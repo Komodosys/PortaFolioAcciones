@@ -8,6 +8,7 @@
     "posiciones": "Positions",
     "preferencias": "Préférences",
     "auditoria": "Audit",
+    "usuarios": "Utilisateurs",
     "administracion": "Administration",
     "salir": "Quitter",
     "idioma": "Langue",
@@ -177,6 +178,28 @@
       "Updated": "A modifié",
       "Deleted": "A supprimé"
     }
+  },
+  "usuarios": {
+    "titulo": "Utilisateurs",
+    "subtitulo": "Qui a accès aux données de la maison.",
+    "nueva": "Nouveau compte",
+    "nombre": "Nom",
+    "usuario": "Nom d'entrée",
+    "usuarioAyuda": "C'est avec cela que l'on entre. Sans espaces ni accents ; par exemple, « ana.garcia ».",
+    "esAdmin": "Administrateur",
+    "esAdminAyuda": "Il pourra voir et modifier les données des autres, et chaque changement sera consigné avec son nom.",
+    "esAdminEtiqueta": "administrateur",
+    "claveTemporal": "mot de passe temporaire",
+    "crear": "Créer le compte",
+    "faltanDatos": "Indiquez le nom et le nom d'entrée.",
+    "sinCuentas": "Il n'y a encore aucun compte.",
+    "cuantas": "{{total}} compte(s)",
+    "unSoloAdministrador": "Il n'y a qu'un seul administrateur. S'il perd son mot de passe, personne ne pourra en générer un autre. Il vaut mieux en avoir deux.",
+    "generarClave": "Générer un mot de passe temporaire",
+    "claveEntregar": "Mot de passe temporaire",
+    "claveAviso": "Remettez-le en main propre à {{persona}}. Il ne sera plus visible : s'il est perdu, générez-en un autre.",
+    "claveHecho": "Je l'ai remis",
+    "caduca": "Expire le"
   },
   "preferencias": {
     "titulo": "Préférences",

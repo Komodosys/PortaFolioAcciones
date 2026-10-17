@@ -57,6 +57,13 @@ export function crearCliente(nombre) {
       return this.testigo;
     },
 
+    /**
+     * Inicia sesión.
+     *
+     * **No lanza excepción si falla: devuelve la respuesta.** Quien la llama tiene que mirar
+     * `respuesta.estado`, porque si no, un inicio de sesión fallido pasa desapercibido y el cliente sigue
+     * haciendo peticiones sin sesión — que fallan más adelante con un 401 que no se parece a la causa.
+     */
     async entrar(usuario, contrasena) {
       await this.obtenerTestigo();
       const respuesta = await this.pedir('POST', '/api/auth/login', { userName: usuario, password: contrasena });

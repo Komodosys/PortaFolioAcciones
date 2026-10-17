@@ -8,6 +8,7 @@
     "posiciones": "Posiciones",
     "preferencias": "Preferencias",
     "auditoria": "Auditoría",
+    "usuarios": "Usuarios",
     "administracion": "Administración",
     "salir": "Salir",
     "idioma": "Idioma",
@@ -177,6 +178,28 @@
       "Updated": "Modificó",
       "Deleted": "Borró"
     }
+  },
+  "usuarios": {
+    "titulo": "Usuarios",
+    "subtitulo": "Quién tiene acceso a los datos de la casa.",
+    "nueva": "Nueva cuenta",
+    "nombre": "Nombre",
+    "usuario": "Nombre de entrada",
+    "usuarioAyuda": "Con esto entra. Sin espacios ni acentos; por ejemplo, «ana.garcia».",
+    "esAdmin": "Administrador",
+    "esAdminAyuda": "Podrá ver y modificar los datos de las demás personas, y cada cambio quedará anotado con su nombre.",
+    "esAdminEtiqueta": "administrador",
+    "claveTemporal": "clave temporal",
+    "crear": "Crear la cuenta",
+    "faltanDatos": "Pon el nombre y el nombre de entrada.",
+    "sinCuentas": "Todavía no hay ninguna cuenta.",
+    "cuantas": "{{total}} cuenta(s)",
+    "unSoloAdministrador": "Solo hay un administrador. Si pierde su contraseña, nadie podrá generar otra. Conviene que haya dos.",
+    "generarClave": "Generar clave temporal",
+    "claveEntregar": "Contraseña temporal",
+    "claveAviso": "Dásela en mano a {{persona}}. No se vuelve a poder mirar: si se pierde, genera otra.",
+    "claveHecho": "Ya la he entregado",
+    "caduca": "Caduca el"
   },
   "preferencias": {
     "titulo": "Preferencias",

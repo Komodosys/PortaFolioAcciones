@@ -8,6 +8,7 @@
     "posiciones": "Positions",
     "preferencias": "Preferences",
     "auditoria": "Audit",
+    "usuarios": "Users",
     "administracion": "Administration",
     "salir": "Sign out",
     "idioma": "Language",
@@ -177,6 +178,28 @@
       "Updated": "Changed",
       "Deleted": "Deleted"
     }
+  },
+  "usuarios": {
+    "titulo": "Users",
+    "subtitulo": "Who has access to the household's data.",
+    "nueva": "New account",
+    "nombre": "Name",
+    "usuario": "Sign-in name",
+    "usuarioAyuda": "That is what they sign in with. No spaces or accents; for example, \"ana.garcia\".",
+    "esAdmin": "Administrator",
+    "esAdminAyuda": "They will be able to see and change other people's data, and every change will be recorded under their name.",
+    "esAdminEtiqueta": "administrator",
+    "claveTemporal": "temporary password",
+    "crear": "Create the account",
+    "faltanDatos": "Enter the name and the sign-in name.",
+    "sinCuentas": "There are no accounts yet.",
+    "cuantas": "{{total}} account(s)",
+    "unSoloAdministrador": "There is only one administrator. If they lose their password, nobody will be able to generate another. It is worth having two.",
+    "generarClave": "Generate temporary password",
+    "claveEntregar": "Temporary password",
+    "claveAviso": "Hand it over in person to {{persona}}. It cannot be shown again: if it is lost, generate another.",
+    "claveHecho": "I have handed it over",
+    "caduca": "Expires on"
   },
   "preferencias": {
     "titulo": "Preferences",

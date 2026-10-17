@@ -15,6 +15,11 @@ module.exports = {
     fontFamily: {
       sans: ['Montserrat', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       montserrat: ['Montserrat', 'sans-serif'],
+
+      // Al redefinir `fontFamily` se PIERDE la escala que trae Tailwind, así que `font-mono` dejaría de
+      // existir —le pasa igual a WinCuentas—. Se devuelve, porque hace falta para lo que de verdad tiene que
+      // ser monoespaciado: una contraseña temporal, donde confundir `O` con `0` es un fallo de verdad.
+      mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
     },
     extend: {
       // El color de fondo de la aplicación, el mismo crema que WinCuentas. Se declara aquí y no se repite

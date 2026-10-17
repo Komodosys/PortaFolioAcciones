@@ -197,6 +197,8 @@
     "avisoAjenas": "Ces portefeuilles ne sont pas les vôtres. Vous pouvez les voir et les modifier parce que vous administrez, et tout ce que vous changerez sera consigné sous votre nom.",
     "cerradas": "Positions clôturées",
     "noEncontrada": "Ce portefeuille est introuvable.",
+    "subtitulo": "Chaque portefeuille est un compte, avec sa propre devise de référence.",
+    "sinCarteras": "Vous n'avez encore aucun portefeuille. Créez-en un pour commencer.",
     "totalesParciales": "Des prix manquent : ces totaux sont partiels.",
     "valorTotal": "Valeur totale",
     "costeTotal": "Coût total",

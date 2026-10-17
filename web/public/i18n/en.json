@@ -197,6 +197,8 @@
     "avisoAjenas": "These portfolios are not yours. You can see and change them because you administer, and everything you change will be recorded under your name.",
     "cerradas": "Closed positions",
     "noEncontrada": "That portfolio could not be found.",
+    "subtitulo": "Each portfolio is an account, with its own base currency.",
+    "sinCarteras": "You don't have any portfolios yet. Create one to get started.",
     "totalesParciales": "Prices are missing: these totals are partial.",
     "valorTotal": "Total value",
     "costeTotal": "Total cost",

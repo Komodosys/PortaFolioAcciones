@@ -17,7 +17,7 @@ interface Grupo {
 /**
  * La lista de carteras: la pantalla donde se entra.
  *
- * Se enseñan **archivadas incluidas**, en su propia seccion, porque archivar es esconder y no borrar: si
+ * Se enseÃ±an **archivadas incluidas**, en su propia seccion, porque archivar es esconder y no borrar: si
  * no aparecieran en ningun sitio, archivar una cartera por error pareceria haberla perdido.
  *
  * Y se separan **las mias de las de las demas**. El administrador ve todas en la misma lista, y sin
@@ -27,7 +27,8 @@ interface Grupo {
   selector: 'app-lista-de-carteras',
   imports: [FormsModule, RouterLink, TranslocoDirective],
   templateUrl: './lista.html',
-  styleUrl: './lista.scss',
+  // El estilo vive en la plantilla, con clases de Tailwind: no queda SCSS que mantener.
+  host: { class: 'block' },
 })
 export class ListaDeCarteras {
   private readonly api = inject(CarterasApi);
@@ -133,7 +134,7 @@ export class ListaDeCarteras {
     this.guardando.set(true);
 
     try {
-      // Moneda vacia significa «heredar la de mi perfil», y por eso se manda nula y no una cadena vacia.
+      // Moneda vacia significa Â«heredar la de mi perfilÂ», y por eso se manda nula y no una cadena vacia.
       await this.api.crear(this.nuevaCartera.trim(), this.nuevaMoneda.trim() || null);
       this.cancelarFormulario();
       await this.cargar();

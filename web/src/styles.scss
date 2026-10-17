@@ -1,11 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /*
- * Estilos globales.
+ * Montserrat en TODA la aplicación, igual que en WinCuentas.
+ *
+ * Se declara por dos vías porque cubren cosas distintas: `--font-sans` es la variable que usa DaisyUI en los
+ * componentes que traen la fuente puesta, y la regla sobre `html, body` alcanza a lo que no pasa por ella.
+ * Es el mismo enfoque que usa la otra aplicación, y así las dos se leen igual.
+ */
+:root {
+  --font-sans: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+}
+
+html,
+body {
+  font-family: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Estilos globales heredados.
  *
  * Los colores se declaran como variables una sola vez y los usan todas las pantallas. Cambiar el aspecto
  * de la aplicacion es cambiar esta lista, no recorrer veinte ficheros.
  *
- * Se respeta el tema del sistema (`prefers-color-scheme`): quien tiene el movil en oscuro no deberia
- * recibir una pantalla blanca al abrir la aplicacion, y esto es una aplicacion que se usa en el movil.
+ * **Esto se va a ir borrando**: cada pantalla que pase a Tailwind deja de necesitar sus variables. Lo que
+ * queda aquí es lo que todavía usan los componentes sin rediseñar.
  */
 
 :root {

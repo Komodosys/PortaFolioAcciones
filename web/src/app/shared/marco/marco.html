@@ -89,14 +89,31 @@
               {{ t('menu.usuarios') }}
             </a>
           }
-
-          <div class="mt-2 border-t border-slate-200 pt-3 md:ml-auto md:mt-0 md:border-0 md:pt-0">
+          <!--
+            En pantallas muy estrechas el hueco de la cabecera no da para el selector, así que ahí se
+            queda este, dentro del menú. Es la misma pieza: solo una de las dos es visible en cada ancho.
+          -->
+          <div class="mt-2 border-t border-slate-200 pt-3 sm:hidden">
             <app-selector-idioma />
           </div>
         </nav>
 
         <div class="ml-auto flex items-center gap-2">
-          <span class="hidden text-sm font-semibold text-slate-700 md:block">
+          <!--
+            El selector de idioma va AQUÍ y no solo dentro del menú, y es una corrección: estaba en el `nav`,
+            que en pantalla estrecha está colapsado detrás de la hamburguesa. O sea que, en un portátil con la
+            ventana a media pantalla, la opción de cambiar de idioma no se veía — y no es una sección de la
+            aplicación, es una preferencia: tiene que estar a la vista.
+
+            La visibilidad va en este envoltorio y no en el componente, que trae su propia clase `block` en el
+            anfitrión: dos utilidades de display en el mismo elemento se resuelven por el orden del CSS
+            generado, y eso funciona hoy pero nadie lo sabe leyéndolo.
+          -->
+          <div class="hidden sm:block">
+            <app-selector-idioma />
+          </div>
+
+          <span class="hidden text-sm font-semibold text-slate-700 lg:block">
             {{ usuario()?.displayName }}
           </span>
 

@@ -1,8 +1,13 @@
 <ng-container *transloco="let t">
   @if (cargando()) {
-    <p class="estado">{{ t('app.cargando') }}</p>
+    <div class="flex items-center gap-3 rounded-3xl bg-white p-5 text-slate-500 shadow-lg">
+      <span class="loading loading-spinner loading-sm"></span>
+      <span class="text-sm">{{ t('app.cargando') }}</span>
+    </div>
   } @else if (fallo(); as clave) {
-    <p class="aviso" role="alert">{{ t(clave) }}</p>
+    <div class="alert alert-error" role="alert">
+      <span>{{ t(clave) }}</span>
+    </div>
   } @else if (vista(); as cartera) {
     <!--
       El aviso va lo PRIMERO, antes incluso del titulo. Quien entra por un enlace directo no pasa por el
@@ -12,66 +17,85 @@
       <app-aviso-datos-ajenos [propietario]="cartera.ownerDisplayName" />
     }
 
-    <div class="cabecera">
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="titulo">{{ cartera.name }}</h1>
-        <p class="moneda">
-          {{ t('cartera.monedaBase') }}: {{ cartera.baseCurrency }}
+        <h1 class="text-3xl font-bold leading-tight text-slate-800">{{ cartera.name }}</h1>
+        <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500">
+          <span class="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+            {{ t('cartera.monedaBase') }}
+          </span>
+          <span>{{ cartera.baseCurrency }}</span>
           @if (estadoDelMercado(); as estado) {
-            <span class="mercado">· {{ t(estado) }}</span>
+            <span class="text-slate-300">·</span>
+            <span>{{ t(estado) }}</span>
           }
         </p>
       </div>
 
-      <a class="boton" [routerLink]="['/carteras', cartera.portfolioId, 'nueva-posicion']">
+      <a
+        class="btn border-0 bg-emerald-500 font-semibold text-white shadow-sm hover:bg-emerald-600"
+        [routerLink]="['/carteras', cartera.portfolioId, 'nueva-posicion']"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2"
+          stroke="currentColor"
+          class="h-4 w-4"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
         {{ t('posiciones.nueva') }}
       </a>
     </div>
 
     <!--
-      Los totales. Si falta algun precio, el aviso va DELANTE del numero y no detras: un total parcial
-      presentado como total es una cifra falsa, y quien lo lee tiene que enterarse antes de creerselo.
+      Los avisos van DELANTE de los numeros y no detras. Un total parcial presentado como total es una cifra
+      falsa, y quien lo lee tiene que enterarse antes de creerselo.
     -->
     @if (!cartera.isComplete) {
-      <p class="aviso aviso--parcial" role="status">
-        {{ t('cartera.totalesParciales') }}
-        @if (sinPrecio().length > 0) {
-          <span class="aviso__detalle">{{ sinPrecio().join(', ') }}</span>
-        }
-      </p>
+      <div class="alert mb-4 border-amber-300 bg-amber-50 py-2.5 text-sm text-amber-800" role="status">
+        <span>
+          {{ t('cartera.totalesParciales') }}
+          @if (sinPrecio().length > 0) {
+            <span class="font-semibold">{{ sinPrecio().join(', ') }}</span>
+          }
+        </span>
+      </div>
     }
 
     <!--
-      Los desdoblamientos sin aplicar. Van ANTES de los totales y no despues, porque lo que anuncian es que
-      los numeros que vienen debajo pueden estar mal: con un 5:1 sin aplicar, la cantidad se queda como
-      estaba y el precio se divide, y la cartera se lee como si hubiera perdido el 80 %.
+      Los desdoblamientos sin aplicar, por el mismo motivo: lo que anuncian es que los numeros de debajo
+      pueden estar mal. Con un 5:1 sin aplicar, la cantidad se queda como estaba y el precio se divide, y la
+      cartera se lee como si hubiera perdido el 80 %.
     -->
     @if (desdoblamientos().length > 0) {
-      <div class="desdoblamientos" role="status">
-        <strong class="desdoblamientos__titulo">{{ t('posiciones.desdoblamientoTitulo') }}</strong>
-        <p class="desdoblamientos__ayuda">{{ t('posiciones.desdoblamientoAyuda') }}</p>
+      <div class="mb-4 rounded-3xl border-2 border-dashed border-amber-300 bg-amber-50/60 p-5" role="status">
+        <strong class="block text-base font-bold text-amber-900">{{ t('posiciones.desdoblamientoTitulo') }}</strong>
+        <p class="mt-1 text-sm text-amber-800">{{ t('posiciones.desdoblamientoAyuda') }}</p>
 
-        <ul class="desdoblamientos__lista">
+        <ul class="mt-3 list-none space-y-3 p-0">
           @for (split of desdoblamientos(); track split.positionId + split.date) {
-            <li class="desdoblamiento">
-              <span class="desdoblamiento__simbolo">{{ split.symbol }}</span>
-              <span class="desdoblamiento__detalle">
+            <li class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-white p-4 shadow-sm">
+              <span class="text-base font-bold text-slate-800">{{ split.symbol }}</span>
+              <span class="text-sm text-slate-600">
                 {{ t('posiciones.desdoblamientoDetalle', {
                   proporcion: split.proporcion,
                   fecha: split.fecha,
                 }) }}
               </span>
-              <span class="desdoblamiento__cuenta">
+              <span class="badge badge-ghost badge-sm">
                 {{ t('posiciones.desdoblamientoCantidad', {
                   antes: split.cantidadAntes,
                   despues: split.cantidadDespues,
                 }) }}
               </span>
 
-              <span class="desdoblamiento__acciones">
+              <span class="ml-auto flex flex-wrap gap-2">
                 <button
                   type="button"
-                  class="boton boton--suave"
+                  class="btn btn-ghost btn-sm text-slate-600"
                   [disabled]="resolviendo()"
                   (click)="resolverDesdoblamiento(split, false)"
                 >
@@ -79,7 +103,7 @@
                 </button>
                 <button
                   type="button"
-                  class="boton"
+                  class="btn btn-sm border-0 bg-emerald-500 font-semibold text-white hover:bg-emerald-600"
                   [disabled]="resolviendo()"
                   (click)="resolverDesdoblamiento(split, true)"
                 >
@@ -92,193 +116,327 @@
       </div>
     }
 
+    <!--
+      Los totales, con el patrón de la rejilla de estadísticas de WinCuentas: un círculo con el icono, la
+      etiqueta en gris mayúsculas y la cifra grande.
+
+      El color de la cifra NO se pone en el `dd` cuando puede cambiar de signo: se pone en la tarjeta y se
+      hereda. Tailwind ordena sus utilidades por nombre, así que un `text-slate-800` base y un
+      `text-emerald-600` condicional se pisan según cuál salga después en el CSS, y ganaría el que no toca.
+    -->
     @if (totales(); as total) {
-      <dl class="totales">
-        <div class="totales__dato">
-          <dt>{{ t('cartera.valorTotal') }}</dt>
-          <dd class="cifra">{{ total.valor }}</dd>
+      <div class="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="rounded-3xl bg-white p-5 shadow-lg">
+          <div class="mb-3 flex items-center gap-2">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" class="h-4 w-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+              </svg>
+            </span>
+            <span class="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+              {{ t('cartera.valorTotal') }}
+            </span>
+          </div>
+          <div class="text-xl font-bold leading-tight text-slate-900">{{ total.valor }}</div>
         </div>
 
-        <div class="totales__dato">
-          <dt>
-            {{ t('cartera.costeTotal') }}
-            <!--
-              El coste en moneda base esta al cambio de HOY, no al del dia de la compra. Hay que decirlo:
-              cambia a diario sin que haya habido ninguna operacion, y sin el aviso pareceria que la
-              persona ha comprado o vendido algo.
-            -->
-            <span class="totales__matiz">{{ t('aviso.costeAlCambioDeHoy') }}</span>
-          </dt>
-          <dd class="cifra">{{ total.coste }}</dd>
+        <div class="rounded-3xl bg-white p-5 shadow-lg">
+          <div class="mb-3 flex items-center gap-2">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" class="h-4 w-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+              </svg>
+            </span>
+            <span class="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+              {{ t('cartera.costeTotal') }}
+            </span>
+          </div>
+          <div class="text-xl font-bold leading-tight text-slate-900">{{ total.coste }}</div>
+          <!--
+            El coste en moneda base esta al cambio de HOY, no al del dia de la compra. Hay que decirlo: cambia
+            a diario sin que haya habido ninguna operacion, y sin el aviso pareceria que se compro o vendio.
+          -->
+          <p class="mt-2 text-[11px] leading-snug text-slate-400">{{ t('aviso.costeAlCambioDeHoy') }}</p>
         </div>
 
-        <div class="totales__dato">
-          <dt>
-            {{ t('posiciones.hoy') }}
-            @if (total.hoyParcial) {
-              <!--
-                Cuando falta el cierre anterior de alguna posicion, esta cifra es solo la parte que se sabe.
-                Se dice aqui mismo y no en un aviso aparte: quien la lee tiene que enterarse antes de
-                creersela.
-              -->
-              <span class="totales__matiz">{{ t('posiciones.hoyParcial') }}</span>
-            }
-          </dt>
-          <dd class="cifra" [class]="'cifra--' + total.signoDeHoy">
+        <div class="rounded-3xl bg-white p-5 text-slate-900 shadow-lg">
+          <div class="mb-3 flex items-center gap-2">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" class="h-4 w-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+            <span class="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+              {{ t('posiciones.hoy') }}
+            </span>
+          </div>
+          <div
+            class="text-xl font-bold leading-tight"
+            [class.text-emerald-600]="total.signoDeHoy === 'positiva'"
+            [class.text-red-600]="total.signoDeHoy === 'negativa'"
+          >
             {{ total.hoy }}
             @if (total.hoyPorcentaje; as porcentaje) {
-              <span class="totales__porcentaje">{{ porcentaje }}</span>
+              <span class="ml-1 text-sm font-semibold opacity-80">{{ porcentaje }}</span>
             }
-          </dd>
+          </div>
+          @if (total.hoyParcial) {
+            <p class="mt-2 text-[11px] font-semibold leading-snug text-amber-700">{{ t('posiciones.hoyParcial') }}</p>
+          }
         </div>
 
-        <div class="totales__dato">
-          <dt>
-            {{ t('cartera.gananciaTotal') }}
-            <!--
-              La moneda se pasa como dato y no va escrita en el texto: la moneda base es una preferencia, y
-              un texto que dijera «en CAD» a fuego mentiria en cuanto alguien la pusiera en dolares.
-            -->
-            <span class="totales__matiz">
-              {{ t('aviso.rendimientoEsDelActivo', { moneda: cartera.baseCurrency }) }}
+        <div class="rounded-3xl bg-white p-5 text-slate-900 shadow-lg">
+          <div class="mb-3 flex items-center gap-2">
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" class="h-4 w-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+              </svg>
             </span>
-          </dt>
-          <dd class="cifra" [class]="'cifra--' + total.signo">
+            <span class="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+              {{ t('cartera.gananciaTotal') }}
+            </span>
+          </div>
+          <div
+            class="text-xl font-bold leading-tight"
+            [class.text-emerald-600]="total.signo === 'positiva'"
+            [class.text-red-600]="total.signo === 'negativa'"
+          >
             {{ total.ganancia }}
-            <span class="totales__porcentaje">{{ total.rentabilidad }}</span>
-          </dd>
+            <span class="ml-1 text-sm font-semibold opacity-80">{{ total.rentabilidad }}</span>
+          </div>
+          <!--
+            La moneda se pasa como dato y no va escrita en el texto: la moneda base es una preferencia, y un
+            texto que dijera «en CAD» a fuego mentiria en cuanto alguien la pusiera en dolares.
+          -->
+          <p class="mt-2 text-[11px] leading-snug text-slate-400">
+            {{ t('aviso.rendimientoEsDelActivo', { moneda: cartera.baseCurrency }) }}
+          </p>
         </div>
-      </dl>
+      </div>
     }
 
-    @if (cartera.ratesDate) {
-      <p class="pie">{{ t('cartera.datosAl') }} {{ cartera.ratesDate }}</p>
-    }
-
-    @if (cartera.closedPositions > 0) {
-      <p class="pie">{{ t('cartera.cerradas') }}: {{ cartera.closedPositions }}</p>
+    @if (cartera.ratesDate || cartera.closedPositions > 0) {
+      <p class="mb-4 flex flex-wrap gap-x-4 text-xs text-slate-400">
+        @if (cartera.ratesDate) {
+          <span>{{ t('cartera.datosAl') }} {{ cartera.ratesDate }}</span>
+        }
+        @if (cartera.closedPositions > 0) {
+          <span>{{ t('cartera.cerradas') }}: {{ cartera.closedPositions }}</span>
+        }
+      </p>
     }
 
     @if (filas().length === 0) {
-      <p class="estado">{{ t('posiciones.sinDatos') }}</p>
+      <div class="rounded-3xl bg-white p-10 text-center shadow-lg">
+        <p class="text-sm text-slate-500">{{ t('posiciones.sinDatos') }}</p>
+      </div>
     } @else {
-      <table class="tabla">
-        <caption class="visualmente-oculto">{{ t('posiciones.titulo') }}</caption>
+      <!--
+        ============================ ESCRITORIO: la tabla ============================
 
-        <thead>
-          <tr>
-            @for (columna of columnas; track columna.campo) {
-              <th
-                scope="col"
-                [class.cifra]="columna.numerica"
-                [attr.aria-sort]="
-                  orden().campo === columna.campo
-                    ? orden().descendente
-                      ? 'descending'
-                      : 'ascending'
-                    : 'none'
-                "
-              >
-                <button
-                  type="button"
-                  class="tabla__orden"
-                  [attr.aria-label]="t('posiciones.ordenarPor', { columna: t(columna.clave) })"
-                  (click)="ordenarPor(columna.campo)"
+        Se mantiene tabla y no fichas porque son nueve columnas de cifras y compararlas en vertical es para
+        lo que sirve una tabla. En móvil no cabe, y ahí está el otro bloque.
+      -->
+      <div class="hidden overflow-hidden rounded-3xl bg-white shadow-lg lg:block">
+        <table class="table table-sm">
+          <caption class="sr-only">{{ t('posiciones.titulo') }}</caption>
+
+          <thead>
+            <tr class="border-b border-slate-200">
+              @for (columna of columnas; track columna.campo) {
+                <th
+                  scope="col"
+                  class="bg-white text-[11px] font-bold uppercase tracking-wide text-slate-400"
+                  [class.text-right]="columna.numerica"
+                  [attr.aria-sort]="
+                    orden().campo === columna.campo
+                      ? orden().descendente
+                        ? 'descending'
+                        : 'ascending'
+                      : 'none'
+                  "
                 >
-                  {{ t(columna.clave) }}
-                  <span class="tabla__flecha" aria-hidden="true">{{ flechaDe(columna.campo) }}</span>
-                </button>
-              </th>
-            }
-          </tr>
-        </thead>
-
-        <tbody>
-          @for (fila of filas(); track fila.id) {
-            <tr [class.tabla__fila--sin-valorar]="fila.sinValorar">
-              <th scope="row" class="tabla__simbolo" [attr.data-etiqueta]="t('posiciones.simbolo')">
-                <a class="tabla__enlace" [routerLink]="['/posiciones', fila.id]">{{ fila.simbolo }}</a>
-
-                <!--
-                  Por que no se ha podido valorar, en la propia fila. Quien mira una posicion con guiones
-                  quiere saber por que los tiene AHI MISMO, no en un aviso tres centimetros mas arriba.
-                -->
-                @if (fila.sinValorar; as motivo) {
-                  <span class="tabla__sin-valor">{{ t(motivo) }}</span>
-                }
-              </th>
-
-              <td class="tabla__nombre" [attr.data-etiqueta]="t('posiciones.nombre')">
-                {{ fila.nombre }}
-              </td>
-
-              <td class="cifra" [attr.data-etiqueta]="t('posiciones.cantidad')">
-                {{ fila.cantidad }}
-                <span class="tabla__moneda">{{ fila.moneda }}</span>
-              </td>
-
-              <td class="cifra" [attr.data-etiqueta]="t('posiciones.coste')">{{ fila.coste }}</td>
-
-              <td class="cifra" [attr.data-etiqueta]="t('posiciones.precio')">
-                {{ fila.precio ?? '—' }}
-
-                <!--
-                  De donde salio el precio. No es lo mismo uno que puso una persona que uno de mercado, y
-                  quien mira una cifra tiene derecho a saber de donde viene.
-                -->
-                @if (fila.origenDelPrecio; as claveOrigen) {
-                  <span class="tabla__etiqueta">{{ t(claveOrigen) }}</span>
-                }
-                @if (fila.fechaDelPrecio; as fecha) {
-                  <span class="tabla__fecha">{{ fecha }}</span>
-                }
-
-                <!--
-                  El aviso de precio viejo: anterior a la ultima sesion de su bolsa. Va aqui y no en una
-                  columna aparte porque es un matiz DEL precio, no un dato nuevo.
-                -->
-                @if (fila.esViejo) {
-                  <span class="tabla__viejo">{{ t('cartera.precioObsoleto') }}</span>
-                }
-              </td>
-
-              <td class="cifra" [attr.data-etiqueta]="t('posiciones.valor')">
-                {{ fila.valor ?? '—' }}
-              </td>
-
-              <td
-                class="cifra"
-                [class]="fila.signoDeHoy === 'neutra' ? 'cifra' : 'cifra--' + fila.signoDeHoy"
-                [attr.data-etiqueta]="t('posiciones.hoy')"
-              >
-                <!--
-                  Un guion cuando no se sabe el cierre anterior, NUNCA un cero: no es que no haya cambiado,
-                  es que no se sabe, y esa diferencia es la que evita leer una cifra incompleta como completa.
-                -->
-                {{ fila.hoy ?? '—' }}
-                @if (fila.hoyPorcentaje; as porcentaje) {
-                  <span class="tabla__porcentaje">{{ porcentaje }}</span>
-                }
-              </td>
-
-              <td
-                class="cifra"
-                [class]="fila.signo === 'neutra' ? 'cifra' : 'cifra--' + fila.signo"
-                [attr.data-etiqueta]="t('posiciones.ganancia')"
-              >
-                {{ fila.ganancia ?? '—' }}
-                @if (fila.gananciaPorcentaje; as porcentaje) {
-                  <span class="tabla__porcentaje">{{ porcentaje }}</span>
-                }
-              </td>
-
-              <td class="cifra" [attr.data-etiqueta]="t('posiciones.peso')">
-                {{ fila.peso ?? '—' }}
-              </td>
+                  <button
+                    type="button"
+                    class="inline-flex w-full items-baseline gap-1 transition-colors hover:text-slate-700"
+                    [class.justify-end]="columna.numerica"
+                    [attr.aria-label]="t('posiciones.ordenarPor', { columna: t(columna.clave) })"
+                    (click)="ordenarPor(columna.campo)"
+                  >
+                    {{ t(columna.clave) }}
+                    <span class="inline-block min-w-[0.7rem] text-emerald-600" aria-hidden="true">{{ flechaDe(columna.campo) }}</span>
+                  </button>
+                </th>
+              }
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody class="text-slate-700">
+            @for (fila of filas(); track fila.id) {
+              <tr class="border-t border-slate-100 transition-colors hover:bg-slate-50" [class.opacity-60]="fila.sinValorar">
+                <th scope="row" class="whitespace-nowrap font-semibold">
+                  <a class="text-emerald-700 hover:underline" [routerLink]="['/posiciones', fila.id]">{{ fila.simbolo }}</a>
+
+                  <!--
+                    Por que no se ha podido valorar, en la propia fila. Quien mira una posicion con guiones
+                    quiere saber por que los tiene AHI MISMO, no en un aviso tres centimetros mas arriba.
+                  -->
+                  @if (fila.sinValorar; as motivo) {
+                    <span class="block text-[11px] font-normal italic text-amber-700">{{ t(motivo) }}</span>
+                  }
+                </th>
+
+                <td class="max-w-[16rem] text-xs text-slate-500">{{ fila.nombre }}</td>
+
+                <td class="text-right tabular-nums">
+                  {{ fila.cantidad }}
+                  <span class="block text-[11px] text-slate-400">{{ fila.moneda }}</span>
+                </td>
+
+                <td class="text-right tabular-nums">{{ fila.coste }}</td>
+
+                <td class="text-right tabular-nums">
+                  {{ fila.precio ?? '—' }}
+
+                  <!--
+                    De donde salio el precio. No es lo mismo uno que puso una persona que uno de mercado, y
+                    quien mira una cifra tiene derecho a saber de donde viene.
+                  -->
+                  @if (fila.origenDelPrecio; as claveOrigen) {
+                    <span class="block text-[11px] italic text-slate-400">{{ t(claveOrigen) }}</span>
+                  }
+                  @if (fila.fechaDelPrecio; as fecha) {
+                    <span class="block text-[11px] text-slate-400">{{ fecha }}</span>
+                  }
+
+                  <!--
+                    El aviso de precio viejo: anterior a la ultima sesion de su bolsa. Va aqui y no en una
+                    columna aparte porque es un matiz DEL precio, no un dato nuevo.
+                  -->
+                  @if (fila.esViejo) {
+                    <span class="block text-[11px] font-semibold text-amber-700">{{ t('cartera.precioObsoleto') }}</span>
+                  }
+                </td>
+
+                <td class="text-right tabular-nums">{{ fila.valor ?? '—' }}</td>
+
+                <td
+                  class="text-right tabular-nums"
+                  [class.text-emerald-600]="fila.signoDeHoy === 'positiva'"
+                  [class.text-red-600]="fila.signoDeHoy === 'negativa'"
+                >
+                  <!--
+                    Un guion cuando no se sabe el cierre anterior, NUNCA un cero: no es que no haya cambiado,
+                    es que no se sabe.
+                  -->
+                  {{ fila.hoy ?? '—' }}
+                  @if (fila.hoyPorcentaje; as porcentaje) {
+                    <span class="block text-[11px]">{{ porcentaje }}</span>
+                  }
+                </td>
+
+                <td
+                  class="text-right font-semibold tabular-nums"
+                  [class.text-emerald-600]="fila.signo === 'positiva'"
+                  [class.text-red-600]="fila.signo === 'negativa'"
+                >
+                  {{ fila.ganancia ?? '—' }}
+                  @if (fila.gananciaPorcentaje; as porcentaje) {
+                    <span class="block text-[11px] font-normal">{{ porcentaje }}</span>
+                  }
+                </td>
+
+                <td class="text-right tabular-nums">{{ fila.peso ?? '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!--
+        ============================ MÓVIL: fichas ============================
+
+        Una tabla de nueve columnas en un movil obliga a desplazarse en horizontal para comparar dos cifras,
+        que es lo contrario de para lo que sirve una tabla. Aqui cada posicion es una ficha con su simbolo
+        arriba y las cifras en rejilla, cada una con su etiqueta.
+      -->
+      <div class="space-y-3 lg:hidden">
+        @for (fila of filas(); track fila.id) {
+          <div class="rounded-3xl bg-white p-5 shadow-lg" [class.opacity-60]="fila.sinValorar">
+            <div class="mb-3 flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <a class="text-lg font-bold text-emerald-700 hover:underline" [routerLink]="['/posiciones', fila.id]">
+                  {{ fila.simbolo }}
+                </a>
+                <p class="truncate text-xs text-slate-500">{{ fila.nombre }}</p>
+                @if (fila.sinValorar; as motivo) {
+                  <p class="mt-1 text-[11px] italic text-amber-700">{{ t(motivo) }}</p>
+                }
+              </div>
+
+              <div class="text-right text-slate-500">
+                <p class="text-lg font-bold leading-tight text-slate-900">{{ fila.valor ?? '—' }}</p>
+                <p
+                  class="text-xs font-semibold"
+                  [class.text-emerald-600]="fila.signo === 'positiva'"
+                  [class.text-red-600]="fila.signo === 'negativa'"
+                >
+                  {{ fila.ganancia ?? '—' }}
+                  @if (fila.gananciaPorcentaje; as porcentaje) {
+                    <span>· {{ porcentaje }}</span>
+                  }
+                </p>
+              </div>
+            </div>
+
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-sm text-slate-700">
+              <div class="flex items-baseline justify-between gap-2">
+                <dt class="text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ t('posiciones.cantidad') }}</dt>
+                <dd class="tabular-nums text-slate-700">
+                  {{ fila.cantidad }} <span class="text-[11px] text-slate-400">{{ fila.moneda }}</span>
+                </dd>
+              </div>
+
+              <div class="flex items-baseline justify-between gap-2">
+                <dt class="text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ t('posiciones.coste') }}</dt>
+                <dd class="tabular-nums text-slate-700">{{ fila.coste }}</dd>
+              </div>
+
+              <div class="flex items-baseline justify-between gap-2">
+                <dt class="text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ t('posiciones.precio') }}</dt>
+                <dd class="text-right tabular-nums text-slate-700">
+                  {{ fila.precio ?? '—' }}
+                  @if (fila.fechaDelPrecio; as fecha) {
+                    <span class="block text-[11px] text-slate-400">{{ fecha }}</span>
+                  }
+                  @if (fila.esViejo) {
+                    <span class="block text-[11px] font-semibold text-amber-700">{{ t('cartera.precioObsoleto') }}</span>
+                  }
+                </dd>
+              </div>
+
+              <div class="flex items-baseline justify-between gap-2">
+                <dt class="text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ t('posiciones.hoy') }}</dt>
+                <dd
+                  class="text-right tabular-nums"
+                  [class.text-emerald-600]="fila.signoDeHoy === 'positiva'"
+                  [class.text-red-600]="fila.signoDeHoy === 'negativa'"
+                >
+                  {{ fila.hoy ?? '—' }}
+                  @if (fila.hoyPorcentaje; as porcentaje) {
+                    <span class="block text-[11px]">{{ porcentaje }}</span>
+                  }
+                </dd>
+              </div>
+
+              <div class="flex items-baseline justify-between gap-2">
+                <dt class="text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ t('posiciones.peso') }}</dt>
+                <dd class="tabular-nums text-slate-700">{{ fila.peso ?? '—' }}</dd>
+              </div>
+            </dl>
+          </div>
+        }
+      </div>
     }
   }
 </ng-container>

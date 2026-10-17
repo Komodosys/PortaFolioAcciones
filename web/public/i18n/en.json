@@ -12,7 +12,8 @@
     "administracion": "Administration",
     "salir": "Sign out",
     "idioma": "Language",
-    "abrirMenu": "Open the menu"
+    "abrirMenu": "Open the menu",
+    "cerrarMenu": "Close the menu"
   },
   "acceso": {
     "entrar": "Sign in",

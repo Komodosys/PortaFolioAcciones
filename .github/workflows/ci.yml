@@ -100,3 +100,14 @@ jobs:
       # Las pruebas corren en jsdom, así que no hace falta ningún navegador instalado.
       - name: Pruebas
         run: npm test
+
+      # Las dos comprobaciones que no son pruebas unitarias y cazan lo que ninguna prueba ve. Van aquí y no
+      # solo en `probar.cmd` porque `probar.cmd` lo ejecuta quien se acuerda, y el CI no se olvida.
+      #
+      # Hacen falta de verdad: un fichero de idiomas con una coma de menos **compila sin quejarse** —las
+      # traducciones se cargan en tiempo de ejecución— y revienta la aplicación al abrirla. Pasó.
+      - name: Comprobar claves de idioma y clases de Tailwind
+        working-directory: .
+        run: |
+          node herramientas/comprobar-idiomas/comprobar.mjs
+          node herramientas/comprobar-estilos/comprobar.mjs

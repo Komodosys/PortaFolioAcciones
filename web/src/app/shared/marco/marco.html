@@ -1,178 +1,172 @@
 <ng-container *transloco="let t">
-  <div class="min-h-dvh bg-crema">
-    <!--
-      La cabecera, con el mismo patrón que WinCuentas: barra blanca de 64 px, borde inferior y pegada
-      arriba al desplazar. El `z-20` no es decorativo: sin él, las tablas de la cartera pasan por encima
-      al hacer scroll.
-    -->
-    <header class="sticky top-0 z-20 h-16 border-b border-slate-200 bg-white">
-      <div class="mx-auto flex h-full max-w-[1440px] items-center gap-3 px-4 sm:px-6">
-        <a
-          class="flex items-center gap-2 text-slate-800 transition-colors hover:text-emerald-600"
-          routerLink="/carteras"
-          (click)="cerrarMenu()"
-        >
+  <!--
+    El marco, con la barra lateral de WinCuentas.
+
+    **Por qué una barra lateral y no una cabecera con enlaces.** La cabecera anterior escondía el menú
+    detrás de una hamburguesa por debajo de 768 px, y con la ventana a media pantalla no se veía ninguna
+    opción. Una barra lateral está siempre en el mismo sitio, se ve entera desde el primer momento y crece
+    hacia abajo sin límite: añadir una pantalla no obliga a hacer sitio.
+
+    Se usa `drawer` de DaisyUI y no un `div` con posicionamiento: es el componente que ya trae el
+    comportamiento de móvil —se abre encima del contenido, se cierra al pulsar fuera, y bloquea el scroll de
+    detrás— sin escribirlo.
+  -->
+  <div class="drawer lg:drawer-open">
+    <input
+      id="menu-lateral"
+      type="checkbox"
+      class="drawer-toggle"
+      [checked]="menuAbierto()"
+      (change)="alternarMenu()"
+    />
+
+    <div class="drawer-content flex min-h-dvh flex-col bg-crema">
+      <!--
+        En móvil la barra lateral se abre desde este botón. En escritorio no existe: la barra ya está a la
+        vista y una cabecera encima solo quitaría alto.
+      -->
+      <header class="flex h-16 items-center gap-3 border-b border-slate-200 bg-white px-4 lg:hidden">
+        <a class="flex items-center gap-2 text-slate-800" routerLink="/carteras" (click)="cerrarMenu()">
           <span class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.8"
-              stroke="currentColor"
-              class="h-5 w-5"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-5 w-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
             </svg>
           </span>
           <span class="text-base font-bold leading-none">{{ t('app.titulo') }}</span>
         </a>
 
-        <!--
-          Una sola lista de opciones para los dos tamaños, no dos copias.
-
-          En escritorio se ve siempre (`md:flex`). En móvil se despliega desde el botón: `hidden` la oculta
-          cuando está cerrada, y gana a `flex` porque en Tailwind `hidden` se genera después de `flex`.
-
-          Se controla con clases y no con JavaScript: así no hay que saber el ancho de la ventana desde el
-          código.
-
-          **El color y el peso base van aquí, en el `nav`, y no en cada enlace.** Es a propósito: Tailwind
-          ordena sus utilidades por nombre de clase, no por el orden en que se escriben, así que si el
-          enlace tuviera `text-slate-600` y `routerLinkActive` añadiera `text-emerald-700`, ganaría el que
-          estuviera después en el CSS — y resulta que esmeralda va antes que slate. El enlace activo no se
-          distinguiría. Heredando del padre no hay choque que deshacer.
-        -->
-        <nav
-          class="absolute inset-x-0 top-16 flex flex-col gap-1 border-b border-slate-200 bg-white p-4
-                 text-sm font-medium text-slate-600 shadow-lg md:static md:mx-2 md:flex-1 md:flex-row
-                 md:items-center md:border-0 md:p-0 md:shadow-none"
-          [class.hidden]="!menuAbierto()"
+        <label
+          for="menu-lateral"
+          class="btn btn-ghost btn-circle btn-sm ml-auto"
+          [attr.aria-label]="t('menu.abrirMenu')"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </label>
+      </header>
+
+      <main class="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-6">
+        <router-outlet />
+      </main>
+    </div>
+
+    <div class="drawer-side z-40">
+      <!-- La capa que cierra la barra al pulsar fuera. En escritorio no se ve. -->
+      <label for="menu-lateral" class="drawer-overlay" [attr.aria-label]="t('menu.cerrarMenu')"></label>
+
+      <aside class="flex min-h-full w-72 flex-col bg-slate-900 text-slate-300">
+        <div class="flex items-center gap-3 border-b border-slate-800 p-6">
+          <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg ring-1 ring-white/20">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-5 w-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+            </svg>
+          </span>
+          <a class="flex flex-col justify-center" routerLink="/carteras" (click)="cerrarMenu()">
+            <span class="text-lg font-black leading-none tracking-tight text-white">{{ t('app.titulo') }}</span>
+            <span class="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              {{ t('menu.carteras') }}
+            </span>
+          </a>
+        </div>
+
+        <nav class="flex-1 space-y-1 overflow-y-auto px-4 py-6">
+          <!--
+            El estilo del elemento de menú se repite en cada enlace y no se pone en el `nav` porque el color
+            del activo tiene que poder ganar al del reposo, y en Tailwind eso depende del orden en que se
+            generan las clases, no de dónde se escriban. Repetido no hay nada que deshacer.
+          -->
           <a
-            class="rounded-xl px-3 py-2 transition-colors hover:bg-slate-50"
+            class="flex items-center gap-4 rounded-2xl px-4 py-3 text-slate-400 transition-all duration-200 hover:bg-slate-800/80 hover:text-white"
             routerLink="/carteras"
-            routerLinkActive="bg-emerald-50 font-semibold text-emerald-700"
+            routerLinkActive="bg-emerald-500 font-bold text-white shadow-lg shadow-emerald-500/20"
             (click)="cerrarMenu()"
           >
-            {{ t('menu.carteras') }}
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" class="h-5 w-5 shrink-0">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+            </svg>
+            <span class="font-medium">{{ t('menu.carteras') }}</span>
           </a>
 
           <a
-            class="rounded-xl px-3 py-2 transition-colors hover:bg-slate-50"
+            class="flex items-center gap-4 rounded-2xl px-4 py-3 text-slate-400 transition-all duration-200 hover:bg-slate-800/80 hover:text-white"
             routerLink="/preferencias"
-            routerLinkActive="bg-emerald-50 font-semibold text-emerald-700"
+            routerLinkActive="bg-emerald-500 font-bold text-white shadow-lg shadow-emerald-500/20"
             (click)="cerrarMenu()"
           >
-            {{ t('menu.preferencias') }}
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" class="h-5 w-5 shrink-0">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.645-.869l.213-1.28z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span class="font-medium">{{ t('menu.preferencias') }}</span>
           </a>
 
           @if (esAdministrador()) {
+            <div class="px-4 py-3">
+              <div class="h-px bg-slate-800"></div>
+            </div>
+
             <a
-              class="rounded-xl px-3 py-2 transition-colors hover:bg-slate-50"
+              class="flex items-center gap-4 rounded-2xl px-4 py-3 text-slate-400 transition-all duration-200 hover:bg-slate-800/80 hover:text-white"
               routerLink="/administracion/auditoria"
-              routerLinkActive="bg-emerald-50 font-semibold text-emerald-700"
+              routerLinkActive="bg-emerald-500 font-bold text-white shadow-lg shadow-emerald-500/20"
               (click)="cerrarMenu()"
             >
-              {{ t('menu.auditoria') }}
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" class="h-5 w-5 shrink-0">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+              </svg>
+              <span class="font-medium">{{ t('menu.auditoria') }}</span>
             </a>
 
             <a
-              class="rounded-xl px-3 py-2 transition-colors hover:bg-slate-50"
+              class="flex items-center gap-4 rounded-2xl px-4 py-3 text-slate-400 transition-all duration-200 hover:bg-slate-800/80 hover:text-white"
               routerLink="/administracion/usuarios"
-              routerLinkActive="bg-emerald-50 font-semibold text-emerald-700"
+              routerLinkActive="bg-emerald-500 font-bold text-white shadow-lg shadow-emerald-500/20"
               (click)="cerrarMenu()"
             >
-              {{ t('menu.usuarios') }}
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" class="h-5 w-5 shrink-0">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+              </svg>
+              <span class="font-medium">{{ t('menu.usuarios') }}</span>
             </a>
           }
-          <!--
-            En pantallas muy estrechas el hueco de la cabecera no da para el selector, así que ahí se
-            queda este, dentro del menú. Es la misma pieza: solo una de las dos es visible en cada ancho.
-          -->
-          <div class="mt-2 border-t border-slate-200 pt-3 sm:hidden">
-            <app-selector-idioma />
-          </div>
         </nav>
 
-        <div class="ml-auto flex items-center gap-2">
-          <!--
-            El selector de idioma va AQUÍ y no solo dentro del menú, y es una corrección: estaba en el `nav`,
-            que en pantalla estrecha está colapsado detrás de la hamburguesa. O sea que, en un portátil con la
-            ventana a media pantalla, la opción de cambiar de idioma no se veía — y no es una sección de la
-            aplicación, es una preferencia: tiene que estar a la vista.
-
-            La visibilidad va en este envoltorio y no en el componente, que trae su propia clase `block` en el
-            anfitrión: dos utilidades de display en el mismo elemento se resuelven por el orden del CSS
-            generado, y eso funciona hoy pero nadie lo sabe leyéndolo.
-          -->
-          <div class="hidden sm:block">
+        <div class="border-t border-slate-800 p-4">
+          <div class="px-2 pb-3">
             <app-selector-idioma />
           </div>
 
-          <span class="hidden text-sm font-semibold text-slate-700 lg:block">
-            {{ usuario()?.displayName }}
-          </span>
-
-          <!-- El avatar con la inicial, como en WinCuentas: identifica la sesión de un vistazo. -->
-          <div class="avatar placeholder" [attr.title]="usuario()?.displayName">
-            <div
-              class="w-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white ring-2 ring-white shadow-sm"
-            >
-              <span class="text-xs font-bold">{{ usuario()?.displayName?.charAt(0) }}</span>
+          <div class="flex items-center gap-3 rounded-2xl px-2 py-2">
+            <div class="avatar placeholder" [attr.title]="usuario()?.displayName">
+              <div class="w-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white ring-2 ring-slate-900">
+                <span class="text-sm font-bold">{{ usuario()?.displayName?.charAt(0) }}</span>
+              </div>
             </div>
-          </div>
 
-          <button
-            type="button"
-            class="btn btn-ghost btn-circle btn-sm text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
-            [attr.aria-label]="t('menu.salir')"
-            [attr.title]="t('menu.salir')"
-            (click)="salir()"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-              class="h-5 w-5"
+            <div class="flex min-w-0 flex-1 flex-col">
+              <span class="truncate text-sm font-bold text-slate-200">{{ usuario()?.displayName }}</span>
+              @if (esAdministrador()) {
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                  {{ t('usuarios.esAdminEtiqueta') }}
+                </span>
+              }
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-ghost btn-circle btn-sm text-slate-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
+              [attr.aria-label]="t('menu.salir')"
+              [attr.title]="t('menu.salir')"
+              (click)="salir()"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
-              />
-            </svg>
-          </button>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+              </svg>
+            </button>
+          </div>
         </div>
-
-        <button
-          type="button"
-          class="btn btn-ghost btn-circle btn-sm md:hidden"
-          [attr.aria-expanded]="menuAbierto()"
-          [attr.aria-label]="t('menu.abrirMenu')"
-          (click)="alternarMenu()"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="2"
-            stroke="currentColor"
-            class="h-5 w-5"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-          </svg>
-        </button>
-      </div>
-    </header>
-
-    <main class="mx-auto max-w-[1440px] px-4 py-6 sm:px-6">
-      <router-outlet />
-    </main>
+      </aside>
+    </div>
   </div>
 </ng-container>

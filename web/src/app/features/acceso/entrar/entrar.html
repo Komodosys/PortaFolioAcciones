@@ -1,16 +1,36 @@
 <ng-container *transloco="let t">
-  <div class="entrada">
-    <div class="entrada__idioma">
+  <div class="relative flex min-h-dvh flex-col items-center justify-center bg-crema px-4 py-6">
+    <div class="absolute right-4 top-4">
       <app-selector-idioma />
     </div>
 
-    <form class="tarjeta" (ngSubmit)="enviar()">
-      <h1 class="tarjeta__titulo">{{ t('app.titulo') }}</h1>
+    <form class="w-full max-w-sm rounded-3xl bg-white p-8 shadow-lg" (ngSubmit)="enviar()">
+      <div class="mb-6 flex flex-col items-center gap-3 text-center">
+        <span class="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.8"
+            stroke="currentColor"
+            class="h-7 w-7"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
+            />
+          </svg>
+        </span>
+        <h1 class="text-2xl font-bold leading-tight text-slate-800">{{ t('app.titulo') }}</h1>
+      </div>
 
-      <label class="campo">
-        <span class="campo__etiqueta">{{ t('acceso.usuario') }}</span>
+      <label class="form-control w-full">
+        <div class="label pb-1">
+          <span class="label-text font-medium text-slate-600">{{ t('acceso.usuario') }}</span>
+        </div>
         <input
-          class="campo__control"
+          class="input input-bordered w-full"
           type="text"
           name="usuario"
           autocomplete="username"
@@ -21,10 +41,12 @@
         />
       </label>
 
-      <label class="campo">
-        <span class="campo__etiqueta">{{ t('acceso.contrasena') }}</span>
+      <label class="form-control mt-4 w-full">
+        <div class="label pb-1">
+          <span class="label-text font-medium text-slate-600">{{ t('acceso.contrasena') }}</span>
+        </div>
         <input
-          class="campo__control"
+          class="input input-bordered w-full"
           type="password"
           name="contrasena"
           autocomplete="current-password"
@@ -38,10 +60,19 @@
         error que solo se ve, no se entera quien no mira.
       -->
       @if (claveDeError(); as clave) {
-        <p class="aviso" role="alert">{{ t(clave) }}</p>
+        <div class="alert alert-error mt-4 py-2.5 text-sm" role="alert">
+          <span>{{ t(clave) }}</span>
+        </div>
       }
 
-      <button class="boton" type="submit" [disabled]="enviando()">
+      <button
+        class="btn mt-6 w-full border-0 bg-emerald-500 font-semibold text-white hover:bg-emerald-600"
+        type="submit"
+        [disabled]="enviando()"
+      >
+        @if (enviando()) {
+          <span class="loading loading-spinner loading-sm"></span>
+        }
         {{ enviando() ? t('app.cargando') : t('acceso.entrar') }}
       </button>
     </form>

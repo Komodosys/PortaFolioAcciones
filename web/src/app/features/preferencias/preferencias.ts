@@ -23,7 +23,8 @@ interface Opcion {
   selector: 'app-preferencias',
   imports: [FormsModule, TranslocoDirective],
   templateUrl: './preferencias.html',
-  styleUrl: './preferencias.scss',
+  // El estilo vive en la plantilla, con clases de Tailwind: no queda SCSS que mantener.
+  host: { class: 'block' },
 })
 export class Preferencias {
   private readonly api = inject(PerfilApi);

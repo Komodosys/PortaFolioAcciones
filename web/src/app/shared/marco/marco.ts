@@ -14,7 +14,9 @@ import { SelectorIdioma } from '../selector-idioma/selector-idioma';
   selector: 'app-marco',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslocoDirective, SelectorIdioma],
   templateUrl: './marco.html',
-  styleUrl: './marco.scss',
+  // El estilo vive en la plantilla, con clases de Tailwind: no queda SCSS que mantener. Lo único que no se
+  // puede poner desde la plantilla es el propio elemento anfitrión, y para eso está `host`.
+  host: { class: 'block' },
 })
 export class Marco {
   private readonly sesion = inject(Sesion);

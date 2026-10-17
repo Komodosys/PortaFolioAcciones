@@ -24,7 +24,8 @@ interface Idioma {
   selector: 'app-selector-idioma',
   imports: [TranslocoDirective],
   templateUrl: './selector-idioma.html',
-  styleUrl: './selector-idioma.scss',
+  // El estilo vive en la plantilla, con clases de Tailwind: no queda SCSS que mantener.
+  host: { class: 'block' },
 })
 export class SelectorIdioma {
   private readonly idiomas = inject(TranslocoService);

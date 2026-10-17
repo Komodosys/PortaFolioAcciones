@@ -17,7 +17,8 @@ import { Sesion } from '../../../core/sesion/sesion';
   selector: 'app-cambiar-contrasena',
   imports: [FormsModule, TranslocoDirective],
   templateUrl: './cambiar-contrasena.html',
-  styleUrl: './cambiar-contrasena.scss',
+  // El estilo vive en la plantilla, con clases de Tailwind: no queda SCSS que mantener.
+  host: { class: 'block' },
 })
 export class CambiarContrasena {
   private readonly sesion = inject(Sesion);

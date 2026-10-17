@@ -117,6 +117,54 @@ if (referencia) {
 
 const total = referencia ? referencia.size : 0;
 
+// --- Tercera comprobación: las claves que el CÓDIGO usa existen --------------------------------
+//
+// Las dos anteriores comparan los ficheros entre sí, y eso deja pasar el fallo más probable: una clave
+// que se escribe en una plantilla y que no está en ninguno de los tres idiomas. Transloco devuelve
+// entonces la propia clave y la pantalla enseña `cartera.sinCarteras` a la persona.
+//
+// Pasó de verdad, y no una vez: el aviso de precio desactualizado llevaba desde la Fase 5 enseñando
+// `aviso.precioObsoleto`, porque la clave existía pero con otro nombre (`cartera.precioObsoleto`). Nadie
+// lo vio porque no había nada que lo mirara.
+//
+// Solo se comprueban las claves ESCRITAS ENTERAS. Las que salen de una variable —`t(clave)`, con el
+// código de error que devuelve la API— no se pueden comprobar así, y avisar de ellas daría falsos fallos.
+if (referencia) {
+  const usadas = new Map();
+
+  for (const fichero of readdirSync('web/src', { recursive: true })) {
+    if (!/\.(html|ts)$/.test(fichero)) {
+      continue;
+    }
+
+    const ruta = join('web/src', fichero);
+    const texto = readFileSync(ruta, 'utf8');
+    const lineas = texto.split('\n');
+
+    lineas.forEach((linea, indice) => {
+      for (const m of linea.matchAll(/\bt\(\s*'([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+)'\s*\)/g)) {
+        if (!usadas.has(m[1])) {
+          usadas.set(m[1], `${ruta}:${indice + 1}`);
+        }
+      }
+    });
+  }
+
+  const inexistentes = [...usadas].filter(([clave]) => !referencia.has(clave));
+
+  if (inexistentes.length > 0) {
+    console.log(`  [MAL] ${inexistentes.length} clave(s) que el código usa y NO existen en español:`);
+
+    for (const [clave, donde] of inexistentes) {
+      console.log(`        ${clave}  (${donde})`);
+    }
+
+    fallos++;
+  } else {
+    console.log(`  Las ${usadas.size} claves escritas en el código existen.`);
+  }
+}
+
 console.log(`  Claves en español: ${total}. Ficheros: ${readdirSync(CARPETA).filter((f) => f.endsWith('.json')).length}.`);
 console.log(fallos === 0 ? '  Los tres idiomas tienen las mismas claves.' : `  ${fallos} problema(s).`);
 process.exit(fallos === 0 ? 0 : 1);

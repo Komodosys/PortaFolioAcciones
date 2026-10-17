@@ -16,7 +16,8 @@ import { SelectorIdioma } from '../../../shared/selector-idioma/selector-idioma'
   selector: 'app-entrar',
   imports: [FormsModule, TranslocoDirective, SelectorIdioma],
   templateUrl: './entrar.html',
-  styleUrl: './entrar.scss',
+  // El estilo vive en la plantilla, con clases de Tailwind: no queda SCSS que mantener.
+  host: { class: 'block' },
 })
 export class Entrar {
   private readonly sesion = inject(Sesion);

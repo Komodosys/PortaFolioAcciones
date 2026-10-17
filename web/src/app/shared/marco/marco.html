@@ -1,70 +1,178 @@
 <ng-container *transloco="let t">
-  <header class="cabecera">
-    <a class="marca" routerLink="/carteras" (click)="cerrarMenu()">
-      <span class="marca__nombre">{{ t('app.titulo') }}</span>
-    </a>
-
+  <div class="min-h-dvh bg-crema">
     <!--
-      El boton solo existe en pantalla estrecha; en ancha, las opciones se ven siempre. Se controla con
-      CSS y no con JavaScript: asi no hay que saber el ancho de la ventana desde el codigo.
+      La cabecera, con el mismo patrón que WinCuentas: barra blanca de 64 px, borde inferior y pegada
+      arriba al desplazar. El `z-20` no es decorativo: sin él, las tablas de la cartera pasan por encima
+      al hacer scroll.
     -->
-    <button
-      type="button"
-      class="cabecera__boton"
-      [attr.aria-expanded]="menuAbierto()"
-      [attr.aria-label]="t('menu.abrirMenu')"
-      (click)="alternarMenu()"
-    >
-      <span class="cabecera__raya"></span>
-      <span class="cabecera__raya"></span>
-      <span class="cabecera__raya"></span>
-    </button>
-
-    <nav class="menu" [class.menu--abierto]="menuAbierto()">
-      <a
-        class="menu__opcion"
-        routerLink="/carteras"
-        routerLinkActive="menu__opcion--activa"
-        (click)="cerrarMenu()"
-      >
-        {{ t('menu.carteras') }}
-      </a>
-
-      <a
-        class="menu__opcion"
-        routerLink="/preferencias"
-        routerLinkActive="menu__opcion--activa"
-        (click)="cerrarMenu()"
-      >
-        {{ t('menu.preferencias') }}
-      </a>
-
-      @if (esAdministrador()) {
+    <header class="sticky top-0 z-20 h-16 border-b border-slate-200 bg-white">
+      <div class="mx-auto flex h-full max-w-[1440px] items-center gap-3 px-4 sm:px-6">
         <a
-          class="menu__opcion"
-          routerLink="/administracion/auditoria"
-          routerLinkActive="menu__opcion--activa"
+          class="flex items-center gap-2 text-slate-800 transition-colors hover:text-emerald-600"
+          routerLink="/carteras"
           (click)="cerrarMenu()"
         >
-          {{ t('menu.auditoria') }}
+          <span class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.8"
+              stroke="currentColor"
+              class="h-5 w-5"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
+              />
+            </svg>
+          </span>
+          <span class="text-base font-bold leading-none">{{ t('app.titulo') }}</span>
         </a>
-      }
 
-      <div class="menu__pie">
-        <app-selector-idioma />
+        <!--
+          Una sola lista de opciones para los dos tamaños, no dos copias.
+
+          En escritorio se ve siempre (`md:flex`). En móvil se despliega desde el botón: `hidden` la oculta
+          cuando está cerrada, y gana a `flex` porque en Tailwind `hidden` se genera después de `flex`.
+
+          Se controla con clases y no con JavaScript: así no hay que saber el ancho de la ventana desde el
+          código.
+
+          **El color y el peso base van aquí, en el `nav`, y no en cada enlace.** Es a propósito: Tailwind
+          ordena sus utilidades por nombre de clase, no por el orden en que se escriben, así que si el
+          enlace tuviera `text-slate-600` y `routerLinkActive` añadiera `text-emerald-700`, ganaría el que
+          estuviera después en el CSS — y resulta que esmeralda va antes que slate. El enlace activo no se
+          distinguiría. Heredando del padre no hay choque que deshacer.
+        -->
+        <nav
+          class="absolute inset-x-0 top-16 flex flex-col gap-1 border-b border-slate-200 bg-white p-4
+                 text-sm font-medium text-slate-600 shadow-lg md:static md:mx-2 md:flex-1 md:flex-row
+                 md:items-center md:border-0 md:p-0 md:shadow-none"
+          [class.hidden]="!menuAbierto()"
+        >
+          <a
+            class="rounded-xl px-3 py-2 transition-colors hover:bg-slate-50"
+            routerLink="/carteras"
+            routerLinkActive="bg-emerald-50 font-semibold text-emerald-700"
+            (click)="cerrarMenu()"
+          >
+            {{ t('menu.carteras') }}
+          </a>
+
+          <a
+            class="rounded-xl px-3 py-2 transition-colors hover:bg-slate-50"
+            routerLink="/preferencias"
+            routerLinkActive="bg-emerald-50 font-semibold text-emerald-700"
+            (click)="cerrarMenu()"
+          >
+            {{ t('menu.preferencias') }}
+          </a>
+
+          @if (esAdministrador()) {
+            <a
+              class="rounded-xl px-3 py-2 transition-colors hover:bg-slate-50"
+              routerLink="/administracion/auditoria"
+              routerLinkActive="bg-emerald-50 font-semibold text-emerald-700"
+              (click)="cerrarMenu()"
+            >
+              {{ t('menu.auditoria') }}
+            </a>
+
+            <a
+              class="rounded-xl px-3 py-2 transition-colors hover:bg-slate-50"
+              routerLink="/administracion/usuarios"
+              routerLinkActive="bg-emerald-50 font-semibold text-emerald-700"
+              (click)="cerrarMenu()"
+            >
+              {{ t('menu.usuarios') }}
+            </a>
+          }
+          <!--
+            En pantallas muy estrechas el hueco de la cabecera no da para el selector, así que ahí se
+            queda este, dentro del menú. Es la misma pieza: solo una de las dos es visible en cada ancho.
+          -->
+          <div class="mt-2 border-t border-slate-200 pt-3 sm:hidden">
+            <app-selector-idioma />
+          </div>
+        </nav>
+
+        <div class="ml-auto flex items-center gap-2">
+          <!--
+            El selector de idioma va AQUÍ y no solo dentro del menú, y es una corrección: estaba en el `nav`,
+            que en pantalla estrecha está colapsado detrás de la hamburguesa. O sea que, en un portátil con la
+            ventana a media pantalla, la opción de cambiar de idioma no se veía — y no es una sección de la
+            aplicación, es una preferencia: tiene que estar a la vista.
+
+            La visibilidad va en este envoltorio y no en el componente, que trae su propia clase `block` en el
+            anfitrión: dos utilidades de display en el mismo elemento se resuelven por el orden del CSS
+            generado, y eso funciona hoy pero nadie lo sabe leyéndolo.
+          -->
+          <div class="hidden sm:block">
+            <app-selector-idioma />
+          </div>
+
+          <span class="hidden text-sm font-semibold text-slate-700 lg:block">
+            {{ usuario()?.displayName }}
+          </span>
+
+          <!-- El avatar con la inicial, como en WinCuentas: identifica la sesión de un vistazo. -->
+          <div class="avatar placeholder" [attr.title]="usuario()?.displayName">
+            <div
+              class="w-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white ring-2 ring-white shadow-sm"
+            >
+              <span class="text-xs font-bold">{{ usuario()?.displayName?.charAt(0) }}</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-ghost btn-circle btn-sm text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
+            [attr.aria-label]="t('menu.salir')"
+            [attr.title]="t('menu.salir')"
+            (click)="salir()"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="h-5 w-5"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-ghost btn-circle btn-sm md:hidden"
+          [attr.aria-expanded]="menuAbierto()"
+          [attr.aria-label]="t('menu.abrirMenu')"
+          (click)="alternarMenu()"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            class="h-5 w-5"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
       </div>
-    </nav>
+    </header>
 
-    <div class="sesion">
-      <span class="sesion__nombre">{{ usuario()?.displayName }}</span>
-
-      <button type="button" class="sesion__salir" (click)="salir()">
-        {{ t('menu.salir') }}
-      </button>
-    </div>
-  </header>
-
-  <main class="contenido">
-    <router-outlet />
-  </main>
+    <main class="mx-auto max-w-[1440px] px-4 py-6 sm:px-6">
+      <router-outlet />
+    </main>
+  </div>
 </ng-container>

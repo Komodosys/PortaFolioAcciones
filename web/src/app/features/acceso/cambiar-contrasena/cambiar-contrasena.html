@@ -1,16 +1,22 @@
 <ng-container *transloco="let t">
-  <div class="cambio">
-    <form class="tarjeta" (ngSubmit)="enviar()">
-      <h1 class="tarjeta__titulo">{{ t('acceso.cambiarContrasena') }}</h1>
+  <div class="flex min-h-dvh items-start justify-center bg-crema px-4 py-10 sm:items-center sm:py-6">
+    <form class="w-full max-w-md rounded-3xl bg-white p-8 shadow-lg" (ngSubmit)="enviar()">
+      <h1 class="mb-1 text-2xl font-bold leading-tight text-slate-800">
+        {{ t('acceso.cambiarContrasena') }}
+      </h1>
 
       @if (esTemporal()) {
-        <p class="explicacion">{{ t('acceso.contrasenaTemporal') }}</p>
+        <p class="mb-5 text-sm text-slate-500">{{ t('acceso.contrasenaTemporal') }}</p>
+      } @else {
+        <div class="mb-5"></div>
       }
 
-      <label class="campo">
-        <span class="campo__etiqueta">{{ t('acceso.contrasenaActual') }}</span>
+      <label class="form-control w-full">
+        <div class="label pb-1">
+          <span class="label-text font-medium text-slate-600">{{ t('acceso.contrasenaActual') }}</span>
+        </div>
         <input
-          class="campo__control"
+          class="input input-bordered w-full"
           type="password"
           name="actual"
           autocomplete="current-password"
@@ -18,22 +24,28 @@
         />
       </label>
 
-      <label class="campo">
-        <span class="campo__etiqueta">{{ t('acceso.contrasenaNueva') }}</span>
+      <label class="form-control mt-4 w-full">
+        <div class="label pb-1">
+          <span class="label-text font-medium text-slate-600">{{ t('acceso.contrasenaNueva') }}</span>
+        </div>
         <input
-          class="campo__control"
+          class="input input-bordered w-full"
           type="password"
           name="nueva"
           autocomplete="new-password"
           [(ngModel)]="nueva"
         />
-        <span class="campo__ayuda">{{ t('acceso.requisitosContrasena') }}</span>
+        <div class="label pt-1">
+          <span class="label-text-alt text-slate-400">{{ t('acceso.requisitosContrasena') }}</span>
+        </div>
       </label>
 
-      <label class="campo">
-        <span class="campo__etiqueta">{{ t('acceso.repetirContrasena') }}</span>
+      <label class="form-control mt-4 w-full">
+        <div class="label pb-1">
+          <span class="label-text font-medium text-slate-600">{{ t('acceso.repetirContrasena') }}</span>
+        </div>
         <input
-          class="campo__control"
+          class="input input-bordered w-full"
           type="password"
           name="repetir"
           autocomplete="new-password"
@@ -42,10 +54,19 @@
       </label>
 
       @if (claveDeError(); as clave) {
-        <p class="aviso" role="alert">{{ t(clave) }}</p>
+        <div class="alert alert-error mt-4 py-2.5 text-sm" role="alert">
+          <span>{{ t(clave) }}</span>
+        </div>
       }
 
-      <button class="boton" type="submit" [disabled]="enviando()">
+      <button
+        class="btn mt-6 w-full border-0 bg-emerald-500 font-semibold text-white hover:bg-emerald-600"
+        type="submit"
+        [disabled]="enviando()"
+      >
+        @if (enviando()) {
+          <span class="loading loading-spinner loading-sm"></span>
+        }
         {{ enviando() ? t('app.cargando') : t('comun.guardar') }}
       </button>
     </form>

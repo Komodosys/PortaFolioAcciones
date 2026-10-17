@@ -35,6 +35,38 @@ src/app/
 - **La moneda viaja como código ISO** junto al importe. Se presenta según el idioma; nunca se
   reinterpreta el valor.
 
+## Estilo: Tailwind CSS y DaisyUI
+
+La interfaz usa **Tailwind CSS 3.4** y **DaisyUI 4.12**, con los temas `light` y `cupcake`, Montserrat y el
+fondo crema `#F5F3EF`. **Son las mismas versiones, temas y tipografía que WinCuentas**, la otra aplicación de
+la casa: la coherencia que se busca no es parecerse, es ser el mismo sistema. Cambiar la versión de DaisyUI
+cambia los nombres y el aspecto de los componentes, y entonces dos aplicaciones que deberían ser gemelas
+empiezan a separarse.
+
+- **No hay SCSS por componente.** El estilo vive en la plantilla con clases de Tailwind. Lo único que no se
+  puede poner desde ahí es la clase del elemento anfitrión, y para eso está `host: { class: 'block' }` en el
+  componente.
+- `src/styles.scss` son las tres directivas de Tailwind, la tipografía y el fondo. Nada más. Las clases
+  propias que había —`.cifra`, `.visualmente-oculto`— no hacen falta: Tailwind ya tiene `tabular-nums` y
+  `sr-only`.
+- El color de la identidad está en `tailwind.config.js` como `crema`, y se usa `bg-crema`. No se repite como
+  `bg-[#F5F3EF]` en cada pantalla: el día que cambie tiene que cambiar en un solo sitio.
+
+### Dos trampas de Tailwind que no dan error
+
+Las dos se compilan, pasan las pruebas, y solo se ven en el navegador. `probar.cmd` avisa de la primera.
+
+1. **Un color de texto base y otro condicional en el mismo elemento.** Tailwind ordena sus utilidades por
+   **nombre de clase**, no por el orden en que se escriben. Con `text-slate-700` de base y
+   `[class.text-emerald-600]` condicional, gana el que quede después en el CSS — y resulta que «emerald» va
+   **antes** que «slate». El color condicional no se aplica nunca. **La solución es no ponerlos juntos**: el
+   color base va en el padre y se hereda.
+
+2. **Los ficheros se leen con UTF-8 explícito.** `Get-Content -Raw` de PowerShell 5.1 lee como ANSI: si se
+   usa para leer y reescribir, **cada acento se convierte en su interpretación cp1252** y `Contraseña` pasa a
+   `ContraseÃ±a` sin que nada falle. Hay que usar `[System.IO.File]::ReadAllText($ruta, UTF8)` o la
+   herramienta de edición.
+
 ## Multi-idioma
 
 Español, francés e inglés, **cambiables en caliente** desde las preferencias de la persona

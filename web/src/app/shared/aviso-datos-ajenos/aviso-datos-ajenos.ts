@@ -11,52 +11,33 @@ import { TranslocoDirective } from '@jsverse/transloco';
  *
  * Va **siempre visible y no se puede cerrar**. Un aviso que se puede descartar es un aviso que desaparece
  * justo cuando se lleva un rato trabajando, que es cuando mas falta hace.
+ *
+ * El estilo vive en la plantilla, como en el resto de la aplicacion. Es ambar y con borde discontinuo, el
+ * mismo recurso que las carteras ajenas del listado: no es un error —en rojo pareceria que algo se ha
+ * roto—, es que hay que ir con cuidado.
  */
 @Component({
   selector: 'app-aviso-datos-ajenos',
   imports: [TranslocoDirective],
+  host: { class: 'mb-4 block' },
   template: `
     <ng-container *transloco="let t">
-      <div class="aviso" role="status">
-        <strong class="aviso__titulo">{{ t('aviso.datosAjenos') }}</strong>
-        <span class="aviso__texto">{{ t('aviso.datosAjenosDetalle', { persona: propietario() }) }}</span>
+      <div
+        class="rounded-3xl border-2 border-dashed border-amber-300 bg-amber-50/70 p-4 text-amber-900"
+        role="status"
+      >
+        <strong class="block text-base font-bold">{{ t('aviso.datosAjenos') }}</strong>
+        <span class="mt-1 block text-sm text-amber-800">
+          {{ t('aviso.datosAjenosDetalle', { persona: propietario() }) }}
+        </span>
         @if (cuenta(); as nombreDeLaCuenta) {
-          <span class="aviso__texto">{{ t('aviso.datosAjenosCuenta', { cuenta: nombreDeLaCuenta }) }}</span>
+          <span class="mt-1 block text-sm text-amber-800">
+            {{ t('aviso.datosAjenosCuenta', { cuenta: nombreDeLaCuenta }) }}
+          </span>
         }
-        <span class="aviso__texto">{{ t('aviso.datosAjenosAuditoria') }}</span>
+        <span class="mt-1 block text-sm text-amber-800">{{ t('aviso.datosAjenosAuditoria') }}</span>
       </div>
     </ng-container>
-  `,
-  styles: `
-    :host {
-      display: block;
-      margin-bottom: 1rem;
-    }
-
-    /*
-     * Ambar y no rojo: no es un error, es una advertencia. En rojo pareceria que algo se ha roto, y lo
-     * que pasa es que hay que ir con cuidado.
-     */
-    .aviso {
-      display: flex;
-      flex-direction: column;
-      gap: 0.2rem;
-      padding: 0.75rem 0.85rem;
-      border: 1px solid #b8860b;
-      border-left-width: 4px;
-      border-radius: 0.45rem;
-      background: color-mix(in srgb, #b8860b 14%, transparent);
-      color: #8a6508;
-      font-size: 0.88rem;
-    }
-
-    .aviso__titulo {
-      font-size: 0.95rem;
-    }
-
-    .aviso__texto {
-      line-height: 1.4;
-    }
   `,
 })
 export class AvisoDatosAjenos {

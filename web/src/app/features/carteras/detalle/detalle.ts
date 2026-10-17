@@ -105,7 +105,8 @@ interface Totales {
   selector: 'app-detalle-de-cartera',
   imports: [RouterLink, TranslocoDirective, AvisoDatosAjenos],
   templateUrl: './detalle.html',
-  styleUrl: './detalle.scss',
+  // El estilo vive en la plantilla, con clases de Tailwind: no queda SCSS que mantener.
+  host: { class: 'block' },
 })
 export class DetalleDeCartera {
   private readonly api = inject(CarterasApi);

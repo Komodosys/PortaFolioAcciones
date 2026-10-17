@@ -63,6 +63,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/administracion/auditoria/auditoria').then((m) => m.Auditoria),
       },
+      {
+        // Aqui se crean accesos a los datos de la familia y se generan credenciales, asi que la guarda es
+        // mas importante que en ninguna otra pantalla. Aun asi, la proteccion de verdad es la API: esto
+        // solo evita enseñar lo que no va a funcionar.
+        path: 'administracion/usuarios',
+        canActivate: [administradorGuard],
+        loadComponent: () =>
+          import('./features/administracion/usuarios/usuarios').then((m) => m.Usuarios),
+      },
     ],
   },
 

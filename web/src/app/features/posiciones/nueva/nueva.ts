@@ -28,7 +28,8 @@ interface LoteEnEdicion {
   selector: 'app-nueva-posicion',
   imports: [FormsModule, TranslocoDirective, BuscadorInstrumento],
   templateUrl: './nueva.html',
-  styleUrl: './nueva.scss',
+  // El estilo vive en la plantilla, con clases de Tailwind: no queda SCSS que mantener.
+  host: { class: 'block' },
 })
 export class NuevaPosicion {
   private readonly api = inject(PosicionesApi);

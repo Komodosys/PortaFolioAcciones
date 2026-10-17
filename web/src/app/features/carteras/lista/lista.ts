@@ -27,7 +27,8 @@ interface Grupo {
   selector: 'app-lista-de-carteras',
   imports: [FormsModule, RouterLink, TranslocoDirective],
   templateUrl: './lista.html',
-  styleUrl: './lista.scss',
+  // El estilo vive en la plantilla, con clases de Tailwind: no queda SCSS que mantener.
+  host: { class: 'block' },
 })
 export class ListaDeCarteras {
   private readonly api = inject(CarterasApi);

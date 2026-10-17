@@ -40,7 +40,8 @@ interface Fila {
   selector: 'app-auditoria',
   imports: [FormsModule, TranslocoDirective],
   templateUrl: './auditoria.html',
-  styleUrl: './auditoria.scss',
+  // El estilo vive en la plantilla, con clases de Tailwind: no queda SCSS que mantener.
+  host: { class: 'block' },
 })
 export class Auditoria {
   private readonly api = inject(AuditoriaApi);

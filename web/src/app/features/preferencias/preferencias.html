@@ -1,49 +1,67 @@
 <ng-container *transloco="let t">
-  <div class="cabecera">
-    <h1 class="titulo">{{ t('preferencias.titulo') }}</h1>
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold leading-tight text-slate-800">{{ t('preferencias.titulo') }}</h1>
   </div>
 
-  <section class="bloque">
-    <label class="campo">
-      <span class="campo__etiqueta">{{ t('cartera.monedaBase') }}</span>
-      <select class="campo__control" [(ngModel)]="moneda" name="moneda">
-        @for (opcion of monedasOfrecidas(); track opcion.codigo) {
-          <option [value]="opcion.codigo">{{ opcion.codigo }} — {{ opcion.nombre }}</option>
+  <div class="grid max-w-3xl grid-cols-1 gap-4">
+    <section class="rounded-3xl bg-white p-5 shadow-lg">
+      <label class="form-control w-full">
+        <div class="label pb-1">
+          <span class="label-text font-medium text-slate-600">{{ t('cartera.monedaBase') }}</span>
+        </div>
+        <select class="select select-bordered w-full max-w-xs" [(ngModel)]="moneda" name="moneda">
+          @for (opcion of monedasOfrecidas(); track opcion.codigo) {
+            <option [value]="opcion.codigo">{{ opcion.codigo }} — {{ opcion.nombre }}</option>
+          }
+        </select>
+      </label>
+
+      <!--
+        Que significa la moneda base no es obvio, y confundirlo lleva a pensar que cambia lo que se tiene.
+        No lo cambia: cambia como se suma.
+      -->
+      <p class="mt-3 text-sm text-slate-500">{{ t('preferencias.monedaAyuda') }}</p>
+    </section>
+
+    <section class="rounded-3xl bg-white p-5 shadow-lg">
+      <label class="form-control w-full">
+        <div class="label pb-1">
+          <span class="label-text font-medium text-slate-600">{{ t('menu.idioma') }}</span>
+        </div>
+        <select class="select select-bordered w-full max-w-xs" [(ngModel)]="idioma" name="idioma">
+          @for (opcion of idiomas; track opcion.codigo) {
+            <option [value]="opcion.codigo">{{ opcion.nombre }}</option>
+          }
+        </select>
+      </label>
+
+      <p class="mt-3 text-sm text-slate-500">{{ t('preferencias.idiomaAyuda') }}</p>
+    </section>
+
+    @if (fallo(); as clave) {
+      <div class="alert alert-error py-2.5 text-sm" role="alert">
+        <span>{{ t(clave) }}</span>
+      </div>
+    }
+
+    @if (guardado()) {
+      <div class="alert alert-success py-2.5 text-sm" role="status">
+        <span>{{ t('preferencias.guardado') }}</span>
+      </div>
+    }
+
+    <div class="flex justify-end">
+      <button
+        type="button"
+        class="btn border-0 bg-emerald-500 font-semibold text-white hover:bg-emerald-600"
+        [disabled]="guardando()"
+        (click)="guardar()"
+      >
+        @if (guardando()) {
+          <span class="loading loading-spinner loading-sm"></span>
         }
-      </select>
-    </label>
-
-    <!--
-      Que significa la moneda base no es obvio, y confundirlo lleva a pensar que cambia lo que se tiene.
-      No lo cambia: cambia como se suma.
-    -->
-    <p class="ayuda">{{ t('preferencias.monedaAyuda') }}</p>
-  </section>
-
-  <section class="bloque">
-    <label class="campo">
-      <span class="campo__etiqueta">{{ t('menu.idioma') }}</span>
-      <select class="campo__control" [(ngModel)]="idioma" name="idioma">
-        @for (opcion of idiomas; track opcion.codigo) {
-          <option [value]="opcion.codigo">{{ opcion.nombre }}</option>
-        }
-      </select>
-    </label>
-
-    <p class="ayuda">{{ t('preferencias.idiomaAyuda') }}</p>
-  </section>
-
-  @if (fallo(); as clave) {
-    <p class="aviso" role="alert">{{ t(clave) }}</p>
-  }
-
-  @if (guardado()) {
-    <p class="exito" role="status">{{ t('preferencias.guardado') }}</p>
-  }
-
-  <div class="acciones">
-    <button type="button" class="boton" [disabled]="guardando()" (click)="guardar()">
-      {{ guardando() ? t('app.cargando') : t('comun.guardar') }}
-    </button>
+        {{ guardando() ? t('app.cargando') : t('comun.guardar') }}
+      </button>
+    </div>
   </div>
 </ng-container>

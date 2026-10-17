@@ -22,7 +22,8 @@ import {
   selector: 'app-detalle-de-posicion',
   imports: [FormsModule, TranslocoDirective, AvisoDatosAjenos],
   templateUrl: './detalle.html',
-  styleUrl: './detalle.scss',
+  // El estilo vive en la plantilla, con clases de Tailwind: no queda SCSS que mantener.
+  host: { class: 'block' },
 })
 export class DetalleDePosicion {
   private readonly api = inject(PosicionesApi);

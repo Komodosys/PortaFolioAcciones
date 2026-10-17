@@ -1,39 +1,64 @@
 <ng-container *transloco="let t">
-  <div class="cabecera">
-    <h1 class="titulo">{{ t('posiciones.nueva') }}</h1>
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold leading-tight text-slate-800">{{ t('posiciones.nueva') }}</h1>
   </div>
 
   @if (!instrumento()) {
-    <section class="paso">
-      <h2 class="paso__titulo">{{ t('posiciones.paso1') }}</h2>
+    <section class="rounded-3xl bg-white p-5 shadow-lg">
+      <h2 class="mb-4 text-base font-bold text-slate-800">{{ t('posiciones.paso1') }}</h2>
       <app-buscador-instrumento (elegido)="elegir($event)" />
     </section>
   } @else {
-    <section class="paso">
-      <h2 class="paso__titulo">{{ t('posiciones.paso2') }}</h2>
+    <section class="rounded-3xl bg-white p-5 shadow-lg">
+      <h2 class="mb-4 text-base font-bold text-slate-800">{{ t('posiciones.paso2') }}</h2>
 
-      <div class="instrumento">
-        <span class="instrumento__simbolo">{{ instrumento()!.symbol }}</span>
-        <span class="instrumento__nombre">{{ instrumento()!.name }}</span>
-        <span class="instrumento__detalle">
-          {{ instrumento()!.quoteCurrency }} · {{ instrumento()!.exchange }}
+      <!-- El instrumento elegido, con el mismo patrón de tarjeta con icono que el resto. -->
+      <div class="flex flex-wrap items-center gap-3 rounded-2xl bg-slate-50 p-4">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.6"
+            stroke="currentColor"
+            class="h-5 w-5"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
+            />
+          </svg>
         </span>
-        <button type="button" class="enlace" (click)="cambiarInstrumento()">
+
+        <div class="min-w-0 flex-1">
+          <p class="text-base font-bold leading-tight text-slate-800">{{ instrumento()!.symbol }}</p>
+          <p class="truncate text-sm text-slate-500">{{ instrumento()!.name }}</p>
+          <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+            {{ instrumento()!.quoteCurrency }} · {{ instrumento()!.exchange }}
+          </p>
+        </div>
+
+        <button type="button" class="btn btn-ghost btn-sm text-slate-600" (click)="cambiarInstrumento()">
           {{ t('posiciones.cambiarInstrumento') }}
         </button>
       </div>
 
-      <p class="ayuda">{{ t('posiciones.ayudaLotes') }}</p>
+      <p class="mt-4 text-sm text-slate-500">{{ t('posiciones.ayudaLotes') }}</p>
 
       @for (lote of lotes(); track $index) {
-        <fieldset class="lote">
-          <legend class="lote__titulo">{{ t('posiciones.compra') }} {{ $index + 1 }}</legend>
+        <fieldset class="mt-4 rounded-2xl border border-slate-200 p-4">
+          <legend class="px-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+            {{ t('posiciones.compra') }} {{ $index + 1 }}
+          </legend>
 
-          <div class="rejilla">
-            <label class="campo">
-              <span class="campo__etiqueta">{{ t('posiciones.cantidad') }}</span>
+          <div class="flex flex-wrap items-start gap-3">
+            <label class="form-control min-w-[8rem] flex-1">
+              <div class="label pb-1">
+                <span class="label-text font-medium text-slate-600">{{ t('posiciones.cantidad') }}</span>
+              </div>
               <input
-                class="campo__control"
+                class="input input-bordered w-full"
                 type="text"
                 inputmode="decimal"
                 [ngModel]="lote.cantidad"
@@ -41,12 +66,14 @@
               />
             </label>
 
-            <label class="campo">
-              <span class="campo__etiqueta">
-                {{ t('posiciones.costePorUnidad') }} ({{ moneda() }})
-              </span>
+            <label class="form-control min-w-[10rem] flex-1">
+              <div class="label pb-1">
+                <span class="label-text font-medium text-slate-600">
+                  {{ t('posiciones.costePorUnidad') }} ({{ moneda() }})
+                </span>
+              </div>
               <input
-                class="campo__control"
+                class="input input-bordered w-full"
                 type="text"
                 inputmode="decimal"
                 [ngModel]="lote.costeUnitario"
@@ -54,64 +81,92 @@
               />
             </label>
 
-            <label class="campo">
-              <span class="campo__etiqueta">{{ t('posiciones.fechaCompra') }}</span>
+            <label class="form-control min-w-[10rem] flex-1">
+              <div class="label pb-1">
+                <span class="label-text font-medium text-slate-600">{{ t('posiciones.fechaCompra') }}</span>
+              </div>
               <input
-                class="campo__control"
+                class="input input-bordered w-full"
                 type="date"
                 [ngModel]="lote.fecha"
                 (ngModelChange)="actualizarLote($index, 'fecha', $event)"
               />
             </label>
 
-            <label class="campo">
-              <span class="campo__etiqueta">{{ t('posiciones.exactitudFecha') }}</span>
-              <select
-                class="campo__control"
-                [ngModel]="lote.exactitud"
-                (ngModelChange)="actualizarLote($index, 'exactitud', $event)"
-              >
+            <label class="form-control min-w-[10rem] flex-1">
+              <div class="label pb-1">
+                <span class="label-text font-medium text-slate-600">{{ t('posiciones.exactitudFecha') }}</span>
+              </div>
+              <select class="select select-bordered w-full" [ngModel]="lote.exactitud" (ngModelChange)="actualizarLote($index, 'exactitud', $event)">
                 <option value="Exact">{{ t('posiciones.exactitud.Exact') }}</option>
                 <option value="Approximate">{{ t('posiciones.exactitud.Approximate') }}</option>
                 <option value="Reference">{{ t('posiciones.exactitud.Reference') }}</option>
               </select>
               <!-- La fecha estimada no es un detalle: fingir que se sabe cuando no se sabe es peor. -->
-              <span class="campo__ayuda">{{ t('posiciones.exactitudAyuda') }}</span>
+              <div class="label pt-1">
+                <span class="label-text-alt text-slate-400">{{ t('posiciones.exactitudAyuda') }}</span>
+              </div>
             </label>
           </div>
 
           @if (lotes().length > 1) {
-            <button type="button" class="enlace enlace--quitar" (click)="quitarLote($index)">
+            <button
+              type="button"
+              class="btn btn-ghost btn-xs mt-3 text-red-500 hover:bg-red-50"
+              (click)="quitarLote($index)"
+            >
               {{ t('posiciones.quitarCompra') }}
             </button>
           }
         </fieldset>
       }
 
-      <div class="pie">
-        <button type="button" class="boton boton--suave" (click)="anadirLote()">
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <button type="button" class="btn btn-ghost btn-sm text-slate-600" (click)="anadirLote()">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            class="h-4 w-4"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
           {{ t('posiciones.anadirCompra') }}
         </button>
 
-        <span class="pie__total">
-          {{ t('posiciones.costeTotal') }}: <strong>{{ totales() }}</strong>
+        <span class="badge badge-lg border-0 bg-emerald-50 font-semibold text-emerald-700">
+          {{ t('posiciones.costeTotal') }}: {{ totales() }}
         </span>
       </div>
 
-      <label class="campo campo--ancho">
-        <span class="campo__etiqueta">{{ t('posiciones.notas') }}</span>
-        <textarea class="campo__control" rows="2" [(ngModel)]="notas" name="notas"></textarea>
+      <label class="form-control mt-4 w-full">
+        <div class="label pb-1">
+          <span class="label-text font-medium text-slate-600">{{ t('posiciones.notas') }}</span>
+        </div>
+        <textarea class="textarea textarea-bordered w-full" rows="2" [(ngModel)]="notas" name="notas"></textarea>
       </label>
 
       @if (fallo(); as clave) {
-        <p class="aviso" role="alert">{{ t(clave) }}</p>
+        <div class="alert alert-error mt-4 py-2.5 text-sm" role="alert">
+          <span>{{ t(clave) }}</span>
+        </div>
       }
 
-      <div class="acciones">
-        <button type="button" class="boton boton--suave" (click)="cancelar()">
+      <div class="mt-5 flex justify-end gap-2">
+        <button type="button" class="btn btn-ghost text-slate-600" (click)="cancelar()">
           {{ t('comun.cancelar') }}
         </button>
-        <button type="button" class="boton" [disabled]="enviando()" (click)="guardar()">
+        <button
+          type="button"
+          class="btn border-0 bg-emerald-500 font-semibold text-white hover:bg-emerald-600"
+          [disabled]="enviando()"
+          (click)="guardar()"
+        >
+          @if (enviando()) {
+            <span class="loading loading-spinner loading-sm"></span>
+          }
           {{ enviando() ? t('app.cargando') : t('comun.guardar') }}
         </button>
       </div>

@@ -85,3 +85,8 @@ appsettings.Production.json
 
 # Las claves temporales que genera la carga de datos. Es lo unico que hay entre ellas y el repositorio.
 /credenciales-iniciales.txt
+
+# Copias de referencia de otros proyectos, y material de descarte. **No se publican**: `Descartar/` puede
+# contener una aplicacion entera con sus dependencias, sus datos y sus documentos. Estuvo a un `git add -A`
+# de entrar en el repositorio publicado con 24.628 ficheros y 221 MB.
+/Descartar/

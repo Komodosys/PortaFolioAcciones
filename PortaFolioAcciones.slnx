@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PortaFolioAcciones.Api/PortaFolioAcciones.Api.csproj" />
+    <Project Path="src/PortaFolioAcciones.Application/PortaFolioAcciones.Application.csproj" />
+    <Project Path="src/PortaFolioAcciones.Domain/PortaFolioAcciones.Domain.csproj" />
+    <Project Path="src/PortaFolioAcciones.Infrastructure/PortaFolioAcciones.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PortaFolioAcciones.Architecture.Tests/PortaFolioAcciones.Architecture.Tests.csproj" />
+    <Project Path="tests/PortaFolioAcciones.Domain.Tests/PortaFolioAcciones.Domain.Tests.csproj" />
+    <Project Path="tests/PortaFolioAcciones.Infrastructure.Tests/PortaFolioAcciones.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

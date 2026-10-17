@@ -1,0 +1,87 @@
+# --- .NET -------------------------------------------------------------------------------------
+bin/
+obj/
+*.user
+*.suo
+.vs/
+[Dd]ebug/
+[Rr]elease/
+TestResults/
+*.binlog
+
+# Registros de compilacion. Se generan al diagnosticar un fallo y no aportan nada al repositorio: son
+# miles de lineas del SDK, con las rutas de este equipo dentro.
+*.log
+
+# Caches locales de NuGet y del CLI: en este equipo hay que redirigirlos aqui dentro, porque el
+# aislamiento impide escribir en el perfil del usuario (ver el README).
+.nuget/
+.dotnet/
+
+# --- Angular / Node ---------------------------------------------------------------------------
+node_modules/
+dist/
+.angular/
+coverage/
+npm-debug.log*
+
+# Cache local de npm, por el mismo motivo que la de NuGet.
+.npm-cache/
+
+# --- Datos personales: NUNCA al repositorio ----------------------------------------------------
+# Los estados de cuenta originales, el texto extraido de ellos y los CSV que salen de ese texto llevan
+# el NOMBRE COMPLETO, los NUMEROS DE CUENTA del broker y las POSICIONES REALES con su valor.
+#
+# Eso, junto, es lo que hace falta para un fraude por suplantacion, y ademas es el patrimonio de la
+# familia. El repositorio SE PUBLICA, asi que nada de esto puede entrar.
+#
+# Excluir los CSV no cuesta nada: son DERIVABLES. Se regeneran volviendo a ejecutar las herramientas de
+# extraccion sobre los estados de cuenta, que viven fuera del repositorio y no salen de aqui.
+FichierTravail/
+herramientas/pdf-extract/salida/
+herramientas/pdf-extract/salida-2026/
+herramientas/pdf-extract/**/*.csv
+herramientas/pdf-extract/**/*.log
+
+# Los CSV de trabajo de la raiz, por el mismo motivo.
+/actividades.csv
+/listado.csv
+/lotes.csv
+/posiciones-todos-los-estados.csv
+/reconciliacion.csv
+
+# Y los de la prueba de cobertura: la lista de instrumentos es la composicion real de la cartera, y el
+# informe es su salida. Los tickers sueltos no identifican a nadie, pero es informacion financiera de la
+# familia y no tiene por que publicarse. En su lugar va `instrumentos.example.csv`, una plantilla.
+herramientas/prueba-cobertura/**/*.csv
+!herramientas/prueba-cobertura/instrumentos.example.csv
+
+# La lista de cadenas que hay que vigilar. Contiene justo lo que hay que mantener fuera, asi que ella
+# misma es lo primero que no puede publicarse.
+.datos-sensibles.txt
+
+# Los respaldos de la base de datos. **Esto es lo mas peligroso de todo el fichero**: un volcado contiene la
+# base ENTERA —los nombres, las cuentas, las posiciones y el libro de auditoria— en un solo fichero.
+#
+# Y hay una razon de mas para excluirlo aqui y no confiar en la comprobacion automatica: esa busqueda mira
+# el TEXTO, y un volcado esta COMPRIMIDO. Los nombres no aparecen como texto, asi que el comprobador los
+# daria por buenos. Esta linea es la unica proteccion que hay.
+/respaldos/
+respaldos/
+*.dump
+*.sql.gz
+
+# --- Secretos ---------------------------------------------------------------------------------
+*.Local.json
+appsettings.Production.json
+.env
+.env.*
+!.env.example
+
+# Carpetas de trabajo local
+.tmp/
+.scratch/
+.herramientas/
+
+# Las claves temporales que genera la carga de datos. Es lo unico que hay entre ellas y el repositorio.
+/credenciales-iniciales.txt

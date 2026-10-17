@@ -1,0 +1,195 @@
+:host {
+  display: block;
+}
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.titulo {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.subtitulo {
+  margin: 2rem 0 0.75rem;
+  font-size: 1.05rem;
+  color: var(--texto-suave);
+}
+
+.boton {
+  padding: 0.5rem 0.9rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: var(--acento);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.boton--suave {
+  background: transparent;
+  color: var(--texto);
+  border: 1px solid var(--borde);
+}
+
+.alta {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.alta__campos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.alta__acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1 1 12rem;
+}
+
+.campo__etiqueta {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.campo__ayuda {
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+}
+
+.campo__control {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.45rem;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 1rem;
+
+  &:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 1px;
+  }
+}
+
+/*
+ * Rejilla que se adapta sola: una columna en el movil y varias en pantalla ancha, sin consultar el ancho
+ * de la ventana desde el codigo.
+ */
+.rejilla {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.85rem;
+}
+
+.ficha {
+  display: block;
+  padding: 1rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+
+  /* La ficha entera es un enlace: en el movil, acertar a un texto pequeño es incomodo. */
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    border-color: var(--acento);
+  }
+}
+
+.ficha--archivada {
+  opacity: 0.65;
+}
+
+/*
+ * Las carteras de otras personas se distinguen a simple vista: borde discontinuo en ambar y el nombre de
+ * quien es cada una encima. Que se note importa: es lo que evita modificar datos ajenos creyendo que son
+ * propios. Un borde distinto no es decoracion.
+ */
+.subtitulo--ajenas {
+  margin-top: 2.5rem;
+  color: #8a6508;
+}
+
+.propietario {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.ficha--ajena {
+  border-color: #b8860b;
+  border-style: dashed;
+}
+
+.aviso--ajenas {
+  margin: 0 0 0.5rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, #b8860b 14%, transparent);
+  color: #8a6508;
+  font-size: 0.88rem;
+}
+
+.ficha__nombre {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.ficha__moneda {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--texto-suave);
+}
+
+.ficha__hereda {
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.75rem;
+  background: var(--superficie-2);
+  font-size: 0.75rem;
+}
+
+.estado {
+  color: var(--texto-suave);
+}
+
+.aviso {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--negativo) 12%, transparent);
+  color: var(--negativo);
+  font-size: 0.9rem;
+}

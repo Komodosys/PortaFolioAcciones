@@ -1,0 +1,204 @@
+<ng-container *transloco="let t">
+  @if (porConfirmar(); as alta) {
+    <!--
+      La confirmacion. No se da de alta nada sin pasar por aqui, y no es un tramite: es el punto donde una
+      persona comprueba que el instrumento es el que dice su estado de cuenta. Para los fondos canadienses
+      de Fundserv es lo UNICO que lo resuelve, porque su codigo no existe en la fuente de precios.
+    -->
+    <div class="confirmacion">
+      <h3 class="confirmacion__titulo">{{ t('instrumento.confirmarTitulo') }}</h3>
+      <p class="confirmacion__ayuda">{{ t('instrumento.confirmarAyuda') }}</p>
+
+      <div class="rejilla">
+        <label class="campo">
+          <span class="campo__etiqueta">{{ t('instrumento.simbolo') }}</span>
+          <input
+            class="campo__control"
+            type="text"
+            [ngModel]="alta.symbol"
+            (ngModelChange)="actualizar('symbol', $event)"
+          />
+        </label>
+
+        <label class="campo campo--ancho">
+          <span class="campo__etiqueta">{{ t('instrumento.nombre') }}</span>
+          <input
+            class="campo__control"
+            type="text"
+            [ngModel]="alta.name"
+            (ngModelChange)="actualizar('name', $event)"
+          />
+        </label>
+
+        <label class="campo">
+          <span class="campo__etiqueta">{{ t('instrumento.tipoEtiqueta') }}</span>
+          <select
+            class="campo__control"
+            [ngModel]="alta.assetType"
+            (ngModelChange)="actualizar('assetType', $event)"
+          >
+            @for (opcion of tipos; track opcion.valor) {
+              <option [value]="opcion.valor">{{ t(opcion.clave) }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="campo">
+          <span class="campo__etiqueta">{{ t('instrumento.bolsa') }}</span>
+          <input
+            class="campo__control"
+            type="text"
+            maxlength="4"
+            placeholder="XNAS"
+            [ngModel]="alta.exchange"
+            (ngModelChange)="actualizar('exchange', $event)"
+          />
+          <span class="campo__ayuda">{{ t('instrumento.bolsaAyuda') }}</span>
+        </label>
+
+        <label class="campo">
+          <span class="campo__etiqueta">{{ t('instrumento.moneda') }}</span>
+          <input
+            class="campo__control"
+            type="text"
+            maxlength="3"
+            [ngModel]="alta.quoteCurrency"
+            (ngModelChange)="actualizar('quoteCurrency', $event)"
+          />
+        </label>
+
+        <label class="campo">
+          <span class="campo__etiqueta">{{ t('instrumento.valoracion') }}</span>
+          <select
+            class="campo__control"
+            [ngModel]="alta.valuationMode"
+            (ngModelChange)="actualizar('valuationMode', $event)"
+          >
+            @for (opcion of modosDeValoracion; track opcion.valor) {
+              <option [value]="opcion.valor">{{ t(opcion.clave) }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="campo">
+          <span class="campo__etiqueta">{{ t('instrumento.frecuenciaEtiqueta') }}</span>
+          <select
+            class="campo__control"
+            [ngModel]="alta.pricingFrequency"
+            (ngModelChange)="actualizar('pricingFrequency', $event)"
+          >
+            @for (opcion of frecuencias; track opcion.valor) {
+              <option [value]="opcion.valor">{{ t(opcion.clave) }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="campo">
+          <span class="campo__etiqueta">{{ t('instrumento.codigoBroker') }}</span>
+          <input
+            class="campo__control"
+            type="text"
+            placeholder="TDB2624C"
+            [ngModel]="alta.brokerCode"
+            (ngModelChange)="actualizar('brokerCode', $event)"
+          />
+          <!-- Es el dato que solo está en el estado de cuenta, y el que hay que apuntar a mano. -->
+          <span class="campo__ayuda">{{ t('instrumento.codigoBrokerAyuda') }}</span>
+        </label>
+
+        <label class="campo">
+          <span class="campo__etiqueta">{{ t('instrumento.isin') }}</span>
+          <input
+            class="campo__control"
+            type="text"
+            maxlength="12"
+            [ngModel]="alta.isin"
+            (ngModelChange)="actualizar('isin', $event)"
+          />
+          <span class="campo__ayuda">{{ t('instrumento.isinAyuda') }}</span>
+        </label>
+      </div>
+
+      @if (fallo(); as clave) {
+        <p class="aviso" role="alert">{{ t(clave) }}</p>
+      }
+
+      <div class="acciones">
+        <button type="button" class="boton boton--suave" (click)="cancelarAlta()">
+          {{ t('comun.cancelar') }}
+        </button>
+        <button type="button" class="boton" [disabled]="confirmando()" (click)="confirmarAlta()">
+          {{ confirmando() ? t('app.cargando') : t('instrumento.darDeAlta') }}
+        </button>
+      </div>
+    </div>
+  } @else {
+    <div class="busqueda">
+      <label class="campo campo--ancho">
+        <span class="campo__etiqueta">{{ t('instrumento.buscar') }}</span>
+        <input
+          class="campo__control"
+          type="search"
+          autocomplete="off"
+          [placeholder]="t('instrumento.buscarAyuda')"
+          [ngModel]="texto()"
+          (ngModelChange)="texto.set($event)"
+          name="busqueda"
+        />
+      </label>
+
+      <button type="button" class="boton boton--suave" [disabled]="buscandoFuera()" (click)="buscarFuera()">
+        {{ buscandoFuera() ? t('app.cargando') : t('instrumento.buscarFuera') }}
+      </button>
+    </div>
+
+    @if (fallo(); as clave) {
+      <p class="aviso" role="alert">{{ t(clave) }}</p>
+    }
+
+    @if (resultados().length > 0) {
+      <h4 class="subtitulo">{{ t('instrumento.yaEnElCatalogo') }}</h4>
+
+      <ul class="resultados">
+        @for (instrumento of resultados(); track instrumento.id) {
+          <li>
+            <button type="button" class="resultado" (click)="elegirDelCatalogo(instrumento)">
+              <span class="resultado__simbolo">{{ instrumento.symbol }}</span>
+              <span class="resultado__nombre">{{ instrumento.name }}</span>
+              <span class="resultado__detalle">
+                {{ instrumento.quoteCurrency }} · {{ instrumento.exchange }}
+                @if (instrumento.brokerCode) {
+                  · {{ instrumento.brokerCode }}
+                }
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    } @else if (texto().trim().length >= 2 && !buscando()) {
+      <p class="estado">{{ t('instrumento.nadaEnElCatalogo') }}</p>
+    }
+
+    @if (resultadosFuera().length > 0) {
+      <h4 class="subtitulo">{{ t('instrumento.enLaFuente') }}</h4>
+      <p class="estado">{{ t('instrumento.enLaFuenteAyuda') }}</p>
+
+      <ul class="resultados">
+        @for (resultado of resultadosFuera(); track resultado.providerKey) {
+          <li>
+            <button type="button" class="resultado" (click)="prepararAlta(resultado)">
+              <span class="resultado__simbolo">{{ resultado.symbol }}</span>
+              <span class="resultado__nombre">{{ resultado.name }}</span>
+              <span class="resultado__detalle">
+                {{ resultado.currency }} · {{ resultado.mic ?? resultado.exchange }}
+                · <span class="resultado__clave">{{ resultado.providerKey }}</span>
+              </span>
+            </button>
+          </li>
+        }
+      </ul>
+    } @else if (buscandoFuera()) {
+      <p class="estado">{{ t('app.cargando') }}</p>
+    }
+  }
+</ng-container>

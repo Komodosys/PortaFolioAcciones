@@ -1,0 +1,20 @@
+# Cadenas que NUNCA pueden aparecer en un fichero publicado.
+#
+# PLANTILLA. Copiala a `.datos-sensibles.txt`, en la raiz del proyecto, y rellenala.
+# El fichero real esta excluido del repositorio a proposito: contiene justo lo que hay que mantener
+# fuera, asi que publicarlo seria el propio fallo que intenta evitar.
+#
+# Una linea por cadena. Las lineas vacias y las que empiezan por # se ignoran.
+# Lo lee herramientas/comprobar-datos-personales/comprobar.ps1.
+
+# --- Nombres completos ------------------------------------------------------------------------
+# Nombre y apellidos tal como salen en los estados de cuenta y en los CSV extraidos.
+Nombre Completo De Ejemplo
+
+# --- Numeros de cuenta del broker -------------------------------------------------------------
+# Uno por linea. Da igual el formato: se busca el texto tal cual.
+00000000
+
+# --- Nombres de pila usados en la documentacion y en las pruebas ------------------------------
+# Los que aparezcan en textos, aunque sea de forma informal.
+NombreDePila

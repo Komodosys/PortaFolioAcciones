@@ -1,0 +1,98 @@
+<ng-container *transloco="let t">
+  <div class="cabecera">
+    <div>
+      <h1 class="titulo">{{ t('auditoria.titulo') }}</h1>
+      <p class="subtitulo">{{ t('auditoria.subtitulo') }}</p>
+    </div>
+  </div>
+
+  <!--
+    El aviso de que el libro no se puede tocar va arriba y no en letra pequeña: es lo que hace que sirva de
+    algo. Si se pudiera editar, no sería un registro.
+  -->
+  <p class="nota">{{ t('auditoria.soloAnadir') }}</p>
+
+  <section class="filtros">
+    <label class="campo">
+      <span class="campo__etiqueta">{{ t('auditoria.persona') }}</span>
+      <select class="campo__control" [(ngModel)]="persona" name="persona">
+        <option value="">{{ t('auditoria.todas') }}</option>
+        @for (una of personas(); track una.id) {
+          <option [value]="una.id">{{ una.displayName }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="campo">
+      <span class="campo__etiqueta">{{ t('auditoria.desde') }}</span>
+      <input class="campo__control" type="date" [(ngModel)]="desde" name="desde" />
+    </label>
+
+    <label class="campo">
+      <span class="campo__etiqueta">{{ t('auditoria.hasta') }}</span>
+      <input class="campo__control" type="date" [(ngModel)]="hasta" name="hasta" />
+    </label>
+
+    <label class="casilla">
+      <input type="checkbox" [(ngModel)]="soloAjenas" name="soloAjenas" />
+      <span>{{ t('auditoria.soloAjenas') }}</span>
+    </label>
+
+    <div class="filtros__acciones">
+      <button type="button" class="boton boton--suave" (click)="limpiar()">
+        {{ t('auditoria.limpiar') }}
+      </button>
+      <button type="button" class="boton" [disabled]="cargando()" (click)="cargar()">
+        {{ cargando() ? t('app.cargando') : t('auditoria.aplicar') }}
+      </button>
+    </div>
+  </section>
+
+  @if (fallo(); as clave) {
+    <p class="aviso" role="alert">{{ t(clave) }}</p>
+  }
+
+  @if (cargando()) {
+    <p class="estado">{{ t('app.cargando') }}</p>
+  } @else if (filas().length === 0) {
+    <p class="estado">{{ t('auditoria.sinResultados') }}</p>
+  } @else {
+    <p class="cuenta">{{ t('auditoria.cuantas', { total: filas().length }) }}</p>
+
+    <ul class="anotaciones">
+      @for (fila of filas(); track fila.id) {
+        <li class="anotacion" [class.anotacion--ajena]="fila.esAjena">
+          <div class="anotacion__cabecera">
+            <span class="anotacion__cuando">{{ fila.cuando }}</span>
+            <span class="anotacion__accion">{{ t(fila.accion) }}</span>
+            <span class="anotacion__entidad">{{ fila.entidad }}</span>
+            @if (fila.esAjena) {
+              <span class="anotacion__marca">{{ t('auditoria.datosAjenos') }}</span>
+            }
+          </div>
+
+          <p class="anotacion__quien">
+            {{ t('auditoria.quienAQuien', { actor: fila.quien, dueno: fila.aQuien }) }}
+          </p>
+
+          @if (fila.cambios.length > 0) {
+            <ul class="cambios">
+              @for (cambio of fila.cambios; track cambio.campo) {
+                <li class="cambio">
+                  <span class="cambio__campo">{{ cambio.campo }}</span>
+                  <span class="cambio__antes">{{ cambio.antes || t('auditoria.vacio') }}</span>
+                  <span class="cambio__flecha" aria-hidden="true">→</span>
+                  <span class="cambio__despues">{{ cambio.despues || t('auditoria.vacio') }}</span>
+                </li>
+              }
+            </ul>
+          }
+
+          @if (fila.motivo; as motivo) {
+            <p class="anotacion__motivo">{{ t('auditoria.motivo') }}: {{ motivo }}</p>
+          }
+        </li>
+      }
+    </ul>
+  }
+</ng-container>

@@ -1,0 +1,49 @@
+<ng-container *transloco="let t">
+  <div class="entrada">
+    <div class="entrada__idioma">
+      <app-selector-idioma />
+    </div>
+
+    <form class="tarjeta" (ngSubmit)="enviar()">
+      <h1 class="tarjeta__titulo">{{ t('app.titulo') }}</h1>
+
+      <label class="campo">
+        <span class="campo__etiqueta">{{ t('acceso.usuario') }}</span>
+        <input
+          class="campo__control"
+          type="text"
+          name="usuario"
+          autocomplete="username"
+          autocapitalize="none"
+          spellcheck="false"
+          [(ngModel)]="usuario"
+          [attr.aria-invalid]="claveDeError() ? true : null"
+        />
+      </label>
+
+      <label class="campo">
+        <span class="campo__etiqueta">{{ t('acceso.contrasena') }}</span>
+        <input
+          class="campo__control"
+          type="password"
+          name="contrasena"
+          autocomplete="current-password"
+          [(ngModel)]="contrasena"
+          [attr.aria-invalid]="claveDeError() ? true : null"
+        />
+      </label>
+
+      <!--
+        El aviso lleva `role="alert"` para que un lector de pantalla lo anuncie en cuanto aparece. Un
+        error que solo se ve, no se entera quien no mira.
+      -->
+      @if (claveDeError(); as clave) {
+        <p class="aviso" role="alert">{{ t(clave) }}</p>
+      }
+
+      <button class="boton" type="submit" [disabled]="enviando()">
+        {{ enviando() ? t('app.cargando') : t('acceso.entrar') }}
+      </button>
+    </form>
+  </div>
+</ng-container>

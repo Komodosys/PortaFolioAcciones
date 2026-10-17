@@ -1,0 +1,236 @@
+:host {
+  display: block;
+}
+
+.cabecera {
+  margin-bottom: 0.5rem;
+}
+
+.titulo {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.subtitulo {
+  margin: 0.2rem 0 0;
+  font-size: 0.88rem;
+  color: var(--texto-suave);
+}
+
+.nota {
+  margin: 0 0 1rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.45rem;
+  background: var(--superficie-2);
+  color: var(--texto-suave);
+  font-size: 0.84rem;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1 1 9rem;
+}
+
+.campo__etiqueta {
+  font-size: 0.82rem;
+  color: var(--texto-suave);
+}
+
+.campo__control {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.45rem;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+
+  /* 16 px o mas: por debajo, el movil hace zoom solo al enfocar. */
+  font-size: 1rem;
+
+  &:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 1px;
+  }
+}
+
+.casilla {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  padding-bottom: 0.55rem;
+
+  input {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+}
+
+.filtros__acciones {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.boton {
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: var(--acento);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.boton--suave {
+  background: transparent;
+  color: var(--texto);
+  border: 1px solid var(--borde);
+}
+
+.cuenta {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.anotaciones {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.anotacion {
+  padding: 0.8rem 0.9rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-left-width: 4px;
+  border-radius: var(--radio);
+}
+
+/*
+ * Las que tocan datos de otra persona van marcadas con el borde, y no con un color de fondo: el color de
+ * fondo se pierde al imprimir o en modo oscuro, y el borde se ve siempre.
+ */
+.anotacion--ajena {
+  border-left-color: #b8860b;
+}
+
+.anotacion__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.anotacion__cuando {
+  font-size: 0.82rem;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.anotacion__accion {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.anotacion__entidad {
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+}
+
+.anotacion__marca {
+  margin-left: auto;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, #b8860b 18%, transparent);
+  color: #8a6508;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.anotacion__quien {
+  margin: 0 0 0.4rem;
+  font-size: 0.88rem;
+}
+
+.cambios {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.cambio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.84rem;
+}
+
+.cambio__campo {
+  min-width: 7rem;
+  color: var(--texto-suave);
+}
+
+.cambio__antes {
+  color: var(--negativo);
+  text-decoration: line-through;
+}
+
+.cambio__flecha {
+  color: var(--texto-suave);
+}
+
+.cambio__despues {
+  color: var(--positivo);
+  font-weight: 600;
+}
+
+.anotacion__motivo {
+  margin: 0.4rem 0 0;
+  font-size: 0.84rem;
+  font-style: italic;
+  color: var(--texto-suave);
+}
+
+.estado {
+  color: var(--texto-suave);
+}
+
+.aviso {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--negativo) 12%, transparent);
+  color: var(--negativo);
+  font-size: 0.9rem;
+}

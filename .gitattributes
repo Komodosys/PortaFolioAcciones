@@ -1,0 +1,20 @@
+# Normaliza los saltos de línea en el repositorio y los adapta al sistema operativo al sacarlos.
+* text=auto
+
+# **Los `.cmd` NO pueden tener saltos de línea LF.** `cmd.exe` los tolera en scripts simples, pero rompe
+# los bloques `for ( ... )` de varias líneas — y el error que da no dice ni en qué fichero ni en qué línea.
+# Eso ya costó un rato en este proyecto: los procedimientos de actualización y arranque fallaban antes de
+# ejecutar nada.
+#
+# Por eso se fuerza **CRLF al sacarlos, en cualquier plataforma**. Sin esta línea, un clon en un equipo con
+# `core.autocrlf=false` los dejaría con LF y volvería a romperse.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Los binarios no se tocan.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.dump binary

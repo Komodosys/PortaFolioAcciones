@@ -1,0 +1,32 @@
+<Project>
+
+  <!--
+    Ajustes comunes a todos los proyectos.
+
+    Los dos ultimos merecen explicacion: este equipo no permite abrir tuberias con nombre a los
+    procesos, y MSBuild las usa para comunicar sus nodos de trabajo. Sin estos ajustes, restore y
+    build fallan con "Build FAILED" y CERO errores, que es un sintoma muy dificil de leer.
+      RestoreBuildInParallel=false  evita que la tarea anidada de restore levante varios nodos.
+      UseSharedCompilation=false    evita el compilador en servidor de Roslyn, que usa lo mismo.
+    Con esto basta para que compilar y restaurar funcionen; para descargar paquetes nuevos hace falta
+    ademas salida a Internet (ver el README).
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- ADR-013: la interfaz es multi-idioma, asi que hacen falta las reglas de cultura (ICU) para
+         formatear fechas, numeros e importes en espanol, frances e ingles. No se puede activar la
+         globalizacion invariante. -->
+    <InvariantGlobalization>false</InvariantGlobalization>
+
+    <RestoreBuildInParallel>false</RestoreBuildInParallel>
+    <UseSharedCompilation>false</UseSharedCompilation>
+  </PropertyGroup>
+
+</Project>

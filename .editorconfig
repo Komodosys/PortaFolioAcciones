@@ -1,0 +1,35 @@
+# Convenciones de estilo del proyecto. Se aplican solas al guardar en editores compatibles.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,ts,html,scss,css,csproj,props,targets}]
+indent_size = 2
+
+[*.md]
+# En Markdown los espacios finales significan salto de linea: no se quitan.
+trim_trailing_whitespace = false
+
+[*.cs]
+# Los identificadores van en ingles; los comentarios y la documentacion, en espanol.
+dotnet_sort_system_directives_first = true
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+dotnet_style_require_accessibility_modifiers = always:warning
+dotnet_diagnostic.CA1848.severity = none
+
+# El codigo GENERADO no se revisa. Las migraciones de EF Core las escribe la herramienta y se
+# regeneran: pelearse con su estilo es una batalla perdida, y bajarlas de nivel solo aqui permite
+# mantener el liston alto en el codigo propio. Sin esta excepcion, `TreatWarningsAsErrors` convierte
+# en error de compilacion cualquier detalle de estilo del generador.
+[**/Persistence/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none
+csharp_style_namespace_declarations = block_scoped:suggestion

@@ -1,0 +1,16 @@
+<ng-container *transloco="let t">
+  <label class="selector">
+    <span class="selector__etiqueta">{{ t('menu.idioma') }}</span>
+
+    <select
+      class="selector__campo"
+      [value]="activo()"
+      (change)="cambiar($any($event.target).value)"
+      [attr.aria-label]="t('menu.idioma')"
+    >
+      @for (idioma of disponibles; track idioma.codigo) {
+        <option [value]="idioma.codigo">{{ idioma.nombre }}</option>
+      }
+    </select>
+  </label>
+</ng-container>

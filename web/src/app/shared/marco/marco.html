@@ -1,0 +1,70 @@
+<ng-container *transloco="let t">
+  <header class="cabecera">
+    <a class="marca" routerLink="/carteras" (click)="cerrarMenu()">
+      <span class="marca__nombre">{{ t('app.titulo') }}</span>
+    </a>
+
+    <!--
+      El boton solo existe en pantalla estrecha; en ancha, las opciones se ven siempre. Se controla con
+      CSS y no con JavaScript: asi no hay que saber el ancho de la ventana desde el codigo.
+    -->
+    <button
+      type="button"
+      class="cabecera__boton"
+      [attr.aria-expanded]="menuAbierto()"
+      [attr.aria-label]="t('menu.abrirMenu')"
+      (click)="alternarMenu()"
+    >
+      <span class="cabecera__raya"></span>
+      <span class="cabecera__raya"></span>
+      <span class="cabecera__raya"></span>
+    </button>
+
+    <nav class="menu" [class.menu--abierto]="menuAbierto()">
+      <a
+        class="menu__opcion"
+        routerLink="/carteras"
+        routerLinkActive="menu__opcion--activa"
+        (click)="cerrarMenu()"
+      >
+        {{ t('menu.carteras') }}
+      </a>
+
+      <a
+        class="menu__opcion"
+        routerLink="/preferencias"
+        routerLinkActive="menu__opcion--activa"
+        (click)="cerrarMenu()"
+      >
+        {{ t('menu.preferencias') }}
+      </a>
+
+      @if (esAdministrador()) {
+        <a
+          class="menu__opcion"
+          routerLink="/administracion/auditoria"
+          routerLinkActive="menu__opcion--activa"
+          (click)="cerrarMenu()"
+        >
+          {{ t('menu.auditoria') }}
+        </a>
+      }
+
+      <div class="menu__pie">
+        <app-selector-idioma />
+      </div>
+    </nav>
+
+    <div class="sesion">
+      <span class="sesion__nombre">{{ usuario()?.displayName }}</span>
+
+      <button type="button" class="sesion__salir" (click)="salir()">
+        {{ t('menu.salir') }}
+      </button>
+    </div>
+  </header>
+
+  <main class="contenido">
+    <router-outlet />
+  </main>
+</ng-container>

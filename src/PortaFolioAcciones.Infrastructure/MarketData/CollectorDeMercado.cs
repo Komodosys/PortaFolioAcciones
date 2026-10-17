@@ -1,0 +1,408 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using PortaFolioAcciones.Application.Abstractions;
+using PortaFolioAcciones.Application.MarketData;
+using PortaFolioAcciones.Domain.Entities;
+using PortaFolioAcciones.Domain.ValueObjects;
+using PortaFolioAcciones.Infrastructure.Persistence;
+using PortaFolioAcciones.Infrastructure.Persistence.Repositories;
+
+namespace PortaFolioAcciones.Infrastructure.MarketData;
+
+/// <summary>
+/// Recoge los precios del dia, calienta los tipos de cambio y toma la foto de las carteras.
+///
+/// <b>Es idempotente</b>, y eso es lo que lo hace seguro de ejecutar: lo que ya esta recogido no se vuelve
+/// a pedir, asi que da igual ejecutarlo al arrancar, despues de una caida o dos veces seguidas. Y es lo que
+/// evita tener que guardar «hasta aqui he llegado» en ningun sitio: <b>el propio dato dice si esta</b>.
+///
+/// <b>El cierre se guarda con la fecha que dice la fuente, no con la de hoy.</b> Es la decision que hace
+/// que el historico sirva: en un festivo la fuente devuelve el cierre del dia anterior, y guardarlo con la
+/// fecha de hoy pondria un precio donde no hubo negociacion. Con la fecha de la fuente, ese dia
+/// simplemente no tiene fila, que es la verdad.
+/// </summary>
+internal sealed class CollectorDeMercado : IMarketDataCollector
+{
+    /// <summary>
+    /// Cuantos dias atras se miran para saber que cierres ya estan guardados.
+    ///
+    /// No se mira todo el historico: seria traer años de filas para decidir sobre un dia. Y una fuente que
+    /// devuelva un cierre de hace mas de un mes no esta dando «el precio de hoy», esta dando un problema, y
+    /// se avisa en vez de guardarlo.
+    /// </summary>
+    private static readonly TimeSpan Ventana = TimeSpan.FromDays(31);
+
+    private readonly DbContextOptions<PortafolioDbContext> _opciones;
+    private readonly IPriceProvider _precios;
+    private readonly IFxRateProvider _tiposDeCambio;
+    private readonly ILogger<CollectorDeMercado> _registro;
+
+    public CollectorDeMercado(
+        DbContextOptions<PortafolioDbContext> opciones,
+        IPriceProvider precios,
+        IFxRateProvider tiposDeCambio,
+        ILogger<CollectorDeMercado> registro)
+    {
+        _opciones = opciones;
+        _precios = precios;
+        _tiposDeCambio = tiposDeCambio;
+        _registro = registro;
+    }
+
+    public async Task<DailyCollectionResult> CollectAsync(
+        DateOnly dia,
+        CancellationToken cancellationToken = default)
+    {
+        // El contexto se construye AQUI y con el usuario del sistema, en vez de pedirlo al contenedor.
+        //
+        // No es un capricho: el contexto que reparte el contenedor lleva el usuario de la peticion, y el
+        // job no tiene peticion. Y hacer que «sin peticion» signifique «administrador» en todo el programa
+        // seria convertir cualquier descuido futuro en un acceso a los datos de todo el mundo. Aqui el
+        // privilegio esta escrito, se ve, y solo vale para este trabajo.
+        await using var contexto = new PortafolioDbContext(_opciones, UsuarioDelSistema.Instancia);
+
+        var instrumentos = await InstrumentosQueHacenFaltaAsync(contexto, cancellationToken);
+
+        if (instrumentos.Count == 0)
+        {
+            _registro.LogInformation("No hay ningun instrumento que necesite precio: no se consulta a nadie.");
+
+            return new DailyCollectionResult(0, 0, 0, 0, [], 0, 0);
+        }
+
+        var desde = dia.AddDays(-(int)Ventana.TotalDays);
+
+        // Lo que ya esta guardado, en UNA consulta. Preguntarlo instrumento a instrumento serian decenas
+        // de consultas para decidir lo mismo.
+        var guardados = await contexto.Prices
+            .Where(precio => precio.PriceDate >= desde)
+            .Select(precio => new { precio.InstrumentId, precio.PriceDate })
+            .ToListAsync(cancellationToken);
+
+        var yaEstan = guardados.Select(p => (p.InstrumentId, p.PriceDate)).ToHashSet();
+
+        var ultimas = await contexto.LatestQuotes
+            .ToDictionaryAsync(cotizacion => cotizacion.InstrumentId, cancellationToken);
+
+        var ahora = DateTimeOffset.UtcNow;
+        var monedas = new HashSet<string>(StringComparer.Ordinal);
+        var nuevos = 0;
+        var repetidos = 0;
+        var sinPrecio = 0;
+
+        foreach (var instrumento in instrumentos)
+        {
+            var cotizacion = await PedirAsync(instrumento, cancellationToken);
+
+            if (cotizacion is null)
+            {
+                sinPrecio++;
+                continue;
+            }
+
+            monedas.Add(cotizacion.Price.Currency.Code);
+
+            AnotarDesdoblamientos(instrumento, cotizacion, ahora);
+
+            // La ultima cotizacion se actualiza SIEMPRE: es «lo ultimo que se sabe», aunque el cierre del
+            // dia no se pueda guardar.
+            if (ultimas.TryGetValue(instrumento.Id, out var ultima))
+            {
+                ultima.Update(cotizacion.Price, cotizacion.AsOfUtc, cotizacion.Source, ahora);
+            }
+            else
+            {
+                contexto.LatestQuotes.Add(LatestQuote.Create(
+                    instrumento.Id,
+                    cotizacion.Price,
+                    cotizacion.AsOfUtc,
+                    cotizacion.Source,
+                    ahora));
+            }
+
+            if (cotizacion.PriceDate < desde)
+            {
+                // Un cierre de hace mas de un mes no es el de hoy. Se avisa y NO se guarda: ponerlo con la
+                // fecha que trae ensuciaria el historico, y ponerlo con la de hoy seria mentir.
+                _registro.LogWarning(
+                    "{Simbolo}: la fuente devolvio un cierre del {Fecha}, demasiado antiguo para ser el de hoy.",
+                    instrumento.Symbol.Value,
+                    cotizacion.PriceDate);
+
+                sinPrecio++;
+                continue;
+            }
+
+            if (!yaEstan.Add((instrumento.Id, cotizacion.PriceDate)))
+            {
+                repetidos++;
+                continue;
+            }
+
+            contexto.Prices.Add(Price.Create(
+                instrumento.Id,
+                cotizacion.PriceDate,
+                cotizacion.Price,
+                cotizacion.Source,
+                ahora));
+
+            nuevos++;
+        }
+
+        await contexto.SaveChangesAsync(cancellationToken);
+
+        await CalentarTiposDeCambioAsync(contexto, monedas, cancellationToken);
+
+        var (carteras, fotos) = await TomarFotosAsync(contexto, dia, cancellationToken);
+
+        var resumen = new DailyCollectionResult(
+            instrumentos.Count,
+            nuevos,
+            repetidos,
+            sinPrecio,
+            [.. monedas.Order(StringComparer.Ordinal)],
+            carteras,
+            fotos);
+
+        _registro.LogInformation(
+            "Recoleccion del {Dia}: {Instrumentos} instrumentos, {Nuevos} cierres nuevos, {Repetidos} ya estaban, {SinPrecio} sin precio, {Fotos} fotos de {Carteras} carteras.",
+            dia,
+            resumen.Instrumentos,
+            resumen.Guardados,
+            resumen.YaEstaban,
+            resumen.SinPrecio,
+            resumen.Fotos,
+            resumen.Carteras);
+
+        return resumen;
+    }
+
+    /// <summary>
+    /// Los instrumentos que necesitan precio: los que tiene alguien en una posicion abierta.
+    ///
+    /// Se excluyen los de <b>precio manual</b>. Preguntarlos seria sobrescribir la decision de quien los
+    /// tiene con un dato ajeno, y ademas sin avisar.
+    /// </summary>
+    private static async Task<IReadOnlyList<Instrument>> InstrumentosQueHacenFaltaAsync(
+        PortafolioDbContext contexto,
+        CancellationToken cancellationToken)
+    {
+        var conPosicion = await contexto.Positions
+            .Where(posicion => !posicion.IsClosed)
+            .Select(posicion => posicion.InstrumentId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        if (conPosicion.Count == 0)
+        {
+            return [];
+        }
+
+        var instrumentos = await contexto.Instruments
+            .Where(instrumento => conPosicion.Contains(instrumento.Id))
+            .ToListAsync(cancellationToken);
+
+        // El filtro por modo de valoracion se hace en memoria: `ValuationMode` es un objeto de valor con
+        // conversion, y compararlo dentro de la consulta no se traduce a SQL.
+        return [.. instrumentos.Where(instrumento => instrumento.ValuationMode != ValuationMode.Manual)];
+    }
+
+    /// <summary>
+    /// Guarda en el instrumento los desdoblamientos que declara la fuente.
+    ///
+    /// <b>Hay que hacerlo en el momento, y por eso esta aqui.</b> La fuente solo declara los eventos del
+    /// rango que se le pide, que es un mes: un desdoblamiento que ocurrio hace dos meses ya no lo cuenta.
+    /// Si no se guarda cuando sale, <b>no hay forma de recuperarlo</b>, y sin el la posicion se lee como
+    /// una caida que nunca ocurrio.
+    ///
+    /// Se guardan en el instrumento y no en la posicion porque un desdoblamiento es un hecho del
+    /// instrumento: le pasa a todo el mundo que lo tenga, y calculo una vez sirve para todos.
+    /// </summary>
+    private void AnotarDesdoblamientos(Instrument instrumento, MarketQuote cotizacion, DateTimeOffset ahora)
+    {
+        if (cotizacion.Splits.Count == 0)
+        {
+            return;
+        }
+
+        var splits = new List<StockSplit>();
+
+        foreach (var evento in cotizacion.Splits)
+        {
+            try
+            {
+                splits.Add(StockSplit.Of(DateOnly.FromDateTime(evento.Date.UtcDateTime), evento.Ratio));
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // Una fuente puede declarar una agrupacion —lo contrario de un desdoblamiento— o algo sin
+                // sentido. No se guarda y se dice: aplicar en silencio un cambio distinto del que se cree
+                // seria peor que no aplicarlo.
+                _registro.LogWarning(
+                    "{Simbolo}: la fuente declara un evento con proporcion {Ratio}, que no es un desdoblamiento. Se ignora.",
+                    instrumento.Symbol.Value,
+                    evento.Ratio);
+            }
+        }
+
+        var nuevos = instrumento.RecordSplits(splits, ahora);
+
+        if (nuevos > 0)
+        {
+            _registro.LogInformation(
+                "{Simbolo}: {Nuevos} desdoblamiento(s) anotado(s). No se pierden aunque la fuente deje de contarlos.",
+                instrumento.Symbol.Value,
+                nuevos);
+        }
+    }
+
+    /// <summary>
+    /// Pide el precio, y si la fuente falla <b>no tumba la recoleccion entera</b>.
+    ///
+    /// Un instrumento que hoy no da precio no puede impedir que se guarden los otros cincuenta. Es la
+    /// diferencia entre perder un dato y perder el dia.
+    /// </summary>
+    private async Task<MarketQuote?> PedirAsync(Instrument instrumento, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _precios.GetQuoteAsync(instrumento, cancellationToken);
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            _registro.LogWarning(
+                error,
+                "No se pudo obtener el precio de {Simbolo}: se sigue con los demas.",
+                instrumento.Symbol.Value);
+
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Pide los tipos de cambio del dia para calentarlos.
+    ///
+    /// No se guardan en ningun sitio —no hay tabla de tipos de cambio—, pero pedirlos aqui hace que la
+    /// primera consulta de la mañana y la foto del dia usen <b>los mismos</b>: sin esto, cada una preguntaria
+    /// por su cuenta y podrian salir numeros distintos del mismo dia.
+    /// </summary>
+    private async Task CalentarTiposDeCambioAsync(
+        PortafolioDbContext contexto,
+        HashSet<string> monedas,
+        CancellationToken cancellationToken)
+    {
+        if (monedas.Count == 0)
+        {
+            return;
+        }
+
+        var divisas = monedas.Select(Currency.FromCode).ToList();
+
+        var bases = await contexto.Portfolios
+            .Select(cartera => cartera.BaseCurrency)
+            .ToListAsync(cancellationToken);
+
+        var monedasBase = await contexto.UserProfiles
+            .Select(perfil => perfil.BaseCurrency)
+            .ToListAsync(cancellationToken);
+
+        var todasLasBases = bases
+            .Where(moneda => moneda is not null)
+            .Select(moneda => moneda!)
+            .Concat(monedasBase)
+            .Distinct()
+            .ToList();
+
+        foreach (var divisa in todasLasBases)
+        {
+            try
+            {
+                await _tiposDeCambio.GetRatesAsync(divisa, divisas, cancellationToken);
+            }
+            catch (Exception error) when (error is not OperationCanceledException)
+            {
+                // Que falten tipos de cambio no impide guardar los precios, que es lo que no se puede
+                // recuperar. Se avisa y se sigue.
+                _registro.LogWarning(
+                    error,
+                    "No se pudieron refrescar los tipos de cambio con base {Moneda}.",
+                    divisa);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Toma la foto del dia de cada cartera que no la tenga ya.
+    /// </summary>
+    /// <returns>Cuantas carteras habia y cuantas se fotografiaron.</returns>
+    private async Task<(int Carteras, int Fotos)> TomarFotosAsync(
+        PortafolioDbContext contexto,
+        DateOnly dia,
+        CancellationToken cancellationToken)
+    {
+        var carteras = await contexto.Portfolios
+            .Where(cartera => !cartera.IsArchived)
+            .Select(cartera => cartera.Id)
+            .ToListAsync(cancellationToken);
+
+        if (carteras.Count == 0)
+        {
+            return (0, 0);
+        }
+
+        var yaFotografiadas = await contexto.PortfolioSnapshots
+            .Where(foto => foto.SnapshotDate == dia)
+            .Select(foto => foto.PortfolioId)
+            .ToListAsync(cancellationToken);
+
+        var pendientes = carteras.Except(yaFotografiadas).ToList();
+
+        if (pendientes.Count == 0)
+        {
+            return (carteras.Count, 0);
+        }
+
+        // Se valora con el MISMO lector que usa la pantalla. Valorar aqui por otra via seria tener dos
+        // cuentas distintas de lo mismo, y el dia que discreparan no habria forma de saber cual es la buena.
+        var lector = new PortfolioViewReader(contexto, UsuarioDelSistema.Instancia, _tiposDeCambio);
+        var fotos = 0;
+
+        foreach (var carteraId in pendientes)
+        {
+            var vista = await lector.GetAsync(carteraId, cancellationToken);
+
+            if (vista is null)
+            {
+                continue;
+            }
+
+            if (!vista.IsComplete)
+            {
+                // NO se guarda una foto con el total incompleto, y es la decision mas importante de este
+                // metodo: una foto es un registro historico, y dentro de un año nadie sabra que aquel
+                // numero estaba a medias. Un hueco se ve; un numero bajo, no.
+                _registro.LogWarning(
+                    "No se toma la foto del {Dia} de la cartera {Cartera}: faltan precios y el total seria parcial.",
+                    dia,
+                    vista.Name);
+
+                continue;
+            }
+
+            var moneda = Currency.FromCode(vista.BaseCurrency);
+
+            contexto.PortfolioSnapshots.Add(PortfolioSnapshot.Take(
+                vista.PortfolioId,
+                dia,
+                moneda,
+                Money.Of(vista.TotalValue, moneda),
+                Money.Of(vista.TotalCost, moneda)));
+
+            fotos++;
+        }
+
+        await contexto.SaveChangesAsync(cancellationToken);
+
+        return (carteras.Count, fotos);
+    }
+}

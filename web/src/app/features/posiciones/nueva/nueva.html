@@ -1,0 +1,120 @@
+<ng-container *transloco="let t">
+  <div class="cabecera">
+    <h1 class="titulo">{{ t('posiciones.nueva') }}</h1>
+  </div>
+
+  @if (!instrumento()) {
+    <section class="paso">
+      <h2 class="paso__titulo">{{ t('posiciones.paso1') }}</h2>
+      <app-buscador-instrumento (elegido)="elegir($event)" />
+    </section>
+  } @else {
+    <section class="paso">
+      <h2 class="paso__titulo">{{ t('posiciones.paso2') }}</h2>
+
+      <div class="instrumento">
+        <span class="instrumento__simbolo">{{ instrumento()!.symbol }}</span>
+        <span class="instrumento__nombre">{{ instrumento()!.name }}</span>
+        <span class="instrumento__detalle">
+          {{ instrumento()!.quoteCurrency }} · {{ instrumento()!.exchange }}
+        </span>
+        <button type="button" class="enlace" (click)="cambiarInstrumento()">
+          {{ t('posiciones.cambiarInstrumento') }}
+        </button>
+      </div>
+
+      <p class="ayuda">{{ t('posiciones.ayudaLotes') }}</p>
+
+      @for (lote of lotes(); track $index) {
+        <fieldset class="lote">
+          <legend class="lote__titulo">{{ t('posiciones.compra') }} {{ $index + 1 }}</legend>
+
+          <div class="rejilla">
+            <label class="campo">
+              <span class="campo__etiqueta">{{ t('posiciones.cantidad') }}</span>
+              <input
+                class="campo__control"
+                type="text"
+                inputmode="decimal"
+                [ngModel]="lote.cantidad"
+                (ngModelChange)="actualizarLote($index, 'cantidad', $event)"
+              />
+            </label>
+
+            <label class="campo">
+              <span class="campo__etiqueta">
+                {{ t('posiciones.costePorUnidad') }} ({{ moneda() }})
+              </span>
+              <input
+                class="campo__control"
+                type="text"
+                inputmode="decimal"
+                [ngModel]="lote.costeUnitario"
+                (ngModelChange)="actualizarLote($index, 'costeUnitario', $event)"
+              />
+            </label>
+
+            <label class="campo">
+              <span class="campo__etiqueta">{{ t('posiciones.fechaCompra') }}</span>
+              <input
+                class="campo__control"
+                type="date"
+                [ngModel]="lote.fecha"
+                (ngModelChange)="actualizarLote($index, 'fecha', $event)"
+              />
+            </label>
+
+            <label class="campo">
+              <span class="campo__etiqueta">{{ t('posiciones.exactitudFecha') }}</span>
+              <select
+                class="campo__control"
+                [ngModel]="lote.exactitud"
+                (ngModelChange)="actualizarLote($index, 'exactitud', $event)"
+              >
+                <option value="Exact">{{ t('posiciones.exactitud.Exact') }}</option>
+                <option value="Approximate">{{ t('posiciones.exactitud.Approximate') }}</option>
+                <option value="Reference">{{ t('posiciones.exactitud.Reference') }}</option>
+              </select>
+              <!-- La fecha estimada no es un detalle: fingir que se sabe cuando no se sabe es peor. -->
+              <span class="campo__ayuda">{{ t('posiciones.exactitudAyuda') }}</span>
+            </label>
+          </div>
+
+          @if (lotes().length > 1) {
+            <button type="button" class="enlace enlace--quitar" (click)="quitarLote($index)">
+              {{ t('posiciones.quitarCompra') }}
+            </button>
+          }
+        </fieldset>
+      }
+
+      <div class="pie">
+        <button type="button" class="boton boton--suave" (click)="anadirLote()">
+          {{ t('posiciones.anadirCompra') }}
+        </button>
+
+        <span class="pie__total">
+          {{ t('posiciones.costeTotal') }}: <strong>{{ totales() }}</strong>
+        </span>
+      </div>
+
+      <label class="campo campo--ancho">
+        <span class="campo__etiqueta">{{ t('posiciones.notas') }}</span>
+        <textarea class="campo__control" rows="2" [(ngModel)]="notas" name="notas"></textarea>
+      </label>
+
+      @if (fallo(); as clave) {
+        <p class="aviso" role="alert">{{ t(clave) }}</p>
+      }
+
+      <div class="acciones">
+        <button type="button" class="boton boton--suave" (click)="cancelar()">
+          {{ t('comun.cancelar') }}
+        </button>
+        <button type="button" class="boton" [disabled]="enviando()" (click)="guardar()">
+          {{ enviando() ? t('app.cargando') : t('comun.guardar') }}
+        </button>
+      </div>
+    </section>
+  }
+</ng-container>

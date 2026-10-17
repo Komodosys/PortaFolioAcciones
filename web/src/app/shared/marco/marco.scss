@@ -1,0 +1,142 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
+}
+
+.marca {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--texto);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.menu__opcion {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  color: var(--texto-suave);
+  text-decoration: none;
+  font-size: 0.95rem;
+
+  &:hover {
+    background: var(--superficie-2);
+    color: var(--texto);
+  }
+}
+
+.menu__opcion--activa {
+  background: var(--superficie-2);
+  color: var(--texto);
+  font-weight: 600;
+}
+
+.menu__pie {
+  margin-left: auto;
+}
+
+.sesion {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.sesion__nombre {
+  font-size: 0.9rem;
+  color: var(--texto-suave);
+}
+
+.sesion__salir {
+  border: 1px solid var(--borde);
+  background: transparent;
+  color: var(--texto);
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--superficie-2);
+  }
+}
+
+.cabecera__boton {
+  display: none;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: transparent;
+  border: 0;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.cabecera__raya {
+  display: block;
+  width: 1.25rem;
+  height: 2px;
+  background: var(--texto);
+}
+
+.contenido {
+  flex: 1;
+  padding: 1.25rem 1rem;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/*
+ * En pantalla estrecha el menu se despliega desde el boton. Es donde se usa de verdad: el movil es el
+ * dispositivo habitual, no el escritorio.
+ */
+@media (max-width: 760px) {
+  .cabecera {
+    flex-wrap: wrap;
+  }
+
+  .cabecera__boton {
+    display: flex;
+    margin-left: auto;
+    order: 2;
+  }
+
+  .sesion {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .menu {
+    display: none;
+    order: 4;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .menu--abierto {
+    display: flex;
+  }
+
+  .menu__pie {
+    margin-left: 0;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--borde);
+  }
+}

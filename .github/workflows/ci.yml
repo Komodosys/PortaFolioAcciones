@@ -1,0 +1,102 @@
+# Integración continua: compilar y ejecutar TODAS las pruebas en cada cambio.
+#
+# Existe por una razón concreta: el repositorio es público, y lo que demuestra que las pruebas se ejecutan
+# de verdad no es que el README lo diga, sino que cualquiera pueda verlas pasar en la pestaña Actions.
+#
+# Dos trabajos en paralelo y no uno: la API y la aplicación no se necesitan entre sí para compilarse ni
+# para probarse, así que hacerlo en secuencia solo tardaría el doble.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Para poder lanzarlo a mano desde la pestaña Actions.
+  workflow_dispatch:
+
+# Si se empuja dos veces seguidas, la ejecución vieja deja de interesar: se cancela y se queda la nueva.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ------------------------------------------------------------------------------------------------
+  # La API: dominio, aplicación, infraestructura y arquitectura
+  # ------------------------------------------------------------------------------------------------
+  api:
+    name: API y pruebas
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar el SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          # Sale de `global.json`, que es la referencia única: si se cambia allí, el CI lo sigue solo.
+          global-json-file: global.json
+
+      # Las dependencias se cachean entre ejecuciones. Sin esto se descargan en cada push, que es lo que
+      # más tarda de todo el trabajo.
+      - name: Cachear los paquetes de NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # `TreatWarningsAsErrors` está activado en el proyecto, así que esto falla también por un aviso. Es a
+      # propósito: un aviso que se deja pasar hoy es el error de mañana.
+      - name: Compilar
+        run: dotnet build --nologo --configuration Release
+
+      # **Cada proyecto de pruebas es un ejecutable**, no un fichero de pruebas que alguien descubre por
+      # convención. Se ejecutan con `dotnet run` y su código de salida es el resultado: así el CI no
+      # depende de que la plataforma de pruebas se entienda con el comando `dotnet test`.
+      - name: Pruebas de dominio
+        run: dotnet run --project tests/PortaFolioAcciones.Domain.Tests --configuration Release --no-build
+
+      - name: Pruebas de arquitectura
+        run: dotnet run --project tests/PortaFolioAcciones.Architecture.Tests --configuration Release --no-build
+
+      - name: Pruebas de infraestructura
+        run: dotnet run --project tests/PortaFolioAcciones.Infrastructure.Tests --configuration Release --no-build
+
+  # ------------------------------------------------------------------------------------------------
+  # La aplicación: compila y pasa sus pruebas
+  # ------------------------------------------------------------------------------------------------
+  web:
+    name: Aplicación y pruebas
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # `npm ci` y no `npm install`: instala EXACTAMENTE lo que dice el fichero de bloqueo, así que el CI
+      # prueba lo mismo que se construye en casa.
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+
+      # El mismo comando que construye la imagen de Docker, para que un fallo de compilación se vea aquí y
+      # no al desplegar.
+      - name: Compilar
+        run: npm run build
+
+      # Las pruebas corren en jsdom, así que no hace falta ningún navegador instalado.
+      - name: Pruebas
+        run: npm test

@@ -1,0 +1,130 @@
+<ng-container *transloco="let t">
+  <div class="cabecera">
+    <h1 class="titulo">{{ t('cartera.tituloPlural') }}</h1>
+
+    @if (!creando()) {
+      <button type="button" class="boton" (click)="abrirFormulario()">
+        {{ t('cartera.nueva') }}
+      </button>
+    }
+  </div>
+
+  @if (creando()) {
+    <form class="alta" (ngSubmit)="crear()">
+      <div class="alta__campos">
+        <label class="campo">
+          <span class="campo__etiqueta">{{ t('cartera.nombre') }}</span>
+          <input
+            class="campo__control"
+            type="text"
+            name="nombre"
+            autocomplete="off"
+            [(ngModel)]="nuevaCartera"
+          />
+        </label>
+
+        <label class="campo">
+          <span class="campo__etiqueta">{{ t('cartera.monedaBase') }}</span>
+          <input
+            class="campo__control"
+            type="text"
+            name="moneda"
+            autocomplete="off"
+            maxlength="3"
+            placeholder="CAD"
+            [(ngModel)]="nuevaMoneda"
+          />
+          <span class="campo__ayuda">{{ t('cartera.monedaHeredada') }}</span>
+        </label>
+      </div>
+
+      @if (falloDeAlta(); as clave) {
+        <p class="aviso" role="alert">{{ t(clave) }}</p>
+      }
+
+      <div class="alta__acciones">
+        <button type="button" class="boton boton--suave" (click)="cancelarFormulario()">
+          {{ t('comun.cancelar') }}
+        </button>
+        <button type="submit" class="boton" [disabled]="guardando()">
+          {{ guardando() ? t('app.cargando') : t('comun.guardar') }}
+        </button>
+      </div>
+    </form>
+  }
+
+  @if (cargando()) {
+    <p class="estado">{{ t('app.cargando') }}</p>
+  } @else if (fallo(); as clave) {
+    <p class="aviso" role="alert">{{ t(clave) }}</p>
+  } @else {
+    @if (mias().length > 0) {
+      <ul class="rejilla">
+        @for (cartera of mias(); track cartera.id) {
+          <li>
+            <a class="ficha" [routerLink]="['/carteras', cartera.id]">
+              <h2 class="ficha__nombre">{{ cartera.name }}</h2>
+
+              <p class="ficha__moneda">
+                {{ cartera.baseCurrency }}
+                @if (cartera.inheritsBaseCurrency) {
+                  <span class="ficha__hereda">{{ t('cartera.heredada') }}</span>
+                }
+              </p>
+            </a>
+          </li>
+        }
+      </ul>
+    } @else if (deOtras().length === 0) {
+      <p class="estado">{{ t('cartera.sinCarteras') }}</p>
+    }
+
+    @if (misArchivadas().length > 0) {
+      <h2 class="subtitulo">{{ t('cartera.archivadas') }}</h2>
+
+      <ul class="rejilla">
+        @for (cartera of misArchivadas(); track cartera.id) {
+          <li>
+            <a class="ficha ficha--archivada" [routerLink]="['/carteras', cartera.id]">
+              <h3 class="ficha__nombre">{{ cartera.name }}</h3>
+              <p class="ficha__moneda">{{ cartera.baseCurrency }}</p>
+            </a>
+          </li>
+        }
+      </ul>
+    }
+
+    <!--
+      Las de las demas personas. Solo las ve el administrador, y van aparte y con el nombre de quien es
+      cada una: sin esto las tendria mezcladas con las suyas y podria abrir la de otra persona sin
+      enterarse.
+    -->
+    @if (deOtras().length > 0) {
+      <h2 class="subtitulo subtitulo--ajenas">{{ t('cartera.deOtrasPersonas') }}</h2>
+
+      <p class="aviso aviso--ajenas" role="status">
+        {{ t('cartera.avisoAjenas') }}
+      </p>
+
+      @for (grupo of deOtras(); track grupo.propietario) {
+        <h3 class="propietario">{{ grupo.propietario }}</h3>
+
+        <ul class="rejilla">
+          @for (cartera of grupo.carteras; track cartera.id) {
+            <li>
+              <a class="ficha ficha--ajena" [routerLink]="['/carteras', cartera.id]">
+                <h4 class="ficha__nombre">{{ cartera.name }}</h4>
+                <p class="ficha__moneda">
+                  {{ cartera.baseCurrency }}
+                  @if (cartera.isArchived) {
+                    <span class="ficha__hereda">{{ t('cartera.archivadas') }}</span>
+                  }
+                </p>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</ng-container>

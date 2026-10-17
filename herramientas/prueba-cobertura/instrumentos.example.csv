@@ -1,0 +1,6 @@
+Categoria,Simbolo,Isin,NombreEsperado,Mercado,Moneda,Notas
+Accion US,AAPL,US0378331005,Apple,NASDAQ,USD,EJEMPLO - sustituir por los instrumentos que se quieran probar
+Accion US,MSFT,US5949181045,Microsoft,NASDAQ,USD,EJEMPLO
+ETF US,VOO,,Vanguard S&P 500,NYSEArca,USD,EJEMPLO
+Accion Canada,SHOP.TO,,Shopify,TSX,CAD,EJEMPLO
+Fondo Canada,XXXX000,,"Fondo de ejemplo",Fundserv,CAD,"EJEMPLO - los fondos canadienses de Fundserv NO tienen ISIN"

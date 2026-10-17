@@ -1,0 +1,29 @@
+# Lo que NO se manda a Docker al construir. Menos contexto es una construccion mas rapida y menos
+# posibilidad de colar algo que no debe estar dentro de la imagen.
+
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/.angular/
+
+# Caches locales: pueden ocupar cientos de megas y no pintan nada dentro de la imagen.
+.nuget/
+.dotnet/
+.npm-cache/
+.herramientas/
+
+# Control de versiones y documentacion.
+.git/
+.gitignore
+.editorconfig
+DOCUMENTACION/
+
+# Datos personales: no deben acabar dentro de una imagen.
+FichierTravail/
+herramientas/
+*.csv
+
+# Secretos.
+.env
+*.Local.json

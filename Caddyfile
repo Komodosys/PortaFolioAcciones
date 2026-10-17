@@ -1,0 +1,49 @@
+# Caddy delante de la API, y sirviendo la aplicacion.
+#
+# Caddy se eligio sobre nginx por dos razones: su configuracion es mucho mas corta, y gestiona el
+# certificado TLS automaticamente en cuanto haya un dominio publico. Aqui, en la red domestica, solo hace
+# de porteria y de punto unico de entrada.
+
+:80 {
+	encode zstd gzip
+
+	# --- La API ------------------------------------------------------------------------------
+	# Todo lo que empieza por /api, mas la comprobacion de salud y el documento OpenAPI.
+	handle /api/* {
+		reverse_proxy api:8080
+	}
+
+	handle /salud {
+		reverse_proxy api:8080
+	}
+
+	handle /openapi/* {
+		reverse_proxy api:8080
+	}
+
+	# --- Las traducciones --------------------------------------------------------------------
+	# **Sin cache, y es a proposito.** Estos ficheros NO llevan un identificador en el nombre —a
+	# diferencia de los trozos de la aplicacion—, asi que si se cachearan, despues de una actualizacion la
+	# aplicacion seguiria enseñando los textos viejos hasta que el navegador decidiera olvidarlos. Y eso
+	# incluye los textos nuevos de una funcion nueva, que aparecerian en el idioma anterior o sin traducir.
+	handle /i18n/* {
+		root * /srv
+		header Cache-Control "no-cache"
+		file_server
+	}
+
+	# --- La aplicacion -----------------------------------------------------------------------
+	# Es una aplicacion de una sola pagina: **cualquier direccion que no sea un fichero se sirve con
+	# `index.html`**. Sin esto, recargar en `/carteras/xxx` —o abrir un enlace guardado— daria un 404,
+	# porque esa ruta no existe como fichero: la resuelve el navegador.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

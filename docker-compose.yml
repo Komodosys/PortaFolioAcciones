@@ -1,0 +1,99 @@
+# Servicios de PortaFolioAcciones.
+#
+# Uso:
+#   docker compose up -d --build     construye y levanta todo
+#   docker compose ps                estado y salud
+#   docker compose logs -f api       seguir los registros de un servicio
+#   docker compose down              parar (los datos NO se pierden: estan en el host)
+#
+# El punto de entrada es Caddy, en http://localhost:PUERTO_WEB
+
+name: portafolioacciones
+
+services:
+
+  # ----------------------------------------------------------------------------------------------
+  # Base de datos
+  # ----------------------------------------------------------------------------------------------
+  postgres:
+    image: postgres:18-alpine
+    container_name: portafolio-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # La imagen oficial quiere un directorio de datos vacio o que le pertenezca. Al montar una
+      # carpeta de Windows, se usa un subdirectorio: asi el punto de montaje puede tener lo que sea
+      # y PostgreSQL trabaja en un directorio propio.
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      # Montaje DIRECTO a una carpeta del host: los datos no viven dentro del contenedor.
+      - ${DATOS_POSTGRES}:/var/lib/postgresql/data
+    ports:
+      # Solo en la propia maquina, para poder conectarse con herramientas desde Windows.
+      # La API NO usa esto: entra por la red interna de Docker.
+      - "127.0.0.1:${PUERTO_POSTGRES}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ----------------------------------------------------------------------------------------------
+  # API
+  # ----------------------------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: src/PortaFolioAcciones.Api/Dockerfile
+    container_name: portafolio-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        # No basta con que el contenedor exista: hay que esperar a que ACEPTE CONEXIONES.
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ENTORNO_ASPNET}
+      # El nombre 'postgres' es el del servicio: Docker lo resuelve por su red interna.
+      ConnectionStrings__Portafolio: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      # Contrasena de la PRIMERA cuenta de administrador. Solo se usa cuando no hay ninguna: despues,
+      # las cuentas las crea el administrador. Si se deja vacio, el arranque genera una y la enseña
+      # una sola vez en el registro, para no obligar a guardarla en un fichero de configuracion.
+      Admin__InitialPassword: ${ADMIN_PASSWORD}
+      # Y el USUARIO con el que se entra. Se pone aqui porque, si no, no habia forma de saberlo: la
+      # contrasena estaba en el .env y el nombre de usuario solo en el codigo.
+      Admin__UserName: ${ADMIN_USERNAME}
+    expose:
+      # Sin publicar al exterior: solo Caddy habla con la API.
+      - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/salud || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ----------------------------------------------------------------------------------------------
+  # Porteria: el unico servicio publicado al exterior. Sirve la aplicacion y pasa la API.
+  # ----------------------------------------------------------------------------------------------
+  caddy:
+    # Se CONSTRUYE en vez de usar la imagen oficial, porque dentro lleva la aplicacion de Angular ya
+    # compilada. Con la imagen a secas, Caddy respondia en `/` con el cuerpo vacio: la API funcionaba y la
+    # aplicacion no existia, y eso no se notaba hasta abrirla en el navegador.
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    container_name: portafolio-caddy
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${PUERTO_WEB}:80"
+    volumes:
+      # El Caddyfile se monta y no se copia en la imagen: asi se puede cambiar el enrutado y reiniciar
+      # Caddy, sin volver a construir la aplicacion —que tarda minutos—.
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Datos propios de Caddy (certificados, cuando los haya) tambien en el host.
+      - ${DATOS_CADDY}:/data

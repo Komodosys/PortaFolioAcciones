@@ -1,0 +1,230 @@
+<ng-container *transloco="let t">
+  @if (cargando()) {
+    <p class="estado">{{ t('app.cargando') }}</p>
+  } @else if (posicion(); as pos) {
+    <!--
+      El aviso va lo PRIMERO, antes del titulo. Se llega aqui por un enlace directo, asi que no hay pantalla
+      anterior que lo haya avisado: si fuera despues de los numeros, ya se habrian leido.
+    -->
+    @if (esAjena() && cuenta(); as cuenta) {
+      <app-aviso-datos-ajenos [propietario]="cuenta.ownerDisplayName" [cuenta]="cuenta.portfolioName" />
+    }
+
+    <div class="cabecera">
+      <div>
+        <h1 class="titulo">{{ pos.symbol }}</h1>
+        <p class="subtitulo">{{ pos.instrumentName }}</p>
+      </div>
+
+      <button type="button" class="boton boton--suave" (click)="volver()">
+        {{ t('posiciones.volverALaCartera') }}
+      </button>
+    </div>
+
+    @if (pos.isClosed) {
+      <p class="aviso aviso--cerrada" role="status">
+        {{ t('posiciones.estaCerrada') }}
+        <span class="aviso__detalle">{{ t('posiciones.cerradaAyuda') }}</span>
+      </p>
+    }
+
+    @if (pos.hasApproximateDates) {
+      <!--
+        Se dice en la cabecera y no solo en cada lote: afecta a todo lo que se calcule con esas fechas, y
+        quien mira el conjunto tiene que saberlo antes de sacar conclusiones.
+      -->
+      <p class="aviso aviso--parcial" role="status">{{ t('posiciones.hayFechasAproximadas') }}</p>
+    }
+
+    <dl class="datos">
+      <div class="dato">
+        <dt>{{ t('posiciones.cantidad') }}</dt>
+        <dd class="cifra">{{ cantidad() }}</dd>
+      </div>
+      <div class="dato">
+        <dt>{{ t('posiciones.costeMedio') }}</dt>
+        <dd class="cifra">{{ costeMedio() }}</dd>
+      </div>
+      <div class="dato">
+        <dt>{{ t('posiciones.costeTotal') }}</dt>
+        <dd class="cifra">{{ costeTotal() }}</dd>
+      </div>
+      @if (pos.manualPriceAmount !== null) {
+        <div class="dato">
+          <dt>{{ t('posiciones.precioManualPuesto') }}</dt>
+          <dd class="cifra">
+            {{ pos.manualPriceAmount }} {{ pos.manualPriceCurrency }}
+            @if (pos.manualPriceDate) {
+              <span class="dato__fecha">{{ pos.manualPriceDate }}</span>
+            }
+          </dd>
+        </div>
+      }
+    </dl>
+
+    @if (fallo(); as clave) {
+      <p class="aviso" role="alert">{{ t(clave) }}</p>
+    }
+
+    @if (!pos.isClosed) {
+      <section class="bloque">
+        <h2 class="bloque__titulo">{{ t('posiciones.vender') }}</h2>
+        <p class="bloque__ayuda">{{ t('posiciones.venderAyuda') }}</p>
+
+        <div class="linea">
+          <label class="campo">
+            <span class="campo__etiqueta">{{ t('posiciones.cantidadAVender') }}</span>
+            <input
+              class="campo__control"
+              type="text"
+              inputmode="decimal"
+              [(ngModel)]="cantidadAVender"
+              name="cantidadAVender"
+            />
+          </label>
+          <button type="button" class="boton" [disabled]="operando()" (click)="vender()">
+            {{ t('posiciones.vender') }}
+          </button>
+        </div>
+      </section>
+    }
+
+    <section class="bloque">
+      <h2 class="bloque__titulo">{{ t('posiciones.precioAMano') }}</h2>
+      <p class="bloque__ayuda">{{ t('posiciones.precioAManoAyuda') }}</p>
+
+      <div class="linea">
+        <label class="campo">
+          <span class="campo__etiqueta">{{ t('posiciones.precio') }}</span>
+          <input
+            class="campo__control"
+            type="text"
+            inputmode="decimal"
+            [(ngModel)]="precioImporte"
+            name="precioImporte"
+          />
+        </label>
+        <label class="campo campo--corto">
+          <span class="campo__etiqueta">{{ t('posiciones.moneda') }}</span>
+          <input
+            class="campo__control"
+            type="text"
+            maxlength="3"
+            [(ngModel)]="precioMoneda"
+            name="precioMoneda"
+          />
+        </label>
+        <label class="campo">
+          <span class="campo__etiqueta">{{ t('posiciones.fechaDelPrecio') }}</span>
+          <input
+            class="campo__control"
+            type="date"
+            [(ngModel)]="precioFecha"
+            name="precioFecha"
+          />
+        </label>
+        <button type="button" class="boton" [disabled]="operando()" (click)="ponerPrecio()">
+          {{ t('comun.guardar') }}
+        </button>
+      </div>
+    </section>
+
+    @if (!pos.isClosed) {
+      <section class="bloque">
+        <h2 class="bloque__titulo">{{ t('posiciones.anadirOtraCompra') }}</h2>
+
+        <div class="linea">
+          <label class="campo">
+            <span class="campo__etiqueta">{{ t('posiciones.cantidad') }}</span>
+            <input
+              class="campo__control"
+              type="text"
+              inputmode="decimal"
+              [(ngModel)]="nuevaCantidad"
+              name="nuevaCantidad"
+            />
+          </label>
+          <label class="campo">
+            <span class="campo__etiqueta">{{ t('posiciones.costePorUnidad') }} ({{ pos.costCurrency }})</span>
+            <input
+              class="campo__control"
+              type="text"
+              inputmode="decimal"
+              [(ngModel)]="nuevoCoste"
+              name="nuevoCoste"
+            />
+          </label>
+          <label class="campo">
+            <span class="campo__etiqueta">{{ t('posiciones.fechaCompra') }}</span>
+            <input class="campo__control" type="date" [(ngModel)]="nuevaFecha" name="nuevaFecha" />
+          </label>
+          <label class="campo">
+            <span class="campo__etiqueta">{{ t('posiciones.exactitudFecha') }}</span>
+            <select class="campo__control" [(ngModel)]="nuevaExactitud" name="nuevaExactitud">
+              <option value="Exact">{{ t('posiciones.exactitud.Exact') }}</option>
+              <option value="Approximate">{{ t('posiciones.exactitud.Approximate') }}</option>
+              <option value="Reference">{{ t('posiciones.exactitud.Reference') }}</option>
+            </select>
+          </label>
+          <button type="button" class="boton" [disabled]="operando()" (click)="anadirCompra()">
+            {{ t('posiciones.anadir') }}
+          </button>
+        </div>
+      </section>
+    }
+
+    <section class="bloque">
+      <h2 class="bloque__titulo">{{ t('posiciones.lasCompras') }}</h2>
+
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col">{{ t('posiciones.fechaCompra') }}</th>
+            <th scope="col" class="cifra">{{ t('posiciones.cantidad') }}</th>
+            <th scope="col" class="cifra">{{ t('posiciones.costePorUnidad') }}</th>
+            <th scope="col" class="cifra">{{ t('posiciones.costeTotal') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (lote of lotes(); track lote.id) {
+            <tr>
+              <td [attr.data-etiqueta]="t('posiciones.fechaCompra')">
+                {{ lote.fecha }}
+                @if (lote.aproximada) {
+                  <span class="tabla__marca">{{ t('posiciones.fechaAproximada') }}</span>
+                }
+              </td>
+              <td class="cifra" [attr.data-etiqueta]="t('posiciones.cantidad')">{{ lote.cantidad }}</td>
+              <td class="cifra" [attr.data-etiqueta]="t('posiciones.costePorUnidad')">{{ lote.coste }}</td>
+              <td class="cifra" [attr.data-etiqueta]="t('posiciones.costeTotal')">{{ lote.total }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+
+    <section class="bloque">
+      <h2 class="bloque__titulo">{{ t('posiciones.notas') }}</h2>
+      <textarea class="campo__control" rows="2" [(ngModel)]="notas" name="notas"></textarea>
+      <div class="acciones">
+        <button type="button" class="boton boton--suave" [disabled]="operando()" (click)="guardarNotas()">
+          {{ t('comun.guardar') }}
+        </button>
+      </div>
+    </section>
+
+    <section class="bloque bloque--cierre">
+      <h2 class="bloque__titulo">
+        {{ pos.isClosed ? t('posiciones.reabrir') : t('posiciones.cerrar') }}
+      </h2>
+      <p class="bloque__ayuda">
+        {{ pos.isClosed ? t('posiciones.reabrirAyuda') : t('posiciones.cerrarAyuda') }}
+      </p>
+      <button type="button" class="boton boton--suave" [disabled]="operando()" (click)="alternarCierre()">
+        {{ pos.isClosed ? t('posiciones.reabrir') : t('posiciones.cerrar') }}
+      </button>
+    </section>
+  } @else if (fallo(); as clave) {
+    <p class="aviso" role="alert">{{ t(clave) }}</p>
+  }
+</ng-container>

@@ -1,0 +1,110 @@
+/*
+ * Estilos globales.
+ *
+ * Los colores se declaran como variables una sola vez y los usan todas las pantallas. Cambiar el aspecto
+ * de la aplicacion es cambiar esta lista, no recorrer veinte ficheros.
+ *
+ * Se respeta el tema del sistema (`prefers-color-scheme`): quien tiene el movil en oscuro no deberia
+ * recibir una pantalla blanca al abrir la aplicacion, y esto es una aplicacion que se usa en el movil.
+ */
+
+:root {
+  --superficie: #ffffff;
+  --superficie-2: #f4f5f7;
+  --borde: #dfe1e6;
+  --texto: #1b1d22;
+  --texto-suave: #5b616e;
+
+  /* Verde y rojo de ganancia y perdida. Se eligen con contraste suficiente sobre el fondo claro para
+     que se lean, y no solo para que «se vean»: son cifras, no adornos. */
+  --positivo: #0a7d43;
+  --negativo: #b3261e;
+
+  --acento: #2f5fd0;
+  --acento-suave: #eaf0fd;
+
+  --radio: 0.6rem;
+  --sombra: 0 1px 2px rgb(0 0 0 / 6%);
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --superficie: #1c1f24;
+    --superficie-2: #24282e;
+    --borde: #363b43;
+    --texto: #e9eaec;
+    --texto-suave: #a2a8b3;
+
+    --positivo: #4ec98a;
+    --negativo: #f2857c;
+
+    --acento: #7ea6f5;
+    --acento-suave: #22304d;
+
+    --sombra: 0 1px 2px rgb(0 0 0 / 40%);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--superficie-2);
+  color: var(--texto);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Los importes se alinean por la derecha y con cifras de ancho fijo: asi las columnas de una tabla de
+ * posiciones se pueden comparar de un vistazo, que es justo para lo que se mira una tabla de dinero.
+ */
+.cifra {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cifra--positiva {
+  color: var(--positivo);
+}
+
+.cifra--negativa {
+  color: var(--negativo);
+}
+
+/*
+ * Texto que solo existe para quien usa un lector de pantalla.
+ *
+ * Se usa para las descripciones de tablas y de controles: una tabla sin titulo es una tabla que no se
+ * entiende al escucharla. Se oculta con recorte y no con `display: none`, porque lo que se oculta asi no
+ * lo lee nadie.
+ */
+.visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

@@ -1,0 +1,49 @@
+<ng-container *transloco="let t">
+  <div class="cabecera">
+    <h1 class="titulo">{{ t('preferencias.titulo') }}</h1>
+  </div>
+
+  <section class="bloque">
+    <label class="campo">
+      <span class="campo__etiqueta">{{ t('cartera.monedaBase') }}</span>
+      <select class="campo__control" [(ngModel)]="moneda" name="moneda">
+        @for (opcion of monedasOfrecidas(); track opcion.codigo) {
+          <option [value]="opcion.codigo">{{ opcion.codigo }} — {{ opcion.nombre }}</option>
+        }
+      </select>
+    </label>
+
+    <!--
+      Que significa la moneda base no es obvio, y confundirlo lleva a pensar que cambia lo que se tiene.
+      No lo cambia: cambia como se suma.
+    -->
+    <p class="ayuda">{{ t('preferencias.monedaAyuda') }}</p>
+  </section>
+
+  <section class="bloque">
+    <label class="campo">
+      <span class="campo__etiqueta">{{ t('menu.idioma') }}</span>
+      <select class="campo__control" [(ngModel)]="idioma" name="idioma">
+        @for (opcion of idiomas; track opcion.codigo) {
+          <option [value]="opcion.codigo">{{ opcion.nombre }}</option>
+        }
+      </select>
+    </label>
+
+    <p class="ayuda">{{ t('preferencias.idiomaAyuda') }}</p>
+  </section>
+
+  @if (fallo(); as clave) {
+    <p class="aviso" role="alert">{{ t(clave) }}</p>
+  }
+
+  @if (guardado()) {
+    <p class="exito" role="status">{{ t('preferencias.guardado') }}</p>
+  }
+
+  <div class="acciones">
+    <button type="button" class="boton" [disabled]="guardando()" (click)="guardar()">
+      {{ guardando() ? t('app.cargando') : t('comun.guardar') }}
+    </button>
+  </div>
+</ng-container>

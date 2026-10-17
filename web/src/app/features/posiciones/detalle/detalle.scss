@@ -1,0 +1,262 @@
+:host {
+  display: block;
+}
+
+.cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.titulo {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.subtitulo {
+  margin: 0.15rem 0 0;
+  font-size: 0.88rem;
+  color: var(--texto-suave);
+}
+
+.estado {
+  color: var(--texto-suave);
+}
+
+.aviso {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--negativo) 12%, transparent);
+  color: var(--negativo);
+  font-size: 0.9rem;
+}
+
+.aviso--parcial {
+  background: color-mix(in srgb, #b8860b 14%, transparent);
+  color: #8a6508;
+}
+
+.aviso--cerrada {
+  background: color-mix(in srgb, var(--texto-suave) 14%, transparent);
+  color: var(--texto-suave);
+}
+
+.aviso__detalle {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.85rem;
+  margin: 0 0 1rem;
+}
+
+.dato {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+}
+
+.dato dt {
+  font-size: 0.82rem;
+  color: var(--texto-suave);
+}
+
+.dato dd {
+  margin: 0.35rem 0 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.dato__fecha {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--texto-suave);
+}
+
+.bloque {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+}
+
+.bloque__titulo {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.bloque__ayuda {
+  margin: 0 0 0.85rem;
+  font-size: 0.82rem;
+  color: var(--texto-suave);
+}
+
+.bloque--cierre {
+  border-color: color-mix(in srgb, var(--negativo) 30%, var(--borde));
+}
+
+.linea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1 1 9rem;
+}
+
+.campo--corto {
+  flex: 0 0 5rem;
+}
+
+.campo__etiqueta {
+  font-size: 0.82rem;
+  color: var(--texto-suave);
+}
+
+.campo__control {
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.45rem;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+
+  /* 16 px o mas: por debajo, el movil hace zoom solo al enfocar. */
+  font-size: 1rem;
+
+  &:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 1px;
+  }
+}
+
+textarea.campo__control {
+  width: 100%;
+  resize: vertical;
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+.boton {
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: var(--acento);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.boton--suave {
+  background: transparent;
+  color: var(--texto);
+  border: 1px solid var(--borde);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.tabla thead th {
+  padding: 0.5rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+  text-align: left;
+  border-bottom: 1px solid var(--borde);
+  white-space: nowrap;
+}
+
+.tabla thead th.cifra {
+  text-align: right;
+}
+
+.tabla tbody td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.tabla tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tabla__marca {
+  display: block;
+  font-size: 0.72rem;
+  font-style: italic;
+  color: #8a6508;
+}
+
+/*
+ * En pantalla estrecha, la tabla de compras se convierte en fichas, igual que la de posiciones.
+ */
+@media (max-width: 640px) {
+  .tabla,
+  .tabla thead,
+  .tabla tbody,
+  .tabla tr,
+  .tabla th,
+  .tabla td {
+    display: block;
+    width: 100%;
+  }
+
+  .tabla thead {
+    display: none;
+  }
+
+  .tabla tbody tr {
+    margin-bottom: 0.6rem;
+    padding: 0.6rem;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+  }
+
+  .tabla tbody td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.25rem 0;
+    border-bottom: 0;
+    text-align: right;
+  }
+
+  .tabla tbody td::before {
+    content: attr(data-etiqueta);
+    font-size: 0.8rem;
+    color: var(--texto-suave);
+    text-align: left;
+  }
+}

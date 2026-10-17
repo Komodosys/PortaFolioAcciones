@@ -1,0 +1,68 @@
+<Project>
+
+  <!--
+    Versiones centralizadas de los paquetes NuGet.
+
+    Se declaran UNA sola vez aqui, y cada proyecto solo dice QUE paquete necesita, sin version. Sin
+    esto, dos proyectos pueden acabar pidiendo versiones distintas de lo mismo, y el conflicto no se
+    ve hasta que algo falla de forma rara en ejecucion. Aparecio de verdad: Npgsql arrastraba
+    EntityFrameworkCore.Relational 10.0.4 mientras el proyecto pedia 10.0.12.
+
+    Para actualizar un paquete se cambia SOLO aqui.
+  -->
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Fija tambien las versiones que llegan de forma transitiva a la declarada aqui. Es lo que
+         resuelve el conflicto entre la version que arrastra Npgsql y la que pedimos nosotros. -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup Label="Acceso a datos">
+    <!-- Alineados con Microsoft.AspNetCore.Identity.EntityFrameworkCore, que exige Relational >= 10.0.13.
+         El control de versiones centralizado detecto el conflicto al compilar, en vez de dejarlo
+         aparecer en ejecucion como un error incomprensible. -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.13" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <!--
+      SQLite SOLO para las pruebas. La aplicacion usa PostgreSQL; esto es para poder probar las consultas
+      de los repositorios sin levantar la pila entera.
+
+      Se eligio SQLite y no el proveedor «en memoria» porque el de en memoria no es una base de datos:
+      no aplica restricciones ni traduce las consultas a SQL. Un fallo como «falta un WHERE» se veria en
+      los dos, pero uno como «la consulta no se puede traducir» solo se ve en uno de verdad.
+    -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
+  </ItemGroup>
+
+  <ItemGroup Label="API">
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
+  </ItemGroup>
+
+  <ItemGroup Label="Autenticacion">
+    <!-- Solo los almacenes de Identity sobre EF Core. Los servicios de Identity (AddIdentity,
+         SignInManager) vienen en el marco compartido de ASP.NET Core, que ya trae el proyecto de API;
+         por eso este paquete solo hace falta en la capa de infraestructura. -->
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.13" />
+  </ItemGroup>
+
+  <ItemGroup Label="Servicios externos">
+    <!-- AddHttpClient y su gestion del ciclo de vida. El proyecto de API ya lo trae por el marco
+         compartido de ASP.NET Core, pero un proyecto de biblioteca no: hay que declararlo. -->
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.13" />
+    <!-- La cache en memoria, para no pedir el mismo precio a la fuente en cada consulta. -->
+    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.13" />
+  </ItemGroup>
+
+  <ItemGroup Label="Registro de sucesos">
+    <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Pruebas">
+    <PackageVersion Include="xunit.v3" Version="4.0.2" />
+  </ItemGroup>
+
+</Project>

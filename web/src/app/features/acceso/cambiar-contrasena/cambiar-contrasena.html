@@ -1,0 +1,53 @@
+<ng-container *transloco="let t">
+  <div class="cambio">
+    <form class="tarjeta" (ngSubmit)="enviar()">
+      <h1 class="tarjeta__titulo">{{ t('acceso.cambiarContrasena') }}</h1>
+
+      @if (esTemporal()) {
+        <p class="explicacion">{{ t('acceso.contrasenaTemporal') }}</p>
+      }
+
+      <label class="campo">
+        <span class="campo__etiqueta">{{ t('acceso.contrasenaActual') }}</span>
+        <input
+          class="campo__control"
+          type="password"
+          name="actual"
+          autocomplete="current-password"
+          [(ngModel)]="actual"
+        />
+      </label>
+
+      <label class="campo">
+        <span class="campo__etiqueta">{{ t('acceso.contrasenaNueva') }}</span>
+        <input
+          class="campo__control"
+          type="password"
+          name="nueva"
+          autocomplete="new-password"
+          [(ngModel)]="nueva"
+        />
+        <span class="campo__ayuda">{{ t('acceso.requisitosContrasena') }}</span>
+      </label>
+
+      <label class="campo">
+        <span class="campo__etiqueta">{{ t('acceso.repetirContrasena') }}</span>
+        <input
+          class="campo__control"
+          type="password"
+          name="repetir"
+          autocomplete="new-password"
+          [(ngModel)]="repetir"
+        />
+      </label>
+
+      @if (claveDeError(); as clave) {
+        <p class="aviso" role="alert">{{ t(clave) }}</p>
+      }
+
+      <button class="boton" type="submit" [disabled]="enviando()">
+        {{ enviando() ? t('app.cargando') : t('comun.guardar') }}
+      </button>
+    </form>
+  </div>
+</ng-container>

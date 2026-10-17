@@ -37,20 +37,11 @@ module.exports = {
     themes: ['light', 'cupcake'],
   },
 
-  // ------------------------------------------------------------------------------------------------
-  // TEMPORAL, mientras dura la migración.
+  // El reseteo de Tailwind.
   //
-  // `preflight` es el reset de Tailwind: quita márgenes, unifica tamaños de titular y normaliza los
-  // controles. Es lo que hace que las utilidades se comporten igual en todas partes, así que al final tiene
-  // que estar ACTIVADO.
-  //
-  // Pero ahora mismo la aplicación todavía se estiliza con su propio SCSS, construido sobre otro reset. Si
-  // se activa hoy, todos los componentes sin rediseñar se verán a la vez, y una migración que se pueda
-  // revisar por trozos pasaría a ser un salto al vacío.
-  //
-  // **Al terminar el rediseño hay que borrar esta línea.** Si sigue aquí, la aplicación funcionará pero no
-  // será exactamente WinCuentas: sus componentes cuentan con el reset de Tailwind.
-  corePlugins: {
-    preflight: false,
-  },
+  // **Estuvo desactivado mientras duró la migración**, y a propósito: la aplicación se estilizaba con su
+  // propio SCSS construido sobre otro reset distinto, y activarlo entonces habría roto de golpe todas las
+  // pantallas sin rediseñar. Ahora que no queda ni un `.scss` de componente, tiene que estar ACTIVADO: es lo
+  // que hace que las utilidades se comporten igual en todas partes, y sin él la aplicación funciona pero no
+  // es exactamente WinCuentas, cuyos componentes cuentan con este reset.
 };

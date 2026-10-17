@@ -58,7 +58,8 @@ interface AltaEnEdicion {
   selector: 'app-buscador-instrumento',
   imports: [FormsModule, TranslocoDirective],
   templateUrl: './buscador-instrumento.html',
-  styleUrl: './buscador-instrumento.scss',
+  // El estilo vive en la plantilla, con clases de Tailwind: no queda SCSS que mantener.
+  host: { class: 'block' },
 })
 export class BuscadorInstrumento {
   private readonly api = inject(InstrumentosApi);

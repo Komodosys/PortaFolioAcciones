@@ -17,6 +17,12 @@ module.exports = {
       montserrat: ['Montserrat', 'sans-serif'],
     },
     extend: {
+      // El color de fondo de la aplicación, el mismo crema que WinCuentas. Se declara aquí y no se repite
+      // como `bg-[#F5F3EF]` en cada pantalla: es el color de la identidad, y el día que cambie tiene que
+      // cambiar en un solo sitio.
+      colors: {
+        crema: '#F5F3EF',
+      },
       animation: {
         fadeIn: 'fadeIn 0.3s ease-in-out',
       },

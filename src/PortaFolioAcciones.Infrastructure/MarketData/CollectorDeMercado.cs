@@ -694,12 +694,20 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
 
             var moneda = Currency.FromCode(vista.BaseCurrency);
 
+            // El efectivo entra en la foto, y se calcula con el MISMO contexto y en el mismo guardado: si se
+            // calculara aparte, la foto y el saldo podrian decir cosas distintas del mismo dia.
+            var saldo = await new CashReader(contexto).GetAsync(vista.PortfolioId, cancellationToken);
+
             contexto.PortfolioSnapshots.Add(PortfolioSnapshot.Take(
                 vista.PortfolioId,
                 dia,
                 moneda,
                 Money.Of(vista.TotalValue, moneda),
-                Money.Of(vista.TotalCost, moneda)));
+                Money.Of(vista.TotalCost, moneda),
+
+                // Si el saldo no se puede dar como bueno —sin apertura o con algo sin convertir— se guarda
+                // cero y no una cifra inventada. La foto dice lo que se sabe.
+                Money.Of(saldo?.IsKnown == true ? saldo.Balance : 0m, moneda)));
 
             fotos++;
         }

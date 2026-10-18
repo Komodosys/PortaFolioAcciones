@@ -20,13 +20,15 @@ public sealed class PortfolioSnapshot
         DateOnly snapshotDate,
         Currency baseCurrency,
         Money marketValue,
-        Money costBasis)
+        Money costBasis,
+        Money cashValue)
     {
         PortfolioId = portfolioId;
         SnapshotDate = snapshotDate;
         BaseCurrency = baseCurrency;
         MarketValue = marketValue;
         CostBasis = costBasis;
+        CashValue = cashValue;
     }
 
     /// <summary>Constructor sin parametros para el mapeo de la base de datos.</summary>
@@ -35,6 +37,7 @@ public sealed class PortfolioSnapshot
         BaseCurrency = Currency.Cad;
         MarketValue = Money.Zero(Currency.Cad);
         CostBasis = Money.Zero(Currency.Cad);
+        CashValue = Money.Zero(Currency.Cad);
     }
 
     /// <summary>Cartera fotografiada.</summary>
@@ -51,6 +54,18 @@ public sealed class PortfolioSnapshot
 
     /// <summary>Lo que habia costado.</summary>
     public Money CostBasis { get; private set; }
+
+    /// <summary>
+    /// El dinero que habia en la cuenta ese dia.
+    ///
+    /// Va aparte de <see cref="MarketValue"/> a proposito: el valor de las posiciones y el efectivo son dos
+    /// cosas distintas, y sumarlas en un solo campo haria que las fotos anteriores —que no tienen efectivo—
+    /// dijeran algo distinto que las nuevas bajo el mismo nombre.
+    /// </summary>
+    public Money CashValue { get; private set; }
+
+    /// <summary>Lo que valia la cartera entera: las posiciones mas el efectivo. Se calcula, no se guarda.</summary>
+    public Money TotalValue => MarketValue.Add(CashValue);
 
     /// <summary>
     /// Ganancia no realizada: valor menos coste. <b>No se guarda</b>, se calcula: guardarla seria tener
@@ -72,7 +87,8 @@ public sealed class PortfolioSnapshot
         DateOnly snapshotDate,
         Currency baseCurrency,
         Money marketValue,
-        Money costBasis)
+        Money costBasis,
+        Money cashValue)
     {
         ArgumentNullException.ThrowIfNull(baseCurrency);
         ArgumentNullException.ThrowIfNull(marketValue);
@@ -96,7 +112,13 @@ public sealed class PortfolioSnapshot
                 $"El coste esta en {costBasis.Currency} y la moneda base de la foto es {baseCurrency}.");
         }
 
-        return new PortfolioSnapshot(portfolioId, snapshotDate, baseCurrency, marketValue, costBasis);
+        if (cashValue.Currency != baseCurrency)
+        {
+            throw new InvalidOperationException(
+                $"El efectivo esta en {cashValue.Currency} y la moneda base de la foto es {baseCurrency}.");
+        }
+
+        return new PortfolioSnapshot(portfolioId, snapshotDate, baseCurrency, marketValue, costBasis, cashValue);
     }
 
     public override string ToString() =>

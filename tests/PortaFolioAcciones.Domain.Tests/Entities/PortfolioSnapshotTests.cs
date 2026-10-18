@@ -12,7 +12,7 @@ public class PortfolioSnapshotTests
     public void TakesThePictureOfAPortfolio()
     {
         var foto = PortfolioSnapshot.Take(
-            Cartera, UnDia, Currency.Cad, Money.Of(100000m, Currency.Cad), Money.Of(80000m, Currency.Cad));
+            Cartera, UnDia, Currency.Cad, Money.Of(100000m, Currency.Cad), Money.Of(80000m, Currency.Cad), Money.Zero(Currency.Cad));
 
         Assert.Equal(UnDia, foto.SnapshotDate);
         Assert.Equal(Currency.Cad, foto.BaseCurrency);
@@ -26,7 +26,7 @@ public class PortfolioSnapshotTests
         // Guardarla seria tener dos verdades: si alguien corrige el valor o el coste, la ganancia
         // guardada quedaria desfasada y nadie sabria cual manda.
         var foto = PortfolioSnapshot.Take(
-            Cartera, UnDia, Currency.Cad, Money.Of(100000m, Currency.Cad), Money.Of(80000m, Currency.Cad));
+            Cartera, UnDia, Currency.Cad, Money.Of(100000m, Currency.Cad), Money.Of(80000m, Currency.Cad), Money.Zero(Currency.Cad));
 
         Assert.Equal(20000m, foto.UnrealizedPnl.Amount);
         Assert.Equal(25m, foto.Return.AsPercent);
@@ -36,7 +36,7 @@ public class PortfolioSnapshotTests
     public void HandlesALoss()
     {
         var foto = PortfolioSnapshot.Take(
-            Cartera, UnDia, Currency.Cad, Money.Of(75000m, Currency.Cad), Money.Of(100000m, Currency.Cad));
+            Cartera, UnDia, Currency.Cad, Money.Of(75000m, Currency.Cad), Money.Of(100000m, Currency.Cad), Money.Zero(Currency.Cad));
 
         Assert.Equal(-25000m, foto.UnrealizedPnl.Amount);
         Assert.Equal(-25m, foto.Return.AsPercent);
@@ -47,7 +47,7 @@ public class PortfolioSnapshotTests
     {
         // Devolver cero evita una division entre cero, que es lo que pasaria al calcular el porcentaje.
         var foto = PortfolioSnapshot.Take(
-            Cartera, UnDia, Currency.Cad, Money.Of(1000m, Currency.Cad), Money.Zero(Currency.Cad));
+            Cartera, UnDia, Currency.Cad, Money.Of(1000m, Currency.Cad), Money.Zero(Currency.Cad), Money.Zero(Currency.Cad));
 
         Assert.True(foto.Return.Ratio == 0m);
     }
@@ -58,12 +58,12 @@ public class PortfolioSnapshotTests
         // Guardar el numero sin que su moneda coincida con la moneda base declarada haria la foto
         // ininterpretable dentro de un año.
         var enUsd = Assert.Throws<InvalidOperationException>(() => PortfolioSnapshot.Take(
-            Cartera, UnDia, Currency.Cad, Money.Of(100000m, Currency.Usd), Money.Of(80000m, Currency.Cad)));
+            Cartera, UnDia, Currency.Cad, Money.Of(100000m, Currency.Usd), Money.Of(80000m, Currency.Cad), Money.Zero(Currency.Cad)));
 
         Assert.Contains("USD", enUsd.Message, StringComparison.Ordinal);
 
         var costeEnUsd = Assert.Throws<InvalidOperationException>(() => PortfolioSnapshot.Take(
-            Cartera, UnDia, Currency.Cad, Money.Of(100000m, Currency.Cad), Money.Of(80000m, Currency.Usd)));
+            Cartera, UnDia, Currency.Cad, Money.Of(100000m, Currency.Cad), Money.Of(80000m, Currency.Usd), Money.Zero(Currency.Cad)));
 
         Assert.Contains("USD", costeEnUsd.Message, StringComparison.Ordinal);
     }
@@ -72,14 +72,14 @@ public class PortfolioSnapshotTests
     public void RejectsASnapshotWithoutAPortfolio()
     {
         Assert.Throws<ArgumentException>(() => PortfolioSnapshot.Take(
-            Guid.Empty, UnDia, Currency.Cad, Money.Zero(Currency.Cad), Money.Zero(Currency.Cad)));
+            Guid.Empty, UnDia, Currency.Cad, Money.Zero(Currency.Cad), Money.Zero(Currency.Cad), Money.Zero(Currency.Cad)));
     }
 
     [Fact]
     public void KeepsTheDateSoTheHistoryIsReadable()
     {
         var foto = PortfolioSnapshot.Take(
-            Cartera, UnDia, Currency.Cad, Money.Of(1m, Currency.Cad), Money.Of(1m, Currency.Cad));
+            Cartera, UnDia, Currency.Cad, Money.Of(1m, Currency.Cad), Money.Of(1m, Currency.Cad), Money.Zero(Currency.Cad));
 
         Assert.Equal(UnDia, foto.SnapshotDate);
     }

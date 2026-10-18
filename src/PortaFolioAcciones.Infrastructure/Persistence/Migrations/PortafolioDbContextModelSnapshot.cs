@@ -547,6 +547,20 @@ namespace PortaFolioAcciones.Infrastructure.Persistence.Migrations
                         .HasMaxLength(3)
                         .HasColumnType("character varying(3)");
 
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "CashValue", "PortaFolioAcciones.Domain.Entities.PortfolioSnapshot.CashValue#Money", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<decimal>("Amount")
+                                .HasPrecision(28, 4)
+                                .HasColumnType("numeric(28,4)");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)");
+                        });
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "CostBasis", "PortaFolioAcciones.Domain.Entities.PortfolioSnapshot.CostBasis#Money", b1 =>
                         {
                             b1.IsRequired();

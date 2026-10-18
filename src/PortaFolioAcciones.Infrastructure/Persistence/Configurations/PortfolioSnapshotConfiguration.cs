@@ -32,6 +32,11 @@ internal sealed class PortfolioSnapshotConfiguration : IEntityTypeConfiguration<
         builder.ComplexProperty(snapshot => snapshot.CostBasis,
             money => money.ConfigureMoney(ColumnPrecision.Amount));
 
+        // El efectivo del día. Va aparte del valor de las posiciones a propósito: son dos cosas distintas, y
+        // las fotos anteriores a este campo lo tendrán en cero, que es la verdad —no había registro de él—.
+        builder.ComplexProperty(snapshot => snapshot.CashValue,
+            money => money.ConfigureMoney(ColumnPrecision.Amount));
+
         // La ganancia NO se mapea: se calcula a partir de los otros dos. Guardarla seria tener dos
         // verdades que pueden divergir si alguien corrige uno de los importes.
 

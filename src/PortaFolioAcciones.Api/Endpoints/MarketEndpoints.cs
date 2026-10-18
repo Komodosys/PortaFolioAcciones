@@ -75,6 +75,29 @@ internal static class MarketEndpoints
         })
         .WithName("market.collect")
         .WithSummary("Ejecuta la recogida diaria ahora: cierre, tipos de cambio y foto de las carteras.");
+
+        // El relleno del histórico. Es una operación de una vez y pesada: una petición por instrumento que
+        // devuelve años de cierres. Por eso lleva el mismo freno que las demás.
+        group.MapPost("/backfill", async Task<IResult> (
+            RefrescoDePrecios refrescos,
+            IMarketDataCollector colector,
+            TimeProvider reloj,
+            HttpContext contexto,
+            CancellationToken cancelacion) =>
+        {
+            if (refrescos.EsperarPara() is { } espera)
+            {
+                return DemasiadoPronto(contexto, espera);
+            }
+
+            // Cinco años: cubre cualquier informe razonable y no multiplica las filas por gusto. Si algún día
+            // hace falta más atrás, es un parámetro y no un rediseño.
+            var desde = DateOnly.FromDateTime(reloj.GetUtcNow().UtcDateTime).AddYears(-5);
+
+            return Results.Ok(await colector.BackfillAsync(desde, cancelacion));
+        })
+        .WithName("market.backfill")
+        .WithSummary("Rellena el histórico de precios hacia atrás. Una petición por instrumento, sin sobrescribir.");
     }
 
     /// <summary>

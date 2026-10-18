@@ -29,7 +29,7 @@ namespace PortaFolioAcciones.Infrastructure.MarketData;
 /// Esto es la <b>versión básica</b>. La caché, los reintentos y la cadena de respaldo son de puntos
 /// posteriores de la Fase 5.
 /// </summary>
-internal sealed partial class YahooChartPriceProvider : IPriceProvider
+internal sealed partial class YahooChartPriceProvider : IPriceProvider, IPriceHistoryProvider
 {
     private const string Ruta = "v8/finance/chart";
 
@@ -50,37 +50,14 @@ internal sealed partial class YahooChartPriceProvider : IPriceProvider
     {
         ArgumentNullException.ThrowIfNull(instrument);
 
-        if (string.IsNullOrWhiteSpace(instrument.ProviderKey))
+        var resultado = await PedirAsync(instrument, "range=1mo&interval=1d&events=div%2Csplits", cancellationToken);
+
+        if (resultado is null || resultado.Timestamp is not { Count: > 0 })
         {
-            _logger.LogDebug("El instrumento {Simbolo} no tiene clave de fuente: no se puede pedir su precio.",
-                instrument.Symbol.Value);
             return null;
         }
 
-        var ruta = $"{Ruta}/{Uri.EscapeDataString(instrument.ProviderKey)}" +
-                   "?range=1mo&interval=1d&events=div%2Csplits";
-
-        try
         {
-            using var respuesta = await _http.GetAsync(new Uri(ruta, UriKind.Relative), cancellationToken);
-
-            if (!respuesta.IsSuccessStatusCode)
-            {
-                _logger.LogWarning(
-                    "La fuente devolvio {Codigo} al pedir el precio de {Clave}.",
-                    (int)respuesta.StatusCode, instrument.ProviderKey);
-                return null;
-            }
-
-            var datos = await respuesta.Content.ReadFromJsonAsync<YahooChartResponse>(JsonOptions, cancellationToken);
-
-            var resultado = datos?.Chart?.Result?.FirstOrDefault();
-
-            if (resultado is null || resultado.Timestamp is not { Count: > 0 })
-            {
-                return null;
-            }
-
             var cierres = resultado.Indicators?.Quote?.FirstOrDefault()?.Close;
 
             if (cierres is null || cierres.Count != resultado.Timestamp.Count)
@@ -107,6 +84,108 @@ internal sealed partial class YahooChartPriceProvider : IPriceProvider
                 [.. DividirEventos(resultado.Events?.Splits)],
                 [.. DividirDividendos(resultado.Events?.Dividends)],
                 "yahoo");
+        }
+    }
+
+    /// <summary>
+    /// La serie de cierres desde una fecha, <b>en una sola petición</b>.
+    /// </summary>
+    /// <remarks>
+    /// Se lee <c>close</c> y no <c>adjclose</c>, igual que al cotizar, y aquí importa todavía más: el cierre
+    /// ajustado descuenta splits y dividendos, así que una serie ajustada <b>no coincide con los precios que
+    /// se usaron para comprar</b> y cualquier comparación contra el coste saldría mal.
+    ///
+    /// Eso significa que la serie <b>lleva los saltos de los desdoblamientos</b>: si un valor hizo un 5:1, los
+    /// cierres anteriores son cinco veces mayores. No se corrigen aquí a propósito —un precio es lo que fue—
+    /// y quien calcule un rendimiento entre dos fechas tiene que tener en cuenta el desdoblamiento, que la
+    /// aplicación ya conoce porque lo aplicó a la posición.
+    /// </remarks>
+    public async Task<IReadOnlyList<DailyClose>> GetHistoryAsync(
+        Instrument instrument,
+        DateOnly desde,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(instrument);
+
+        var inicio = new DateTimeOffset(desde.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).ToUnixTimeSeconds();
+        var fin = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        var resultado = await PedirAsync(
+            instrument,
+            $"period1={inicio}&period2={fin}&interval=1d",
+            cancellationToken);
+
+        if (resultado?.Timestamp is not { Count: > 0 })
+        {
+            return [];
+        }
+
+        var cierres = resultado.Indicators?.Quote?.FirstOrDefault()?.Close;
+
+        if (cierres is null || cierres.Count != resultado.Timestamp.Count)
+        {
+            return [];
+        }
+
+        var moneda = ResolverMoneda(resultado.Meta?.Currency, instrument.QuoteCurrency);
+
+        // Un diccionario y no una lista: la fuente puede repetir un día, y dos precios del mismo día dejan
+        // el histórico ambiguo. Se queda el último que publique, que es el más reciente de los dos.
+        var porDia = new Dictionary<DateOnly, DailyClose>();
+
+        for (var i = 0; i < cierres.Count; i++)
+        {
+            if (cierres[i] is not { } valor || valor <= 0m)
+            {
+                // Sin cierre, o con un cero que no es un precio: ese día no existe. No se rellena con el
+                // anterior, porque un precio inventado es peor que uno que falta.
+                continue;
+            }
+
+            var dia = DateOnly.FromDateTime(
+                DateTimeOffset.FromUnixTimeSeconds(resultado.Timestamp[i]).UtcDateTime);
+
+            porDia[dia] = new DailyClose(dia, Money.Of(valor, moneda));
+        }
+
+        return [.. porDia.Values.OrderBy(cierre => cierre.Date)];
+    }
+
+    /// <summary>
+    /// Pide el gráfico y devuelve el primer resultado, o nulo si la fuente no da nada.
+    ///
+    /// Los dos usos —cotizar y rellenar— comparten esto para que el manejo de errores esté escrito una vez:
+    /// si se duplicara, el día que uno cambiara la forma de tratar un fallo el otro se quedaría atrás.
+    /// </summary>
+    private async Task<YahooResult?> PedirAsync(
+        Instrument instrument,
+        string consulta,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(instrument.ProviderKey))
+        {
+            _logger.LogDebug("El instrumento {Simbolo} no tiene clave de fuente: no se puede pedir su precio.",
+                instrument.Symbol.Value);
+            return null;
+        }
+
+        var ruta = $"{Ruta}/{Uri.EscapeDataString(instrument.ProviderKey)}?{consulta}";
+
+        try
+        {
+            using var respuesta = await _http.GetAsync(new Uri(ruta, UriKind.Relative), cancellationToken);
+
+            if (!respuesta.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "La fuente devolvio {Codigo} al pedir el precio de {Clave}.",
+                    (int)respuesta.StatusCode, instrument.ProviderKey);
+                return null;
+            }
+
+            var datos = await respuesta.Content.ReadFromJsonAsync<YahooChartResponse>(JsonOptions, cancellationToken);
+
+            return datos?.Chart?.Result?.FirstOrDefault();
         }
         catch (HttpRequestException excepcion)
         {

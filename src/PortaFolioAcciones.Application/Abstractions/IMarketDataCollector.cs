@@ -39,4 +39,20 @@ public interface IMarketDataCollector
     /// </summary>
     /// <param name="cancellationToken">Cancelación.</param>
     public Task<QuoteRefreshResult> RefreshQuotesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Rellena el histórico de precios hacia atrás, <b>en una petición por instrumento</b>.
+    ///
+    /// La recogida diaria guarda un cierre al día, así que el histórico de una instalación nueva empieza el
+    /// día que se instaló: los informes de periodo no se podrían calcular hasta pasado un año. La fuente,
+    /// en cambio, ya tiene los cierres publicados, y pedirlos de una vez los trae todos.
+    ///
+    /// <b>No sobrescribe.</b> Lo que ya está guardado se queda como está: se comprobó cuando se guardó, y
+    /// rellenar dos veces no debe cambiar el pasado.
+    /// </summary>
+    /// <param name="desde">El día más antiguo que interesa.</param>
+    /// <param name="cancellationToken">Cancelación.</param>
+    public Task<BackfillResult> BackfillAsync(
+        DateOnly desde,
+        CancellationToken cancellationToken = default);
 }

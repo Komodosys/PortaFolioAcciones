@@ -105,6 +105,11 @@ public static class DependencyInjection
         })
         .ConResiliencia("query1.finance.yahoo.com");
 
+        // El histórico se pide por el MISMO objeto que cotiza, pero expuesto por su otro puerto: una
+        // petición por instrumento y una serie de vuelta. Sin caché ni respaldo, porque se usa una vez y lo
+        // que devuelve no es «el precio de ahora» sino varios cientos de cierres.
+        services.AddScoped<IPriceHistoryProvider>(
+            proveedor => proveedor.GetRequiredService<YahooChartPriceProvider>());
         // El adaptador de tipos de cambio, sin cache: solo sabe preguntar.
         services.AddHttpClient<FrankfurterFxRateProvider>(cliente =>
         {

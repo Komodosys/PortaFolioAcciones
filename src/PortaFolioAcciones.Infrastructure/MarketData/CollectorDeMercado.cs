@@ -34,17 +34,20 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
 
     private readonly DbContextOptions<PortafolioDbContext> _opciones;
     private readonly IPriceProvider _precios;
+    private readonly IPriceHistoryProvider _historico;
     private readonly IFxRateProvider _tiposDeCambio;
     private readonly ILogger<CollectorDeMercado> _registro;
 
     public CollectorDeMercado(
         DbContextOptions<PortafolioDbContext> opciones,
         IPriceProvider precios,
+        IPriceHistoryProvider historico,
         IFxRateProvider tiposDeCambio,
         ILogger<CollectorDeMercado> registro)
     {
         _opciones = opciones;
         _precios = precios;
+        _historico = historico;
         _tiposDeCambio = tiposDeCambio;
         _registro = registro;
     }
@@ -238,6 +241,79 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
             sinPrecio);
 
         return new QuoteRefreshResult(instrumentos.Count, actualizados, sinPrecio);
+    }
+
+    public async Task<BackfillResult> BackfillAsync(
+        DateOnly desde,
+        CancellationToken cancellationToken = default)
+    {
+        await using var contexto = new PortafolioDbContext(_opciones, UsuarioDelSistema.Instancia);
+
+        var instrumentos = await InstrumentosQueHacenFaltaAsync(contexto, cancellationToken);
+
+        if (instrumentos.Count == 0)
+        {
+            return new BackfillResult(0, 0, 0, 0);
+        }
+
+        // Lo que ya está guardado en la ventana, en UNA consulta: preguntarlo instrumento a instrumento
+        // serían decenas de consultas para decidir lo mismo.
+        var yaEstan = (await contexto.Prices
+                .Where(precio => precio.PriceDate >= desde)
+                .Select(precio => new { precio.InstrumentId, precio.PriceDate })
+                .ToListAsync(cancellationToken))
+            .Select(fila => (fila.InstrumentId, fila.PriceDate))
+            .ToHashSet();
+
+        var ahora = DateTimeOffset.UtcNow;
+        var nuevos = 0;
+        var repetidos = 0;
+        var sinSerie = 0;
+
+        foreach (var instrumento in instrumentos)
+        {
+            var serie = await _historico.GetHistoryAsync(instrumento, desde, cancellationToken);
+
+            if (serie.Count == 0)
+            {
+                // La fuente no lo conoce: los fondos canadienses de Fundserv no tienen código de mercado. Se
+                // cuenta y se sigue; no es un fallo del relleno.
+                sinSerie++;
+                continue;
+            }
+
+            foreach (var cierre in serie)
+            {
+                if (!yaEstan.Add((instrumento.Id, cierre.Date)))
+                {
+                    repetidos++;
+                    continue;
+                }
+
+                contexto.Prices.Add(Price.Create(
+                    instrumento.Id,
+                    cierre.Date,
+                    cierre.Price,
+                    "yahoo",
+                    ahora));
+
+                nuevos++;
+            }
+        }
+
+        // Un solo guardado para todo: el relleno son cientos de filas por instrumento, y guardar una a una
+        // serían cientos de viajes a la base por cada uno.
+        await contexto.SaveChangesAsync(cancellationToken);
+
+        _registro.LogInformation(
+            "Relleno desde {Desde}: {Instrumentos} instrumentos, {Nuevos} cierres nuevos, {Repetidos} ya estaban, {SinSerie} sin serie.",
+            desde,
+            instrumentos.Count,
+            nuevos,
+            repetidos,
+            sinSerie);
+
+        return new BackfillResult(instrumentos.Count, nuevos, repetidos, sinSerie);
     }
 
     /// <summary>

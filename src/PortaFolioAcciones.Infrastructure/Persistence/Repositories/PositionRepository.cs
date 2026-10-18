@@ -250,6 +250,11 @@ internal sealed class PositionRepository : IPositionRepository
         // El coste medio se toma ANTES de vender: es lo que cuesta lo que se vende, y despues de vender ya
         // no se puede saber, porque los lotes se han reducido.
         var costeMedio = posicion.AverageCostPerUnit;
+        var dia = command.OccurredOn ?? DateOnly.FromDateTime(ahora.UtcDateTime);
+
+        // El tipo del día de la venta, no el de hoy: el dinero entró en la cuenta ese día, y usar el de hoy
+        // haría que el saldo de efectivo se moviera solo cuando cambia el dólar.
+        var tasa = await TasaDelDiaAsync(posicion.PortfolioId, instrumento.QuoteCurrency, dia, cancellationToken);
 
         posicion.Sell(vendida, ahora);
 
@@ -262,17 +267,79 @@ internal sealed class PositionRepository : IPositionRepository
             vendida,
             Money.Of(command.PricePerUnit, instrumento.QuoteCurrency),
             costeMedio,
-            command.OccurredOn ?? DateOnly.FromDateTime(ahora.UtcDateTime),
+            dia,
             command.Notes,
-            ahora));
+            ahora,
+            tasa));
 
         await _context.SaveChangesAsync(cancellationToken);
 
         return PositionResult.Ok(ADetalle(posicion, instrumento));
     }
 
-    public async Task<PositionResult> SetManualPriceAsync(
-        Guid id,
+    /// <summary>
+    /// El tipo de cambio para llevar un importe a la moneda base de la cartera, <b>el del día del movimiento</b>.
+    /// </summary>
+    /// <returns>
+    /// Nulo si no hace falta convertir —el importe ya está en la moneda base— y también si no hay tipo para ese
+    /// día. Los dos casos son distintos pero se comportan igual aquí: el movimiento se guarda sin tipo, y quien
+    /// calcule el saldo dirá que no se sabe en vez de inventar una conversión.
+    /// </returns>
+    /// <remarks>
+    /// Se busca el <b>último publicado en o antes</b> de esa fecha y no exactamente el de esa fecha: los tipos no
+    /// se publican fines de semana ni festivos, y una venta hecha un sábado se liquidó al del viernes. Lo que
+    /// <b>no</b> se hace es cambiarle la fecha al tipo para que coincida: es un dato con fecha, y falsearla es
+    /// peor que no tenerlo.
+    /// </remarks>
+    private async Task<decimal?> TasaDelDiaAsync(
+        Guid portfolioId,
+        Currency divisa,
+        DateOnly dia,
+        CancellationToken cancellationToken)
+    {
+        var baseDeLaCartera = await BaseDeLaCarteraAsync(portfolioId, cancellationToken);
+
+        if (baseDeLaCartera is null || divisa == baseDeLaCartera)
+        {
+            // Sin moneda base no hay a qué convertir, y si coinciden no hace falta.
+            return null;
+        }
+
+        var tasa = await _context.DailyFxRates
+            .AsNoTracking()
+            .Where(tipo => tipo.From == divisa && tipo.To == baseDeLaCartera && tipo.RateDate <= dia)
+            .OrderByDescending(tipo => tipo.RateDate)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return tasa?.Rate;
+    }
+
+    /// <summary>La moneda en la que se presentan los totales de una cartera: la suya, o la de su dueño.</summary>
+    private async Task<Currency?> BaseDeLaCarteraAsync(Guid portfolioId, CancellationToken cancellationToken)
+    {
+        var cartera = await _context.Portfolios
+            .AsNoTracking()
+            .Where(portfolio => portfolio.Id == portfolioId)
+            .Select(portfolio => new { portfolio.BaseCurrency, portfolio.OwnerUserId })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (cartera is null)
+        {
+            return null;
+        }
+
+        if (cartera.BaseCurrency is { } propia)
+        {
+            return propia;
+        }
+
+        return await _context.UserProfiles
+            .AsNoTracking()
+            .Where(perfil => perfil.Id == cartera.OwnerUserId)
+            .Select(perfil => (Currency?)perfil.BaseCurrency)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+    public async Task<PositionResult> SetManualPriceAsync(        Guid id,
         ManualPriceCommand command,
         CancellationToken cancellationToken = default)
     {

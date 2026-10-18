@@ -34,16 +34,18 @@ día**, de modo que **las fechas de compra dejan de ser necesarias** y desaparec
 
 ## Lo que necesito de ti (el detalle)
 
-**Nada, hoy.** El remoto existe (`github.com/Komodosys/PortaFolioAcciones`), `main` y `rediseno-daisyui` están
-subidas, y el trabajo del 2026-10-18 está en local pendiente de confirmar y empujar.
+**Nada, hoy.** El remoto existe (`github.com/Komodosys/PortaFolioAcciones`) y **las dos ramas están subidas y
+fusionadas**: `main` y `rediseno-daisyui` apuntan al mismo contenido, el trabajo del 2026-10-18 está confirmado y
+publicado.
 
 Lo único que hay que **decidir**, no hacer:
 
 | # | Qué | Por qué |
 |---|---|---|
-| 1 | **Los 53 commits de `rediseno-daisyui` no están en `main`** | Llevan ahí desde antes de esta sesión. Mientras no se fusionen, `main` —que es lo que se clona— no tiene ni el rediseño ni la reconstrucción de la cuenta. Es una decisión tuya, no un paso técnico: fusionar y subir es un comando |
+| 1 | ~~Los commits de `rediseno-daisyui` fuera de `main`~~ | **Hecho el 2026-10-18.** Fusionado y subido; `main` ya tiene el rediseño y la reconstrucción de la cuenta |
 | 2 | **Programar el respaldo** | `programar-respaldo.cmd` **no se ha ejecutado**: crear una tarea en tu equipo es decisión tuya, y además solo funciona si Docker está arrancado a las 03:00. Hoy hay 9 copias hechas a mano; sin la tarea, no hay ninguna automática |
 | 3 | **El efecto divisa del coste (2.982,24 CAD)** | Es la única diferencia que queda sin explicar *presentada al lado*. Se arregla con la hoja de ruta nº 2, que es una pantalla, no un retoque |
+| 4 | **El efectivo de la curva de evolución** | El último punto de la serie da 2.269 CAD frente a los −1.050,39 del lector de efectivo. Es un fallo **mío**, no una decisión tuya, y está abierto |
 
 ### La publicación: hecho y comprobado
 

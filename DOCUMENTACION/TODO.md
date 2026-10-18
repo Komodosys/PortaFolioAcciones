@@ -43,7 +43,7 @@ Lo único que hay que **decidir**, no hacer:
 | # | Qué | Por qué |
 |---|---|---|
 | 1 | ~~Los commits de `rediseno-daisyui` fuera de `main`~~ | **Hecho el 2026-10-18.** Fusionado y subido; `main` ya tiene el rediseño y la reconstrucción de la cuenta |
-| 2 | **Programar el respaldo** | `programar-respaldo.cmd` **no se ha ejecutado**: crear una tarea en tu equipo es decisión tuya, y además solo funciona si Docker está arrancado a las 03:00. Hoy hay 9 copias hechas a mano; sin la tarea, no hay ninguna automática |
+| 2 | ~~Programar el respaldo~~ | **Hecho el 2026-10-18**: la tarea existe, está probada y devuelve resultado 0. Corre a las 03:00, se recupera si el equipo estaba apagado y no se solapa. Sigue dependiendo de que Docker esté arrancado a esa hora, y si no lo está lo deja escrito en el registro |
 | 3 | **El efecto divisa del coste (2.982,24 CAD)** | Es la única diferencia que queda sin explicar *presentada al lado*. Se arregla con la hoja de ruta nº 2, que es una pantalla, no un retoque |
 | 4 | **El efectivo de la curva de evolución** | El último punto de la serie da 2.269 CAD frente a los −1.050,39 del lector de efectivo. Es un fallo **mío**, no una decisión tuya, y está abierto |
 
@@ -1227,10 +1227,15 @@ resto es trabajo conocido. Tamaños orientativos: 🟢 pequeño · 🟡 medio ·
     cambia las fechas del sistema de ficheros, y entonces borraría los que no toca
   - Deja un **registro** en `respaldos\respaldo.log`. Cuando lo ejecuta el Programador de tareas, sin
     registro un respaldo que lleva un mes fallando no se distingue de uno que funciona
-  - [`programar-respaldo.cmd`](../programar-respaldo.cmd) lo deja programado a las 03:00 con una orden. **No
-    se ha ejecutado**: crear una tarea programada en el equipo de alguien es una decisión suya, y además solo
-    funciona si Docker está arrancado a esa hora. Se ejecuta como administrador, una vez, y se quita con
-    `schtasks /delete /tn "PortaFolio - respaldo" /f`
+  - [`programar-respaldo.cmd`](../programar-respaldo.cmd) lo deja programado a las 03:00 con una orden.
+    **Programado el 2026-10-18** y **probado a mano**: el respaldo se hizo, quedó comprobado y la tarea
+    devolvió resultado 0. Se quita con `schtasks /delete /tn "PortaFolio - respaldo" /f`
+    - **Tres ajustes que `schtasks` no pone**, y que son la diferencia entre «a las tres» y «cuando se pueda»:
+      **si el equipo estaba apagado o suspendido, la tarea se hace al arrancar**; **dos ejecuciones no se
+      solapan**; y **una ejecución colgada se corta a la hora**, no a las 72 que trae por defecto —con «no
+      lanzar otra encima», un cuelgue bloquearía el respaldo tres días sin que nadie se enterase
+    - **Sigue dependiendo de Docker**: la tarea corre en la sesión de quien la creó y Docker Desktop tiene que
+      estar arrancado. Si no lo está, la tarea falla y **lo deja escrito** en `respaldos\respaldo.log`
 - [x] **Restauración probada de verdad.** [`restaurar.cmd`](../restaurar.cmd) y
       [`herramientas/respaldo/restaurar.ps1`](../herramientas/respaldo/restaurar.ps1)
   - **Por omisión NO toca la base buena**: restaura en una base aparte, la de comprobación. Restaurar encima

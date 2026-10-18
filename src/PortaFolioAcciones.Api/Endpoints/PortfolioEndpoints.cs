@@ -283,6 +283,41 @@ internal static class PortfolioEndpoints
         .WithName("portfolios.movements")
         .WithSummary("Los movimientos de una cartera, del más reciente al más antiguo.");
 
+        // Corregir la apertura. Va aparte del alta de movimientos a proposito: una apertura no se anade, se
+        // reemplaza, y tenerlo en su propio boton deja claro que solo hay una.
+        group.MapPut("/{id:guid}/opening", async Task<IResult> (
+            Guid id,
+            CashMovementRequest peticion,
+            IPortfolioRepository carteras,
+            IMovementRepository movimientos,
+            TimeProvider reloj,
+            CancellationToken cancelacion) =>
+        {
+            var cartera = await carteras.FindAsync(id, cancelacion);
+
+            if (cartera is null)
+            {
+                return NoEncontrada();
+            }
+
+            var dia = peticion.OccurredOn ?? DateOnly.FromDateTime(reloj.GetUtcNow().UtcDateTime);
+
+            // La moneda de la cartera si no se dice otra, que es lo normal: el efectivo de una cuenta esta en
+            // su moneda.
+            var moneda = peticion.Currency ?? cartera.BaseCurrency ?? Currency.Cad.Code;
+
+            var resumen = await movimientos.CorrectOpeningAsync(
+                id, peticion.Amount, moneda, dia, peticion.Notes, cancelacion);
+
+            return resumen is null
+                ? Results.Problem(
+                    title: "movement.invalid_amount",
+                    detail: "El importe de la apertura tiene que ser mayor que cero.",
+                    statusCode: StatusCodes.Status400BadRequest)
+                : Results.Ok(resumen);
+        })
+        .WithName("portfolios.opening")
+        .WithSummary("Corrige la apertura de la cartera. Hay una sola: se reemplaza, no se suma.");
         group.MapPost("/{id:guid}/movements", async Task<IResult> (
             Guid id,
             CashMovementRequest peticion,

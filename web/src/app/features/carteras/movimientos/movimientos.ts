@@ -36,6 +36,59 @@ export class MovimientosDeCartera {
   /** El saldo de efectivo, calculado por el servidor desde la apertura. */
   readonly saldo = signal<SaldoDeEfectivo | null>(null);
 
+  /** Si se esta corrigiendo la apertura. */
+  readonly corrigiendo = signal(false);
+
+  /**
+   * Lo que se esta escribiendo para corregirla.
+   *
+   * **En senales y no en campos.** La aplicacion es sin zona: un campo normal cambia y la pantalla no se
+   * entera, asi que el formulario pareceria no responder.
+   */
+  readonly correccion = signal({ amount: 0, currency: 'CAD', occurredOn: '', notes: '' });
+
+  /** La apertura guardada, para poder corregirla. */
+  readonly aperturaActual = computed(() => this.movimientos().find((m) => m.kind === 'Opening') ?? null);
+
+  abrirCorreccion(): void {
+    const actual = this.aperturaActual();
+
+    this.correccion.set({
+      amount: actual?.amount ?? 0,
+      currency: actual?.currency ?? 'CAD',
+      occurredOn: actual?.occurredOn ?? '',
+      notes: actual?.notes ?? '',
+    });
+
+    this.corrigiendo.set(true);
+  }
+
+  cambiarCorreccion(campo: string, valor: unknown): void {
+    this.correccion.update((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  async guardarCorreccion(): Promise<void> {
+    const datos = this.correccion();
+    this.guardando.set(true);
+
+    try {
+      await this.api.corregirApertura(this.id(), {
+        tipo: 'Opening',
+        importe: datos.amount,
+        moneda: datos.currency,
+        dia: datos.occurredOn || null,
+        notas: datos.notes || null,
+      });
+
+      this.corrigiendo.set(false);
+      await this.cargar();
+    } catch (error) {
+      this.fallo.set(this.claveDe(error));
+    } finally {
+      this.guardando.set(false);
+    }
+  }
+
   /**
    * Un importe escrito como se escribe el dinero: dos decimales y el código de la moneda.
    *

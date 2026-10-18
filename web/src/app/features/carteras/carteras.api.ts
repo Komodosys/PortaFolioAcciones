@@ -114,6 +114,16 @@ export class CarterasApi {
   }
 
   /**
+   * Corrige la apertura de la cartera.
+   *
+   * **Hay una sola y se reemplaza**: declarar otra no se suma a la anterior. Si se declara dos veces el mismo
+   * dinero, el saldo saldría al doble, y eso es justo lo que no puede pasar.
+   */
+  corregirApertura(id: string, apertura: NuevoMovimiento): Promise<Movimiento> {
+    return firstValueFrom(this.http.put<Movimiento>(`/api/portfolios/${id}/opening`, apertura));
+  }
+
+  /**
    * El saldo de efectivo de la cartera, calculado desde la apertura declarada.
    *
    * isKnown es falso cuando no hay apertura o cuando algun importe no se pudo convertir. En ese caso el

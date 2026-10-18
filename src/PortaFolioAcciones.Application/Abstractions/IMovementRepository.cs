@@ -35,6 +35,21 @@ public interface IMovementRepository
     /// <param name="cancellationToken">Cancelación.</param>
     /// <exception cref="ArgumentException">Si la moneda no tiene forma de código.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Si el importe no es positivo.</exception>
+    /// <summary>
+    /// Corrige la apertura de una cartera, o la crea si no habia.
+    ///
+    /// **Una sola apertura.** Declarar otra no se suma a la anterior: la reemplaza. Dos aperturas del mismo
+    /// dinero lo contarian dos veces, y el saldo saldria al doble. Las que sobraran se retiran.
+    /// </summary>
+    /// <returns>La apertura corregida, o <c>null</c> si el importe no vale.</returns>
+    public Task<MovementSummary?> CorrectOpeningAsync(
+        Guid portfolioId,
+        decimal amount,
+        string currency,
+        DateOnly occurredOn,
+        string? notes,
+        CancellationToken cancellationToken = default);
+
     public Task<MovementSummary> AddCashAsync(
         Guid portfolioId,
         string kind,

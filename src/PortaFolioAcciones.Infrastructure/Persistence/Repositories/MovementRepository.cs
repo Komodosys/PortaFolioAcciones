@@ -61,6 +61,54 @@ internal sealed class MovementRepository : IMovementRepository
         ];
     }
 
+    public async Task<MovementSummary?> CorrectOpeningAsync(
+        Guid portfolioId,
+        decimal amount,
+        string currency,
+        DateOnly occurredOn,
+        string? notes,
+        CancellationToken cancellationToken = default)
+    {
+        if (amount <= 0m)
+        {
+            return null;
+        }
+
+        var importe = Money.Of(amount, Currency.FromCode(currency));
+        var ocurridoEl = occurredOn;
+
+        var apertura = await _context.Movements
+            .Where(movimiento => movimiento.PortfolioId == portfolioId
+                                 && movimiento.Kind == MovementKind.Opening)
+            .OrderByDescending(movimiento => movimiento.OccurredOn)
+            .ThenByDescending(movimiento => movimiento.CreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (apertura is null)
+        {
+            // No habia ninguna: se crea, y ya esta.
+            return await AddCashAsync(
+                portfolioId, "Opening", amount, currency, occurredOn, notes, cancellationToken);
+        }
+
+        apertura.CorregirApertura(importe, ocurridoEl, notes);
+
+        apertura.SetRateUsed(await _context.DelDiaAsync(
+            portfolioId, importe.Currency, ocurridoEl, cancellationToken));
+
+        // Las demas aperturas que hubiera se retiran: vale la ultima, y dejar las viejas haria dudar de cual manda.
+        var sobrantes = await _context.Movements
+            .Where(movimiento => movimiento.PortfolioId == portfolioId
+                                 && movimiento.Kind == MovementKind.Opening
+                                 && movimiento.Id != apertura.Id)
+            .ToListAsync(cancellationToken);
+
+        _context.Movements.RemoveRange(sobrantes);
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return AResumen(apertura, symbol: null);
+    }
     public async Task<MovementSummary> AddCashAsync(
         Guid portfolioId,
         string kind,

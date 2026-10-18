@@ -48,6 +48,31 @@ public sealed class Movement
 
     /// <summary>Constructor sin parámetros para el mapeo de la base de datos.</summary>
     /// <summary>
+    /// Corrige una apertura ya declarada.
+    ///
+    /// **No se crea otra**: dos aperturas del mismo dinero lo contarian dos veces. Se corrige la que hay, y el
+    /// flujo de caja sigue siendo cero porque no es dinero que entrara, es el punto de partida.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Si el movimiento no es una apertura.</exception>
+    public void CorregirApertura(Money importe, DateOnly ocurridoEl, string? notas = null)
+    {
+        ArgumentNullException.ThrowIfNull(importe);
+
+        if (Kind is not MovementKind.Opening)
+        {
+            throw new InvalidOperationException(
+                "Solo se corrige una apertura. Este movimiento es de tipo {Kind}.");
+        }
+
+        Amount = importe;
+        OccurredOn = ocurridoEl;
+        Notes = notas;
+
+        // El tipo se rehace: si cambio la fecha, el tipo de la anterior ya no vale.
+        RateUsed = null;
+    }
+
+    /// <summary>
     /// Anota el tipo de cambio del dia. **Solo se pone una vez**: el tipo de un movimiento es un hecho del dia en
     /// que ocurrio, y poder cambiarlo despues seria poder reescribir el pasado.
     /// </summary>

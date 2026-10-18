@@ -84,7 +84,21 @@ internal sealed class CashReader : ICashReader
             return total;
         }
 
-        var declarado = Suma(MovementKind.Opening);
+        // **Una sola apertura, la ultima.** Sumarlas seria sumar la correccion a lo corregido: declarar dos
+        // veces el mismo dinero lo contaria dos veces, y el saldo saldria al doble.
+        var declarado = 0m;
+
+        if (apertura is not null)
+        {
+            if (apertura.AmountIn(moneda) is { } importeDeLaApertura)
+            {
+                declarado = importeDeLaApertura.Amount;
+            }
+            else
+            {
+                sinConvertir++;
+            }
+        }
         var aportado = Suma(MovementKind.Deposit);
         var retirado = Suma(MovementKind.Withdrawal);
         var vendido = Suma(MovementKind.Sale);

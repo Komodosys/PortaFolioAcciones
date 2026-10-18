@@ -114,8 +114,10 @@ internal static class MarketEndpoints
                 return DemasiadoPronto(contexto, espera);
             }
 
-            // Los mismos cinco años que los precios: no tiene sentido tener cierres de 2021 y tipos desde 2025.
-            var desde = DateOnly.FromDateTime(reloj.GetUtcNow().UtcDateTime).AddYears(-5);
+            // Diez años, no cinco como los precios: los tipos viejos hacen falta para convertir movimientos
+            // antiguos, y una apertura puede ser de hace mas años que la primera compra que se registre. Pedir de
+            // mas cuesta lo mismo —una peticion por par— que pedir de menos y quedarse sin el dato.
+            var desde = DateOnly.FromDateTime(reloj.GetUtcNow().UtcDateTime).AddYears(-10);
 
             return Results.Ok(await colector.BackfillFxAsync(desde, cancelacion));
         })

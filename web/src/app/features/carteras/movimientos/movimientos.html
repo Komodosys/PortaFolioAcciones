@@ -44,10 +44,18 @@
         </p>
 
         @if (efectivo.isKnown) {
-          <p class="mt-1 text-3xl font-bold text-slate-800">{{ efectivo.balance }} {{ efectivo.currency }}</p>
+          <p class="mt-1 text-3xl font-bold" [class.text-slate-800]="efectivo.balance >= 0">{{ efectivo.balance }} {{ efectivo.currency }}</p>
           <p class="mt-1 text-xs text-slate-400">
             {{ t('movimiento.saldoDesde', { dia: efectivo.since }) }}
           </p>
+
+          <!-- Un saldo negativo casi siempre significa que la apertura se declaró como el efectivo y no como lo
+               puesto en total. Se avisa, en vez de enseñar el número y dejarlo pasar. -->
+          @if (efectivo.balance < 0) {
+            <div class="alert alert-warning mt-3 py-2.5 text-sm" role="status">
+              <span>{{ t('movimiento.saldoNegativo') }}</span>
+            </div>
+          }
         } @else if (efectivo.since === null) {
           <!-- Sin apertura no hay saldo: se dice lo que hay que hacer, no un número que no significa nada. -->
           <div class="alert alert-warning mt-2 py-2.5 text-sm" role="status">

@@ -88,6 +88,12 @@ internal sealed class MovementRepository : IMovementRepository
                 nameof(kind), kind, "Solo se pueden registrar aportaciones y retiros."),
         };
 
+        // El tipo del dia del movimiento, para poder llevar el importe a la moneda de la cartera. Sin el, una
+        // apertura en dolares no se puede convertir y el saldo entero se queda en «no se sabe» — que es
+        // exactamente lo que paso.
+        movimiento.SetRateUsed(await _context.DelDiaAsync(
+            portfolioId, importe.Currency, occurredOn, cancellationToken));
+
         _context.Movements.Add(movimiento);
         await _context.SaveChangesAsync(cancellationToken);
 

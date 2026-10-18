@@ -380,6 +380,9 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
         // Y con los tipos ya guardados, se les pone el suyo a los lotes que no lo tenían.
         await AnotarTiposDeLosLotesAsync(contexto, cancellationToken);
 
+        // Y a los movimientos, que es lo que deja el saldo en «no se sabe» cuando la apertura está en dólares.
+        await AnotarTiposDeLosMovimientosAsync(contexto, cancellationToken);
+
         _registro.LogInformation(
             "Relleno de divisa desde {Desde}: {Pares} pares, {Nuevos} tipos nuevos, {Repetidos} ya estaban, {SinSerie} sin serie.",
             desde, pares, nuevos, repetidos, sinSerie);
@@ -515,6 +518,48 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
             await contexto.SaveChangesAsync(cancellationToken);
 
             _registro.LogInformation("Tipos anotados a {Anotados} lotes con el histórico de divisa.", anotados);
+        }
+
+        return anotados;
+    }
+    /// <summary>
+    /// Anota el tipo de cambio a los movimientos que no lo tienen, con el histórico ya cargado.
+    ///
+    /// Sirve para reparar los que se registraron antes de que el alta guardara el tipo: una apertura en dólares
+    /// sin tipo deja el saldo entero en «no se sabe», porque no hay forma de llevarla a la moneda de la cartera.
+    /// </summary>
+    private async Task<int> AnotarTiposDeLosMovimientosAsync(
+        PortafolioDbContext contexto,
+        CancellationToken cancellationToken)
+    {
+        var movimientos = await contexto.Movements
+            .Where(movimiento => movimiento.RateUsed == null)
+            .ToListAsync(cancellationToken);
+
+        if (movimientos.Count == 0)
+        {
+            return 0;
+        }
+
+        var anotados = 0;
+
+        foreach (var movimiento in movimientos)
+        {
+            var tasa = await contexto.DelDiaAsync(
+                movimiento.PortfolioId, movimiento.Amount.Currency, movimiento.OccurredOn, cancellationToken);
+
+            if (tasa is > 0m)
+            {
+                movimiento.SetRateUsed(tasa);
+                anotados++;
+            }
+        }
+
+        if (anotados > 0)
+        {
+            await contexto.SaveChangesAsync(cancellationToken);
+
+            _registro.LogInformation("Tipos anotados a {Anotados} movimientos con el historico de divisa.", anotados);
         }
 
         return anotados;

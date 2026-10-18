@@ -47,6 +47,18 @@ public sealed class Movement
     }
 
     /// <summary>Constructor sin parámetros para el mapeo de la base de datos.</summary>
+    /// <summary>
+    /// Anota el tipo de cambio del dia. **Solo se pone una vez**: el tipo de un movimiento es un hecho del dia en
+    /// que ocurrio, y poder cambiarlo despues seria poder reescribir el pasado.
+    /// </summary>
+    public void SetRateUsed(decimal? rateUsed)
+    {
+        if (rateUsed is > 0m)
+        {
+            RateUsed = rateUsed;
+        }
+    }
+
     private Movement()
     {
         Amount = Money.Of(0m, Currency.Cad);

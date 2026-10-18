@@ -238,6 +238,12 @@
       <ul class="list-none space-y-3 p-0">
         @for (movimiento of movimientos(); track movimiento.id) {
           <li class="flex flex-wrap items-center gap-3 rounded-3xl bg-white p-4 shadow-sm">
+            <!--
+              El color dice lo que el movimiento significa para lo aportado, no si el dinero entró o salió: verde
+              es dinero puesto, gris es dinero sacado, y el ámbar es todo lo demás. **Los traspasos van en ámbar a
+              propósito**: entra o sale dinero, pero no lo pone ni se lo lleva nadie, y pintarlos de verde haría
+              creer que son aportaciones.
+            -->
             <span
               class="badge badge-sm"
               [class]="

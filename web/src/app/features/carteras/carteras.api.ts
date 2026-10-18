@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { Movimiento, NuevoMovimiento, ResumenDeCartera, SaldoDeEfectivo, VistaDeCartera } from './modelos';
+import { EvolucionDeCartera, Movimiento, NuevoMovimiento, ResumenDeCartera, SaldoDeEfectivo, VistaDeCartera } from './modelos';
 
 /**
  * El acceso a la API de carteras.
@@ -54,6 +54,21 @@ export class CarterasApi {
    */
   vista(id: string): Promise<VistaDeCartera> {
     return firstValueFrom(this.http.get<VistaDeCartera>(`/api/portfolios/${id}/view`));
+  }
+
+  /**
+   * La evolución de una cartera en el tiempo.
+   *
+   * Los puntos los calcula el servidor: aquí no se suma ni se convierte nada, solo se dibuja. Y el periodo
+   * también lo traduce el servidor, porque «lo que va de año» es una regla de calendario y no una resta de días
+   * hecha en la pantalla.
+   *
+   * @param rango `5d`, `15d`, `1m`, `1a`, `ytd` o `todo`.
+   */
+  evolucion(id: string, rango = 'todo'): Promise<EvolucionDeCartera> {
+    return firstValueFrom(
+      this.http.get<EvolucionDeCartera>(`/api/portfolios/${id}/evolution`, { params: { rango } }),
+    );
   }
 
   /** Una cartera concreta. */

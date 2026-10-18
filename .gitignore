@@ -43,12 +43,23 @@ herramientas/pdf-extract/salida-2026/
 herramientas/pdf-extract/**/*.csv
 herramientas/pdf-extract/**/*.log
 
+# La reconstruccion de la cuenta de siete años: su salida es el extracto entero, con el numero de cuenta
+# y con todos los importes. Se regenera con `extraer.mjs` sobre los PDF, que viven fuera del repositorio.
+herramientas/estados-126/salida/
+herramientas/estados-126/**/*.json
+herramientas/estados-126/**/*.csv
+
 # Los CSV de trabajo de la raiz, por el mismo motivo.
 /actividades.csv
 /listado.csv
 /lotes.csv
 /posiciones-todos-los-estados.csv
 /reconciliacion.csv
+
+# La lista de movimientos de la cuenta de siete años, guardada en DOCUMENTACION/ para no tener que
+# extraerla otra vez. Es documentacion de trabajo, pero NO se publica: lleva el numero de cuenta y todos
+# los importes de la familia, que es justo lo que el resto de este bloque mantiene fuera.
+/DOCUMENTACION/movimientos.csv
 
 # Y los de la prueba de cobertura: la lista de instrumentos es la composicion real de la cartera, y el
 # informe es su salida. Los tickers sueltos no identifican a nadie, pero es informacion financiera de la

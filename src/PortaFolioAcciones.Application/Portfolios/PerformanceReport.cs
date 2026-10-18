@@ -12,11 +12,16 @@ namespace PortaFolioAcciones.Application.Portfolios;
 /// <param name="CashValue">El dinero que hay en la cuenta.</param>
 /// <param name="CostBasis">Lo que costaron esas mismas posiciones.</param>
 /// <param name="UnrealizedGain"><paramref name="MarketValue"/> menos <paramref name="CostBasis"/>.</param>
-/// <param name="Contributed">El dinero que ha entrado desde fuera.</param>
-/// <param name="Withdrawn">El dinero que ha salido hacia fuera.</param>
+/// <param name="Contributed">
+/// El dinero que ha entrado desde fuera, <b>en la moneda de la fila</b>. Nulo si algún movimiento está en otra
+/// moneda y no se guardó su tipo: una suma a la que le falta una parte se leería como el total.
+/// </param>
+/// <param name="Withdrawn">El dinero que ha salido hacia fuera, en la moneda de la fila. Nulo, igual que
+/// <paramref name="Contributed"/>.</param>
 /// <param name="RealizedGain">
-/// Lo ganado en lo ya vendido. <b>Nulo</b> si alguna venta no tiene el coste guardado —las anteriores a que
-/// ese dato existiera—: devolver cero diría que no se ganó nada, y no es lo mismo que no saberlo.
+/// Lo ganado en lo ya vendido, en la moneda de la fila. <b>Nulo</b> si alguna venta no tiene el coste guardado
+/// —las anteriores a que ese dato existiera—: devolver cero diría que no se ganó nada, y no es lo mismo que no
+/// saberlo.
 /// </param>
 /// <param name="SnapshotDate">
 /// El día al que corresponden <paramref name="MarketValue"/> y <paramref name="CostBasis"/>. Se dice porque
@@ -37,14 +42,17 @@ public sealed record PerformanceRow(
     decimal CashValue,
     decimal CostBasis,
     decimal UnrealizedGain,
-    decimal Contributed,
-    decimal Withdrawn,
+    decimal? Contributed,
+    decimal? Withdrawn,
     decimal? RealizedGain,
     DateOnly? SnapshotDate,
-    bool HasOpening)
+    bool HasOpening,
+    decimal? TransfersIn = null,
+    decimal? TransfersOut = null)
 {
     /// <summary>
-    /// Lo ganado de verdad: el total menos lo aportado neto. **Nulo si no hay apertura declarada.**
+    /// Lo ganado de verdad: el total menos el dinero que entró <b>sin ser ganancia</b>. **Nulo si no hay
+    /// apertura declarada**, si falta la foto, o si alguna de las partes no se pudo sumar entera.
     ///
     /// Sin apertura, «lo aportado» son solo las aportaciones que se hayan anotado, y las posiciones que ya
     /// estaban no aparecerian como puestas: la ganancia saldria enorme y falsa. Nulo dice «no se sabe», que es
@@ -53,13 +61,24 @@ public sealed record PerformanceRow(
     /// **Y sin foto tampoco**, por el mismo motivo: los importes de la fila salen de la foto del dia, y una
     /// cartera creada despues de la ultima recogida los tiene a cero. Restarle lo aportado a cero no es una
     /// perdida: es que todavia no se sabe.
+    ///
+    /// **Y los traspasos se restan.** Un traspaso desde otra cuenta del titular no es ganancia, igual que no es
+    /// una aportacion: sin restarlo, esta cifra diria que se gano todo lo que se movio de sitio. Se vio con la
+    /// cuenta de siete años, donde los traspasos son 13.205,66 CAD de los 55.354,30 que salian como ganados.
     /// </summary>
-    public decimal? Gain => HasOpening && SnapshotDate is not null
-        ? TotalValue - NetContributed
+    public decimal? Gain => HasOpening && SnapshotDate is not null && NetContributed is { } neto && NetTransfers is { } traspasos
+        ? TotalValue - neto - traspasos
         : null;
 
-    /// <summary>Lo que se puso y no se ha retirado.</summary>
-    public decimal NetContributed => Contributed - Withdrawn;
+    /// <summary>Lo que se puso y no se ha retirado. Nulo si falta una de las dos partes.</summary>
+    public decimal? NetContributed => Contributed is { } puesto && Withdrawn is { } sacado
+        ? puesto - sacado
+        : null;
+
+    /// <summary>Lo que entró y salió por traspaso, neto. Nulo si falta una de las dos partes.</summary>
+    public decimal? NetTransfers => TransfersIn is { } entrado && TransfersOut is { } salido
+        ? entrado - salido
+        : null;
 
     /// <summary>
     /// Lo que vale la cartera entera: las posiciones **mas el efectivo**.

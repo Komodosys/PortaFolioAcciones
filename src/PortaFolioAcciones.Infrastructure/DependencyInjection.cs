@@ -53,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<IPerformanceReader, PerformanceReader>();
         services.AddScoped<ICashReader, CashReader>();
         services.AddScoped<IPortfolioViewReader, PortfolioViewReader>();
+        services.AddScoped<IPortfolioEvolutionReader, PortfolioEvolutionReader>();
         services.AddScoped<ILastKnownPrice, LastKnownPriceReader>();
 
         // -------------------------------------------------------------------------------------

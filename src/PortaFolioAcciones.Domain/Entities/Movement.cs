@@ -251,6 +251,52 @@ public sealed class Movement
     }
 
     /// <summary>
+    /// Dinero que entra por un traspaso desde otra cuenta del mismo titular.
+    ///
+    /// **No es una aportación**, y por eso tiene su propio tipo en vez de usar <see cref="Deposit"/>. En una
+    /// cuenta de jubilación una aportación consume espacio de cotización y un traspaso no: si se registrara como
+    /// aportación, el informe diría que se puso dinero que no se puso, y la ganancia saldría corta justo en lo
+    /// que valga el traspaso.
+    /// </summary>
+    public static Movement TransferIn(
+        Guid portfolioId,
+        Money amount,
+        DateOnly occurredOn,
+        string? notes,
+        DateTimeOffset now,
+        decimal? rateUsed = null)
+    {
+        ArgumentNullException.ThrowIfNull(amount);
+        ExigirCartera(portfolioId);
+        ExigirPositivo(amount, nameof(amount));
+
+        return new Movement(
+            Guid.NewGuid(), portfolioId, MovementKind.TransferIn, occurredOn, amount,
+            positionId: null, quantity: null, pricePerUnit: null, notes, now, rateUsed);
+    }
+
+    /// <summary>
+    /// Dinero que sale hacia otra cuenta del mismo titular. **No es un retiro**: el dinero no se lo llevó nadie,
+    /// sigue siendo de la misma persona en otra cuenta.
+    /// </summary>
+    public static Movement TransferOut(
+        Guid portfolioId,
+        Money amount,
+        DateOnly occurredOn,
+        string? notes,
+        DateTimeOffset now,
+        decimal? rateUsed = null)
+    {
+        ArgumentNullException.ThrowIfNull(amount);
+        ExigirCartera(portfolioId);
+        ExigirPositivo(amount, nameof(amount));
+
+        return new Movement(
+            Guid.NewGuid(), portfolioId, MovementKind.TransferOut, occurredOn, amount,
+            positionId: null, quantity: null, pricePerUnit: null, notes, now, rateUsed);
+    }
+
+    /// <summary>
     /// Una venta: cuántas unidades, a qué precio y **cuánto habían costado**.
     ///
     /// El importe <b>se calcula</b> y no se recibe. Si se pudiera pasar, alguien podría registrar «10 unidades
@@ -336,7 +382,9 @@ public sealed class Movement
     }
 
     /// <summary>Dice si es dinero que entra o sale, en vez de una operación sobre un valor.</summary>
-    public bool IsCash => Kind is MovementKind.Deposit or MovementKind.Withdrawal;
+    public bool IsCash =>
+        Kind is MovementKind.Deposit or MovementKind.Withdrawal
+            or MovementKind.TransferIn or MovementKind.TransferOut;
 
     /// <summary>
     /// El efecto sobre el dinero <b>aportado</b>: positivo si entró y negativo si salió.
@@ -346,6 +394,11 @@ public sealed class Movement
     ///
     /// Y <b>la apertura tampoco</b>: no es dinero que se aportara estando la aplicación mirando, es el punto
     /// de partida de una cuenta que ya tenía dinero. Se cuenta aparte, en el informe, y se dice.
+    ///
+    /// **Y un traspaso tampoco, aunque mueva efectivo.** Por eso cae en el caso por defecto y devuelve cero, y
+    /// no su importe: que <see cref="IsCash"/> sea cierto no significa que cambie lo aportado. Son dos preguntas
+    /// distintas —«¿se movió dinero?» y «¿puse dinero nuevo?»— y mezclarlas es justo el error que estos dos
+    /// tipos existen para evitar.
     /// </summary>
     public Money CashFlow() => Kind switch
     {

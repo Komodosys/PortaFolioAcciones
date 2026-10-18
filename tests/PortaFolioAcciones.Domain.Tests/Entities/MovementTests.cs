@@ -88,6 +88,43 @@ public sealed class MovementTests
     }
 
     [Fact]
+    public void Un_traspaso_tambien_es_dinero_que_se_mueve()
+    {
+        // Entra o sale dinero de la cuenta, asi que para el SALDO es dinero. Lo que no cambia es lo aportado, y
+        // esa es la prueba siguiente.
+        Assert.True(Movement.TransferIn(Cartera, Canadiense(1m), Dia, null, Ahora).IsCash);
+        Assert.True(Movement.TransferOut(Cartera, Canadiense(1m), Dia, null, Ahora).IsCash);
+    }
+
+    [Fact]
+    public void Un_traspaso_NO_cambia_lo_aportado()
+    {
+        // Es la razon de existir del tipo: si fuera un deposito, el informe diria que se puso dinero que no se
+        // puso, y la ganancia saldria corta justo en lo que valga el traspaso. En una cuenta de jubilacion no es
+        // un matiz: una aportacion consume espacio de cotizacion y un traspaso no.
+        var recibido = Movement.TransferIn(Cartera, Canadiense(12_064.86m), Dia, "traspaso desde otra cuenta", Ahora);
+        var enviado = Movement.TransferOut(Cartera, Canadiense(900m), Dia, "traspaso a otra cuenta", Ahora);
+
+        Assert.True(recibido.CashFlow().IsZero);
+        Assert.True(enviado.CashFlow().IsZero);
+
+        // Y para que la prueba signifique algo, el mismo importe como aportacion SI mueve lo aportado.
+        Assert.Equal(12_064.86m, Movement.Deposit(Cartera, Canadiense(12_064.86m), Dia, null, Ahora).CashFlow().Amount);
+        Assert.Equal(-900m, Movement.Withdrawal(Cartera, Canadiense(900m), Dia, null, Ahora).CashFlow().Amount);
+    }
+
+    [Fact]
+    public void Un_traspaso_exige_importe_mayor_que_cero()
+    {
+        // El signo lo pone el tipo, no el importe: un traspaso «de menos 900» seria un traspaso en la direccion
+        // contraria escrito al reves, y dos formas de decir lo mismo acaban discrepando.
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => Movement.TransferIn(Cartera, Canadiense(0m), Dia, null, Ahora));
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => Movement.TransferOut(Cartera, Canadiense(-1m), Dia, null, Ahora));
+    }
+
+    [Fact]
     public void El_flujo_de_caja_suma_lo_que_entra_y_resta_lo_que_sale()
     {
         var aportacion = Movement.Deposit(Cartera, Canadiense(5_000m), Dia, null, Ahora);

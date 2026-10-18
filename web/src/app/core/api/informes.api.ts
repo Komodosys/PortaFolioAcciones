@@ -18,8 +18,28 @@ export interface FilaDeRendimiento {
   readonly cashValue: string | number;
   readonly costBasis: string | number;
   readonly unrealizedGain: string | number;
-  readonly contributed: string | number;
-  readonly withdrawn: string | number;
+
+  /**
+   * Lo que ha entrado desde fuera, **en la moneda de la fila**, o nulo si no se pudo sumar entero.
+   *
+   * Nulo y no una suma parcial: si algún movimiento está en otra moneda y no tiene tipo de cambio guardado, la
+   * suma a la que le falta una parte se leería como el total. Es la misma regla que la ganancia realizada.
+   */
+  readonly contributed: string | number | null;
+
+  /** Lo que ha salido hacia fuera, en la moneda de la fila, o nulo por el mismo motivo. */
+  readonly withdrawn: string | number | null;
+
+  /**
+   * Lo que ha entrado por traspaso desde otra cuenta del titular, en la moneda de la fila.
+   *
+   * Va aparte de `contributed` a propósito: **un traspaso no es una aportación** —el dinero ya era suyo— y
+   * tampoco es ganancia. Se resta en «lo ganado», o esa cifra diría que se ganó todo lo que se movió de sitio.
+   */
+  readonly transfersIn: string | number | null;
+
+  /** Lo que ha salido hacia otra cuenta del titular. */
+  readonly transfersOut: string | number | null;
 
   /**
    * Lo ganado en lo vendido, o **nulo** si alguna venta no tiene el coste guardado.

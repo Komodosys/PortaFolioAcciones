@@ -307,7 +307,9 @@
     "saldoNegativo": "El saldo sale negativo: la apertura es menor que lo que costó lo que hay en cartera. Una apertura tiene que ser lo que pusiste en total —lo que costó lo comprado más el efectivo—, no solo el efectivo que había.",
     "sinApertura": "Todavía no has declarado la apertura: lo que habías puesto en total en esta cuenta, contando lo que costó lo que ya estaba comprado. Y el saldo empezará a contarse desde ahí.",
     "saldoIncompleto": "El saldo no se puede dar como bueno: hay {{total}} movimiento(s) sin tipo de cambio, así que parte del dinero no se puede convertir.",
-      "Sale": "Venta"
+      "Sale": "Venta",
+      "TransferIn": "Traspaso recibido",
+      "TransferOut": "Traspaso enviado"
     },
     "saldo": "Efectivo",
     "saldoEnUsd": "Son unos {{usd}} al cambio de hoy (1 USD = {{tipo}} {{moneda}}). Solo informativo.",
@@ -323,6 +325,21 @@
     "invalid": "Ese movimiento no se puede anotar. Para una venta, usa la venta de la posición."
   },
   "informe": {
+    "evolucion": "Evolución",
+    "evolucionSubtitulo": "Lo que vale la cartera y lo que se había puesto, a lo largo del tiempo. La distancia entre las dos líneas es lo ganado.",
+    "elegirCartera": "Elige una cartera",
+    "evolucionSinElegir": "Elige una cartera para ver su evolución.",
+    "evolucionReconstruida": "Reconstruida desde los movimientos, los cierres y los tipos de cambio: no estaba registrada día a día.",
+    "evolucionDeFotos": "De las fotografías guardadas: es lo que se registró, día a día.",
+    "evolucionParcial": "Parcial: falta el precio de {{instrumentos}}, así que ese tramo está por debajo de lo que era.",
+    "evolucionEtiqueta": "Evolución del valor de la cartera y de lo puesto",
+    "rango": "Periodo",
+    "rango5d": "5 días",
+    "rango15d": "15 días",
+    "rango1m": "1 mes",
+    "rango1a": "1 año",
+    "rangoYtd": "Año en curso",
+    "rangoTodo": "Todo",
     "titulo": "Coste contra valor",
     "subtitulo": "Lo que vale cada cartera, lo que costó, lo que se ha aportado y lo que ya se ha vendido. Se puede filtrar por persona y por tipo de registro.",
     "avisoEfectivo": "Este informe mide las posiciones. La aplicación no lleva cuenta de efectivo, así que el dinero sin invertir no aparece en el valor.",
@@ -344,6 +361,7 @@
     "desconocida": "no se sabe",
     "aportado": "Aportado",
     "aportadoNeto": "Aportado neto",
+    "aportadoDesconocido": "no se sabe, falta el tipo de cambio de algún movimiento",
     "cartera": "Cartera",
     "sinFilas": "No hay carteras que enseñar con esos filtros.",
     "fechaDeLasCifras": "Cifras del",
@@ -364,5 +382,17 @@
     "cancelar": "Cancelar",
     "guardar": "Guardar",
     "error": "Ha ocurrido un error."
+  },
+  "grafico": {
+    "reparto": "Reparto",
+    "repartoEtiqueta": "Reparto del valor de la cartera",
+    "repartoParcial": "Falta el precio de alguna posición: el reparto es de lo que se sabe.",
+    "porInstrumento": "Por instrumento",
+    "porMoneda": "Por moneda",
+    "total": "Total",
+    "valor": "Valor",
+    "aportado": "Aportado",
+    "desdeHasta": "Del {{desde}} al {{hasta}}",
+    "sinDatos": "Todavía no hay datos que dibujar."
   }
 }

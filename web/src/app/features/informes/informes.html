@@ -82,7 +82,11 @@
 
         <div class="rounded-3xl bg-white p-5 shadow-lg">
           <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ t('informe.aportadoNeto') }}</p>
-          <p class="mt-1 text-2xl font-bold text-slate-800">{{ importe(total.aportado - total.retirado, total.moneda) }}</p>
+          @if (total.aportadoNeto === null) {
+            <p class="mt-1 text-sm font-semibold text-slate-400">{{ t('informe.aportadoDesconocido') }}</p>
+          } @else {
+            <p class="mt-1 text-2xl font-bold text-slate-800">{{ importe(total.aportadoNeto, total.moneda) }}</p>
+          }
         </div>
       </div>
 
@@ -95,6 +99,71 @@
         }
       </p>
     }
+
+    <!--
+      La evolución, cartera a cartera y a petición. No se dibuja la de todas a la vez: dos carteras con escalas
+      distintas en el mismo lienzo se comparan mal, y cada una cuenta una historia distinta.
+    -->
+    <div class="mb-6 rounded-3xl bg-white p-5 shadow-lg">
+      <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ t('informe.evolucion') }}</p>
+          <p class="mt-1 text-xs text-slate-500">{{ t('informe.evolucionSubtitulo') }}</p>
+        </div>
+
+        <label class="form-control min-w-[14rem]">
+          <select
+            class="select select-bordered select-sm"
+            [ngModel]="elegida()"
+            (ngModelChange)="verEvolucion($event)"
+            [attr.aria-label]="t('informe.evolucion')"
+          >
+            <option value="">{{ t('informe.elegirCartera') }}</option>
+            @for (fila of filas(); track fila.portfolioId) {
+              <option [value]="fila.portfolioId">{{ fila.name }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      @if (cargandoEvolucion()) {
+        <div class="flex items-center gap-3 text-slate-500">
+          <span class="loading loading-spinner loading-sm"></span>
+          <span class="text-sm">{{ t('app.cargando') }}</span>
+        </div>
+      } @else if (elegida() === '') {
+        <p class="text-sm text-slate-500">{{ t('informe.evolucionSinElegir') }}</p>
+      } @else if (evolucion(); as serie) {
+        <!-- El periodo. Va en botones y no en un desplegable porque son seis opciones y se comparan de un vistazo:
+             con un desplegable hay que abrirlo para saber qué se puede elegir. -->
+        <div class="join mb-3 flex-wrap" role="group" [attr.aria-label]="t('informe.rango')">
+          @for (opcion of rangos; track opcion.valor) {
+            <button
+              type="button"
+              class="btn btn-xs join-item"
+              [class]="rango() === opcion.valor ? 'btn-active' : ''"
+              [attr.aria-pressed]="rango() === opcion.valor"
+              (click)="cambiarRango(opcion.valor)"
+            >
+              {{ t(opcion.clave) }}
+            </button>
+          }
+        </div>
+        <!-- De dónde sale la serie. No es un detalle: una reconstrucción y una serie de fotos no son lo mismo, y
+             quien mira tiene derecho a saberlo. -->
+        <p class="mb-2 text-xs text-slate-400">
+          {{ serie.source === 'Reconstructed' ? t('informe.evolucionReconstruida') : t('informe.evolucionDeFotos') }}
+        </p>
+
+        @if (!serie.isComplete) {
+          <p class="mb-2 text-xs text-amber-700">
+            {{ t('informe.evolucionParcial', { instrumentos: serie.missingPrices.join(', ') }) }}
+          </p>
+        }
+
+        <app-linea [puntos]="puntosDeEvolucion()" [etiqueta]="t('informe.evolucionEtiqueta')" />
+      }
+    </div>
 
     @if (filas().length === 0) {
       <div class="rounded-3xl bg-white p-10 text-center shadow-lg">
@@ -139,7 +208,13 @@
                     {{ importe(fila.realizedGain, fila.currency) }}
                   }
                 </td>
-                <td class="text-right text-slate-600">{{ importe(fila.contributed, fila.currency) }}</td>
+                <td class="text-right text-slate-600">
+                  @if (fila.contributed === null) {
+                    <span class="text-slate-400">{{ t('informe.desconocida') }}</span>
+                  } @else {
+                    {{ importe(fila.contributed, fila.currency) }}
+                  }
+                </td>
               </tr>
             }
           </tbody>

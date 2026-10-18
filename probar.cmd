@@ -10,8 +10,16 @@ set "RAIZ=%~dp0"
 set "FALLO=0"
 cd /d "%RAIZ%"
 
+REM La bandera `-m:1` NO es opcional en este equipo, y sin ella el fallo es de los que hacen perder una tarde:
+REM "Build FAILED" con CERO errores y sin ningun mensaje. El aislamiento no deja a MSBuild abrir tuberias con
+REM nombre para sus nodos de trabajo, y con mas de uno la compilacion no llega a empezar.
+REM
+REM Si algun dia se ejecuta esto SIN salida a Internet, añadir tambien `-p:NuGetAudit=false`: la auditoria de
+REM vulnerabilidades de NuGet se queda sin poder consultar su listado y ese aviso (NU1900) lo convierte en error
+REM TreatWarningsAsErrors. No se deja puesta por defecto a proposito: apagaria una comprobacion de dependencias
+REM que este proyecto quiere tener.
 echo === Compilando ===
-dotnet build "%RAIZ%PortaFolioAcciones.slnx" --nologo -v q
+dotnet build "%RAIZ%PortaFolioAcciones.slnx" --nologo -v q -m:1
 if errorlevel 1 (
     echo.
     echo LA COMPILACION HA FALLADO

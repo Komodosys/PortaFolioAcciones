@@ -41,4 +41,22 @@ public enum MovementKind
     /// queda el intermediario.
     /// </summary>
     Commission = 5,
+
+    /// <summary>
+    /// Dinero que **entra** por un traspaso desde otra cuenta del mismo titular.
+    ///
+    /// Suma al efectivo igual que una aportación, pero **no es una aportación**: nadie puso dinero nuevo, el
+    /// dinero ya era suyo y solo cambió de cuenta. En una cuenta de jubilación la diferencia no es un matiz
+    /// —una aportación consume espacio de cotización y un traspaso no—, así que contarlos juntos diría que se
+    /// aportó mucho más de lo que se aportó, y la ganancia saldría corta justo en esa cantidad.
+    ///
+    /// Va aparte de <see cref="Deposit"/> por eso, y no por gusto de tener más tipos.
+    /// </summary>
+    TransferIn = 6,
+
+    /// <summary>
+    /// Dinero que **sale** hacia otra cuenta del mismo titular. Resta del efectivo, como un retiro, y **no es un
+    /// retiro**: el dinero no se lo llevó nadie, sigue siendo suyo, en otro sitio.
+    /// </summary>
+    TransferOut = 7,
 }

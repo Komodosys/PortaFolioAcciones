@@ -20,11 +20,16 @@ namespace PortaFolioAcciones.Infrastructure.Persistence.Repositories;
 /// Con la apertura entendida así, el saldo es:
 ///
 /// <code>
-/// efectivo = apertura + aportaciones − retiros + ventas − TODO lo comprado
+/// efectivo = apertura + aportaciones − retiros + traspasos recibidos − traspasos enviados
+///            + ventas + dividendos − comisiones − TODO lo comprado
 /// </code>
 ///
 /// Y entonces lo ganado —total menos aportado neto— sale igual a la ganancia no realizada más la realizada,
 /// que es la comprobación de que el modelo está bien montado.
+///
+/// **Los traspasos se suman al efectivo y son aparte de las aportaciones.** El dinero se movió —por eso entran
+/// en esta cuenta—, pero no lo puso nadie: ya era del titular, en otra cuenta. Por eso no van dentro de
+/// <c>aportado</c>, que es lo que hace de contrapeso del total para calcular lo ganado.
 /// </remarks>
 internal sealed class CashReader : ICashReader
 {
@@ -108,6 +113,13 @@ internal sealed class CashReader : ICashReader
         }
         var aportado = SumaDesde(MovementKind.Deposit);
         var retirado = SumaDesde(MovementKind.Withdrawal);
+
+        // Los traspasos mueven efectivo igual que una aportacion o un retiro, pero NO son dinero puesto: el
+        // dinero ya era del titular y solo cambio de cuenta. Se suman aqui, y se dejan FUERA de `aportado`, que
+        // es contra lo que se mide lo ganado.
+        var transferidoEntrada = SumaDesde(MovementKind.TransferIn);
+        var transferidoSalida = SumaDesde(MovementKind.TransferOut);
+
         var vendido = SumaDesde(MovementKind.Sale);
 
         // Un dividendo entra y una comision sale. Ninguno es dinero aportado: el dividendo es ganancia y la
@@ -169,7 +181,8 @@ internal sealed class CashReader : ICashReader
             }
         }
 
-        var saldo = declarado + aportado - retirado + vendido + dividendos - comisiones - comprado;
+        var saldo = declarado + aportado - retirado + transferidoEntrada - transferidoSalida
+            + vendido + dividendos - comisiones - comprado;
 
         // La vista en dolares, solo informativa. Se calcula al cambio de hoy y no se guarda: manana valdra otra
         // cosa, y guardarla seria tener un numero que envejece sin decirlo. El tipo se ensena al lado para que la
@@ -206,7 +219,9 @@ internal sealed class CashReader : ICashReader
             dividendos,
             comisiones,
             saldoEnUsd,
-            tipoDeHoy);
+            tipoDeHoy,
+            transferidoEntrada,
+            transferidoSalida);
     }
 
     private async Task<Currency> BaseDelDuenoAsync(Guid dueno, CancellationToken cancellationToken)

@@ -34,9 +34,16 @@ día**, de modo que **las fechas de compra dejan de ser necesarias** y desaparec
 
 ## Lo que necesito de ti (el detalle)
 
+**Nada, hoy.** El remoto existe (`github.com/Komodosys/PortaFolioAcciones`), `main` y `rediseno-daisyui` están
+subidas, y el trabajo del 2026-10-18 está en local pendiente de confirmar y empujar.
+
+Lo único que hay que **decidir**, no hacer:
+
 | # | Qué | Por qué |
 |---|---|---|
-| 1 | **Crear el repositorio en tu cuenta de GitHub y darme la dirección del remoto** | El repositorio local **ya está creado** (`git init`, rama `main`) y **ya está anonimizado y comprobado**. Falta el remoto y el primer envío. **Mándame la URL y lo subo**, o súbelo tú: `git remote add origin <url>` y `git push -u origin main` |
+| 1 | **Los 53 commits de `rediseno-daisyui` no están en `main`** | Llevan ahí desde antes de esta sesión. Mientras no se fusionen, `main` —que es lo que se clona— no tiene ni el rediseño ni la reconstrucción de la cuenta. Es una decisión tuya, no un paso técnico: fusionar y subir es un comando |
+| 2 | **Programar el respaldo** | `programar-respaldo.cmd` **no se ha ejecutado**: crear una tarea en tu equipo es decisión tuya, y además solo funciona si Docker está arrancado a las 03:00. Hoy hay 9 copias hechas a mano; sin la tarea, no hay ninguna automática |
+| 3 | **El efecto divisa del coste (2.982,24 CAD)** | Es la única diferencia que queda sin explicar *presentada al lado*. Se arregla con la hoja de ruta nº 2, que es una pantalla, no un retoque |
 
 ### La publicación: hecho y comprobado
 
@@ -71,6 +78,128 @@ anonimización y se dejó una comprobación automática:
 pie, 12 CPU y 8 GB. PostgreSQL 18.6 ya está levantado encima.
 
 **La Fase 1 está en marcha**, así que no queda nada que confirmar por tu parte.
+
+---
+
+## Hecho — 2026-10-18
+
+### Gráficos: el reparto (donut) y la evolución
+
+- [x] **Donut del reparto** en la ficha de la cartera, **con las dos agrupaciones**: por instrumento y **por
+      moneda**. Las dos preguntas son distintas y no se sustituyen: por instrumento dice dónde está el dinero;
+      por moneda dice cuánto está en dólares, que es lo que explica por qué el total en CAD se mueve un día sin
+      que nadie haya comprado nada
+  - **Sin backend nuevo**: el peso y el valor por posición ya venían calculados del servidor
+  - **Agrupa en «otros» a partir de ocho porciones.** No es estética: con treinta, los sectores son franjas de
+    dos grados y la leyenda ocupa más que el gráfico
+  - **Lleva leyenda siempre**, con el importe y el porcentaje: el color solo no distingue nada para quien no ve
+    bien los colores, y un gráfico sin leyenda no se lee en blanco y negro
+  - La paleta es **fija y no aleatoria**: los mismos datos tienen que tener el mismo color entre pantallas
+- [x] **Gráfico de evolución** en el informe, con selector de cartera. **Se calcula a petición y no se guarda**:
+    guardarlo sería guardar algo que se puede reconstruir, y entonces habría dos verdades
+  - **La parte difícil no es dibujar**: los lotes guardan lo que **queda** de cada compra, no lo que se compró.
+    Se recupera **invirtiendo** las ventas —hacia atrás, la cantidad de antes es la de ahora más lo vendido— y
+    **los desdoblamientos**, que cambian la unidad: doce acciones de 2021 son sesenta de hoy, y el precio de 2021
+    está en las de entonces
+  - **Tres pruebas contra SQLite, y una falsificada**: al quitar la división por el desdoblamiento, la prueba
+    falla. Es la única forma de saber que la prueba sirve
+  - **Se dice de dónde sale la serie**: `Snapshots` si son fotos registradas, `Reconstructed` si se ha
+    reconstruido. Una cartera dada de alta como foto **no tiene historia que reconstruir** y dibujarle una línea
+    hacia atrás sería inventarse el pasado
+  - Los dos trazos **comparten escala**, y la línea de lo aportado solo se dibuja si se sabe en todos los puntos:
+    con un hueco, el trazo uniría dos puntos que no son comparables
+- [x] **Filtro de periodo en el gráfico de evolución**: 5 días, 15 días, 1 mes, 1 año, año en curso y todo, con
+      la fecha final siempre en el día de hoy
+  - **El periodo lo traduce el servidor**, no la pantalla. «Lo que va de año» es una regla de calendario, y
+    repartida por el cliente acabaría calculándose de dos maneras: el 31 de diciembre y el 1 de enero se verían
+    distintos sin que nadie lo hubiera decidido
+  - **«Todo» es nulo, no una fecha muy antigua.** Pedir 2019 cuando los precios empiezan en 2021 dejaría un tramo
+    vacío al principio y la línea empezaría plana a cero, que no es un dato
+  - **Cada periodo pide un número de puntos distinto**: sesenta sobre cinco días son más puntos que días —el
+    mismo repetido— y sesenta sobre un año deja días sin mirar
+  - **Una prueba por cada esquina del calendario**: el 1 de enero, el año bisiesto (29 de febrero), un periodo
+    desconocido en la dirección —que se dibuja como «todo» en vez de dar error— y que el número de puntos sea un
+    máximo de verdad. Estaba mal: truncando la división salían 74 donde se pedían 60
+- [x] **La geometría va aparte y con trece pruebas propias.** Un arco mal calculado no falla: dibuja una porción
+    del tamaño que no es y nadie lo nota mirando. Está en `shared/graficos/graficos.ts`, con prueba de las partes,
+    del reparto en «otros», del arco de vuelta entera, de la serie plana (que dividiría por cero) y de que dos
+    series con la misma escala se comparan de verdad
+
+**Queda abierto en el gráfico de evolución, y no se da por bueno:** el efectivo del último punto sale **2.269 CAD
+frente a los −1.050,39 del lector de efectivo**, una diferencia de unos **3.300 CAD**. El valor de las posiciones
+es exacto —precio por unidades invertidas—, pero la parte de efectivo de la curva no cierra todavía. Se ve
+afectado por las posiciones **vendidas del todo**, cuyos lotes quedaron a cero y de los que se usó el coste de la
+venta; hay un detalle de convenio con el lector de efectivo que falta por cuadrar. **No se presenta como
+terminado hasta que los dos números coincidan al céntimo.**
+
+---
+
+## Hecho — 2026-10-18
+
+### La cuenta `RRSP ···126` reconstruida desde sus 73 estados de cuenta
+
+- [x] **Extraídos los 160 movimientos de siete años** (2020-09 a 2026-09) leyendo los PDF por **coordenadas**,
+      no por líneas. La herramienta vive en [`herramientas/estados-126`](../herramientas/estados-126) y su README
+      cuenta las trampas del formato
+- [x] **Cuadrados contra los propios estados, mes a mes**: los conceptos (ventas, compras, dividendos,
+      aportaciones, traspasos, conversiones, comisiones) y la cadena del saldo dan **73 de 73**, en CAD y en USD.
+      Las cantidades cuadran con las acciones que declara cada dividendo: **70 de 70**
+- [x] **Cargada la cuenta**: 46 compras, 3 desdoblamientos aplicados en su fecha, 16 ventas, 6 aportaciones,
+      7 traspasos, 70 dividendos y 34 comisiones. **9 posiciones**, y las 8 que había coinciden una a una
+- [x] **El efectivo calculado coincide con el previsto al céntimo** en las nueve partidas; la ganancia realizada
+      sale **12.345,79 USD**, exactamente la calculada antes de cargar
+- [x] **Un tipo de movimiento nuevo: `TransferIn` / `TransferOut`.** Un traspaso mueve efectivo pero **no es una
+      aportación** —en una cuenta de jubilación, una aportación consume espacio de cotización y un traspaso no—,
+      así que meterlo como `Deposit` habría inflado «lo aportado» en unos 13.800. Son **dos valores y no uno**
+      porque el tipo tiene que decir **hacia dónde** fue el dinero, y el signo de un movimiento nunca se guarda:
+      se deduce del tipo. Comprobado en marcha: `transfersIn`/`transfersOut` suben y `deposits`/`withdrawals` se
+      quedan en cero
+- [x] **Un hallazgo que cambió el plan a mitad**: las posiciones que ya había eran una **foto del final**, y una
+      venta no se puede anotar sobre una posición que ya no tiene esas acciones. Hubo que **rehacer las
+      posiciones desde las 46 compras** y aplicar los desdoblamientos en su fecha, en vez de marcarlos como «ya
+      reflejado». Se midió antes de decidir: cargar sin las ventas habría dejado el efectivo corto en la
+      ganancia realizada, 12.345,79 USD
+- [x] **El coste de no modelar las conversiones de divisas, medido**: el efectivo sale −1.050,39 CAD frente a
+      los +36,41 CAD del bróker. Unos **1.087 CAD en siete años**: es la diferencia que el ADR de conversiones
+      dejaba abierta, ahora cuantificada
+- [x] **Dos fallos de entorno documentados**: la solución no compila con `dotnet build` a secas (hay que añadir
+      `-m:1 -p:NuGetAudit=false`, y `probar.cmd` no las lleva, así que falla **sin decir por qué**); y el
+      frontend no compila dentro del aislamiento porque `esbuild` lanza un proceso hijo (`spawn EPERM`)
+- [x] **Una fuga de datos personales corregida, y era preexistente**: el número de cuenta real estaba escrito en
+      [`12-reconstruccion-de-la-7126.md`](12-reconstruccion-de-la-7126.md), en el mismo párrafo que dice que se
+      enmascara. La encontró el comprobador automático, no una lectura
+
+**Queda abierto, y se ve ahora que hay movimientos en dos monedas**: el «aportado» del informe
+(`PerformanceReader`) suma los importes **sin convertir la moneda**, al revés que el lector de efectivo. En esta
+cuenta dice **25.477**, que es una suma de dólares y de dólares canadienses. Hay que decidir qué significa y
+arreglarlo.
+
+### Y lo que esa carga destapó, arreglado el mismo día
+
+- [x] **El informe sumaba monedas.** `PerformanceReader` sumaba los importes **sin convertir**, al revés que el
+      lector de efectivo: «aportado 25.477» era dólares más dólares canadienses. Ahora convierte al tipo del día
+      de cada movimiento y **devuelve nulo si a alguno le falta**, en vez de dar una suma a medias. Lo mismo con
+      la ganancia realizada. Queda en **30.476,83 CAD** y **16.725,99 CAD**
+  - **Tres pruebas nuevas contra SQLite y falsificadas**: se volvió a poner el fallo y **dos fallaron**. Es la
+    forma de saber que la prueba sirve; una que no falla con el fallo puesto no protege de nada
+  - **Y un fallo de procedimiento que casi lo esconde**: al restaurar el fichero con `Move-Item` se conservó la
+    fecha vieja del fichero, MSBuild **no recompiló** y la prueba seguía pasando con el fallo dentro. Una
+    falsificación que no recompila no falsifica nada
+- [x] **«Ganado» contaba los traspasos como ganancia.** Ahora se restan: un traspaso desde otra cuenta del
+      titular no es ganancia, igual que no es una aportación. La cifra estaba **13.205,66 CAD alta**
+- [x] **El «ganado» ya no cuadra al céntimo con «no realizada + realizada», y eso está explicado**: dividendos
+      (789,53) y comisiones (−197,87) son ingreso y coste que esa comparación no incluye, y **2.982,24 CAD son el
+      efecto divisa** —el coste está al cambio de hoy por el ADR-011 y el efectivo a los tipos de cada día—. Eso
+      último es la hoja de ruta nº 2 y no se arregla sumando: se presenta aparte
+- [x] **`probar.cmd` no compilaba nada en este equipo y lo decía con cero errores.** Faltaba `-m:1`: el
+      aislamiento no deja a MSBuild abrir tuberías con nombre para sus nodos. Arreglado y **ejecutado entero**:
+      259 + 8 + 62 + 51 y las dos comprobaciones, en verde
+  - **Y una corrección a lo que primero escribí aquí**: atribuí el fallo a la falta de Internet y dejé puesta
+    `-p:NuGetAudit=false`. No era eso. **Con red, la compilación pasa con la auditoría de vulnerabilidades
+    puesta**, así que la bandera se quitó: dejarla habría apagado para siempre una comprobación de dependencias
+    por un fallo que solo aparece cuando no hay red. Queda documentada como el remedio de ese caso, y nada más
+- [x] **Las dos fotos de cartera de esa cuenta eran de antes de la carga.** Borradas y tomada una nueva: un número
+      histórico equivocado es peor que un hueco
 
 ---
 

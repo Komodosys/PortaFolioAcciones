@@ -307,7 +307,9 @@
     "saldoNegativo": "Le solde est négatif : l'ouverture est inférieure à ce qu'a coûté ce qui est en portefeuille. Une ouverture doit être ce que vous avez mis au total — le coût des achats plus les liquidités —, pas seulement les liquidités.",
     "sinApertura": "Vous n'avez pas encore déclaré l'ouverture : ce que vous aviez mis au total sur ce compte, y compris le coût de ce qui était déjà acheté. Le solde sera compté à partir de là.",
     "saldoIncompleto": "Le solde ne peut pas être considéré comme juste : {{total}} mouvement(s) sans taux de change, donc une partie de l'argent ne peut pas être convertie.",
-      "Sale": "Vente"
+      "Sale": "Vente",
+      "TransferIn": "Transfert reçu",
+      "TransferOut": "Transfert envoyé"
     },
     "saldo": "Liquidités",
     "saldoEnUsd": "Soit environ {{usd}} au taux du jour (1 USD = {{tipo}} {{moneda}}). À titre indicatif.",
@@ -323,6 +325,21 @@
     "invalid": "Ce mouvement ne peut pas être enregistré. Pour une vente, utilisez la vente de la position."
   },
   "informe": {
+    "evolucion": "Évolution",
+    "evolucionSubtitulo": "Ce que vaut le portefeuille et ce qui y avait été mis, dans le temps. L'écart entre les deux lignes, c'est ce qui a été gagné.",
+    "elegirCartera": "Choisissez un portefeuille",
+    "evolucionSinElegir": "Choisissez un portefeuille pour voir son évolution.",
+    "evolucionReconstruida": "Reconstituée à partir des mouvements, des clôtures et des taux de change : elle n'était pas enregistrée jour après jour.",
+    "evolucionDeFotos": "D'après les photographies enregistrées : c'est ce qui a été relevé, jour après jour.",
+    "evolucionParcial": "Partiel : il manque le prix de {{instrumentos}}, donc ce tronçon est en dessous de ce qu'il était.",
+    "evolucionEtiqueta": "Évolution de la valeur du portefeuille et de ce qui y a été mis",
+    "rango": "Période",
+    "rango5d": "5 jours",
+    "rango15d": "15 jours",
+    "rango1m": "1 mois",
+    "rango1a": "1 an",
+    "rangoYtd": "Année en cours",
+    "rangoTodo": "Tout",
     "titulo": "Coût contre valeur",
     "subtitulo": "Ce que vaut chaque portefeuille, ce qu'il a coûté, ce qui a été apporté et ce qui a déjà été vendu. Filtrable par personne et par type de régime.",
     "avisoEfectivo": "Ce rapport mesure les positions. L'application ne tient pas de compte de liquidités : l'argent non investi n'apparaît pas dans la valeur.",
@@ -344,6 +361,7 @@
     "desconocida": "inconnu",
     "aportado": "Apporté",
     "aportadoNeto": "Apporté net",
+    "aportadoDesconocido": "inconnu, il manque le taux de change d'un mouvement",
     "cartera": "Portefeuille",
     "sinFilas": "Aucun portefeuille à afficher avec ces filtres.",
     "fechaDeLasCifras": "Chiffres du",
@@ -364,5 +382,17 @@
     "cancelar": "Annuler",
     "guardar": "Enregistrer",
     "error": "Une erreur est survenue."
+  },
+  "grafico": {
+    "reparto": "Répartition",
+    "repartoEtiqueta": "Répartition de la valeur du portefeuille",
+    "repartoParcial": "Il manque le prix d'une position : la répartition est celle de ce qu'on sait.",
+    "porInstrumento": "Par instrument",
+    "porMoneda": "Par devise",
+    "total": "Total",
+    "valor": "Valeur",
+    "aportado": "Apporté",
+    "desdeHasta": "Du {{desde}} au {{hasta}}",
+    "sinDatos": "Il n'y a pas encore de données à dessiner."
   }
 }

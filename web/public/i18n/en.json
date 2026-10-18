@@ -307,7 +307,9 @@
     "saldoNegativo": "The balance is negative: the opening is less than what the holdings cost. An opening must be what you put in in total — what the purchases cost plus the cash —, not just the cash there was.",
     "sinApertura": "You have not declared the opening yet: what you had put into this account in total, including what the holdings already there had cost. The balance will start counting from there.",
     "saldoIncompleto": "The balance cannot be taken as good: {{total}} movement(s) have no exchange rate, so part of the money cannot be converted.",
-      "Sale": "Sale"
+      "Sale": "Sale",
+      "TransferIn": "Transfer in",
+      "TransferOut": "Transfer out"
     },
     "saldo": "Cash",
     "saldoEnUsd": "That is about {{usd}} at the rate of today (1 USD = {{tipo}} {{moneda}}). Informational only.",
@@ -323,6 +325,21 @@
     "invalid": "That movement cannot be recorded. For a sale, use the position's sell."
   },
   "informe": {
+    "evolucion": "Evolution",
+    "evolucionSubtitulo": "What the portfolio is worth and what had been put in, over time. The gap between the two lines is what you have made.",
+    "elegirCartera": "Choose a portfolio",
+    "evolucionSinElegir": "Choose a portfolio to see its evolution.",
+    "evolucionReconstruida": "Rebuilt from the movements, closes and exchange rates: it was not recorded day by day.",
+    "evolucionDeFotos": "From the stored snapshots: this is what was recorded, day by day.",
+    "evolucionParcial": "Partial: the price of {{instrumentos}} is missing, so that stretch is below what it was.",
+    "evolucionEtiqueta": "Evolution of the portfolio value and of what was put in",
+    "rango": "Period",
+    "rango5d": "5 days",
+    "rango15d": "15 days",
+    "rango1m": "1 month",
+    "rango1a": "1 year",
+    "rangoYtd": "Year to date",
+    "rangoTodo": "All",
     "titulo": "Cost against value",
     "subtitulo": "What each portfolio is worth, what it cost, what has been contributed and what has already been sold. Filterable by person and by registration type.",
     "avisoEfectivo": "This report measures holdings. The application keeps no cash account, so uninvested money does not appear in the value.",
@@ -344,6 +361,7 @@
     "desconocida": "unknown",
     "aportado": "Contributed",
     "aportadoNeto": "Net contributed",
+    "aportadoDesconocido": "unknown, a movement is missing its exchange rate",
     "cartera": "Portfolio",
     "sinFilas": "No portfolios to show with those filters.",
     "fechaDeLasCifras": "Figures as of",
@@ -364,5 +382,17 @@
     "cancelar": "Cancel",
     "guardar": "Save",
     "error": "Something went wrong."
+  },
+  "grafico": {
+    "reparto": "Breakdown",
+    "repartoEtiqueta": "Breakdown of the portfolio value",
+    "repartoParcial": "A position has no price: the breakdown is of what is known.",
+    "porInstrumento": "By instrument",
+    "porMoneda": "By currency",
+    "total": "Total",
+    "valor": "Value",
+    "aportado": "Contributed",
+    "desdeHasta": "From {{desde}} to {{hasta}}",
+    "sinDatos": "There is no data to draw yet."
   }
 }

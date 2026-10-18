@@ -316,6 +316,55 @@
       </p>
     }
 
+    <!--
+      El reparto del dinero. Va ANTES de la tabla porque responde a la pregunta de un vistazo —«¿dónde está mi
+      dinero?»— y la tabla, que es más precisa, responde a la siguiente: «¿cuál es más grande?».
+
+      Una tarta no sirve para comparar porciones parecidas: el ojo distingue mal dos sectores de doce grados. Por
+      eso va al lado de la tabla y no en su lugar.
+    -->
+    @if (porciones().length > 0) {
+      <div class="mb-6 rounded-3xl bg-white p-5 shadow-lg">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ t('grafico.reparto') }}</p>
+
+          <div class="join" role="group" [attr.aria-label]="t('grafico.reparto')">
+            <button
+              type="button"
+              class="btn btn-xs join-item"
+              [class]="reparto() === 'instrumento' ? 'btn-active' : ''"
+              [attr.aria-pressed]="reparto() === 'instrumento'"
+              (click)="reparto.set('instrumento')"
+            >
+              {{ t('grafico.porInstrumento') }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-xs join-item"
+              [class]="reparto() === 'moneda' ? 'btn-active' : ''"
+              [attr.aria-pressed]="reparto() === 'moneda'"
+              (click)="reparto.set('moneda')"
+            >
+              {{ t('grafico.porMoneda') }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Se avisa cuando falta un precio: el reparto es de lo que se sabe, y presentarlo como el total sería
+             una cifra falsa con forma de dibujo. -->
+        @if (!vista()?.isComplete) {
+          <p class="mb-2 text-xs text-amber-700">{{ t('grafico.repartoParcial') }}</p>
+        }
+
+        <app-donut
+          [porciones]="porciones()"
+          [total]="totalDelReparto()"
+          [etiqueta]="t('grafico.repartoEtiqueta')"
+          [formatear]="formatearImporteDeLaCartera"
+        />
+      </div>
+    }
+
     @if (filas().length === 0) {
       <div class="rounded-3xl bg-white p-10 text-center shadow-lg">
         <p class="text-sm text-slate-500">{{ t('posiciones.sinDatos') }}</p>

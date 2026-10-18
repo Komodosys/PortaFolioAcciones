@@ -11,6 +11,8 @@ import {
   formatearPorcentaje,
   formatearPeso,
 } from '../../../shared/formato/numeros';
+import { repartir } from '../../../shared/graficos/graficos';
+import { Donut } from '../../../shared/graficos/donut/donut';
 import { CarterasApi } from '../carteras.api';
 import { DesdoblamientoPendiente, PosicionEnVista, PosicionSinValorar, VistaDeCartera } from '../modelos';
 import { Columna, compararPosiciones, ordenarPor as siguienteOrden } from '../orden';
@@ -106,6 +108,9 @@ interface Totales {
   readonly hoyParcial: boolean;
 }
 
+/** Como se agrupa el reparto del donut. */
+type Reparto = 'instrumento' | 'moneda';
+
 /**
  * El detalle de una cartera: sus posiciones y sus totales.
  *
@@ -118,7 +123,7 @@ interface Totales {
  */
 @Component({
   selector: 'app-detalle-de-cartera',
-  imports: [RouterLink, TranslocoDirective, AvisoDatosAjenos],
+  imports: [RouterLink, TranslocoDirective, AvisoDatosAjenos, Donut],
   templateUrl: './detalle.html',
   // El estilo vive en la plantilla, con clases de Tailwind: no queda SCSS que mantener.
   host: { class: 'block' },
@@ -136,6 +141,53 @@ export class DetalleDeCartera {
   readonly vista = signal<VistaDeCartera | null>(null);
   readonly cargando = signal(true);
   readonly fallo = signal<string | null>(null);
+
+  /**
+   * Cómo se agrupa el donut.
+   *
+   * Se ofrecen **las dos** porque responden preguntas distintas y no se sustituyen: por instrumento dice dónde
+   * está el dinero; **por moneda dice cuánto está en dólares**, que es lo que explica por qué el total en la
+   * moneda base se mueve un día sin que nadie haya comprado nada.
+   */
+  readonly reparto = signal<Reparto>('instrumento');
+
+  /** Las porciones del donut, ya repartidas. */
+  readonly porciones = computed(() => {
+    const vista = this.vista();
+
+    if (!vista) {
+      return [];
+    }
+
+    const agrupado = this.reparto();
+
+    return repartir(
+      vista.positions,
+      (posicion) => posicion.baseMarketValue,
+      (posicion) => (agrupado === 'instrumento' ? posicion.symbol : posicion.priceCurrency),
+      // Ocho porciones como mucho: con más, los sectores son franjas de dos grados y la leyenda ocupa más que
+      // el gráfico.
+      8,
+      this.idioma.activo() === 'es' ? 'Otros' : this.idioma.activo() === 'fr' ? 'Autres' : 'Others',
+    );
+  });
+
+  /** El total del reparto, ya formateado, para el agujero del donut. */
+  readonly totalDelReparto = computed(() => {
+    const vista = this.vista();
+
+    return vista
+      ? formatearImporte(
+          this.porciones().reduce((suma, porcion) => suma + porcion.valor, 0),
+          vista.baseCurrency,
+          this.idioma.activo(),
+        )
+      : '';
+  });
+
+  /** Formatea un importe en la moneda de la cartera, para el donut. */
+  readonly formatearImporteDeLaCartera = (valor: number): string =>
+    formatearImporte(valor, this.vista()?.baseCurrency ?? 'CAD', this.idioma.activo());
 
   /** Si hay una operacion en curso, para no disparar dos veces. */
   readonly resolviendo = signal(false);

@@ -265,6 +265,44 @@ internal static class PortfolioEndpoints
         })
         .WithName("portfolios.cash")
         .WithSummary("El saldo de efectivo de una cartera, calculado desde la apertura declarada.");
+        // La evolución en el tiempo. Se calcula a petición y NO se guarda: guardarla sería guardar algo que se
+        // puede reconstruir, y entonces habría dos verdades. Se dice de dónde sale la serie, porque no es lo
+        // mismo una foto registrada día a día que una reconstrucción desde los movimientos.
+        group.MapGet("/{id:guid}/evolution", async (
+            Guid id,
+            string? rango,
+            DateOnly? desde,
+            DateOnly? hasta,
+            int? puntos,
+            IPortfolioRepository carteras,
+            IPortfolioEvolutionReader evolucion,
+            TimeProvider reloj,
+            CancellationToken cancelacion) =>
+        {
+            var cartera = await carteras.FindAsync(id, cancelacion);
+
+            if (cartera is null)
+            {
+                return NoEncontrada();
+            }
+
+            // El periodo se traduce AQUÍ y no en la pantalla: «lo que va de año» es una regla de calendario, y
+            // repartida por el cliente acabaría calculándose de dos maneras distintas.
+            var periodo = EvolutionRanges.Parse(rango);
+            var hoy = DateOnly.FromDateTime(reloj.GetUtcNow().UtcDateTime);
+
+            // Lo que se pide a mano manda sobre el periodo: si alguien pide una fecha concreta, es porque la
+            // quiere, no porque haya elegido un botón.
+            var comienzo = desde ?? EvolutionRanges.Desde(periodo, hoy);
+
+            // Se acota el número de puntos: un gráfico no necesita un punto por día, y pedir diez años diarios
+            // sería una consulta que multiplica el trabajo sin que se vea ninguna diferencia.
+            var cuantos = Math.Clamp(puntos ?? EvolutionRanges.Puntos(periodo), 2, 500);
+
+            return Results.Ok(await evolucion.GetAsync(id, comienzo, hasta, cuantos, cancelacion));
+        })
+        .WithName("portfolios.evolution")
+        .WithSummary("La evolución de una cartera: lo que valía y lo que se había puesto, punto a punto.");
         group.MapGet("/{id:guid}/movements", async (
             Guid id,
             IPortfolioRepository carteras,
@@ -390,14 +428,14 @@ internal static class PortfolioEndpoints
             }
             catch (ArgumentException)
             {
-                // Aquí caen la moneda malformada y el tipo que no es aportación ni retiro. Se devuelve 400 y no
+                // Aquí caen la moneda malformada y el tipo que no se puede anotar a mano. Se devuelve 400 y no
                 // 500: es la petición la que está mal, no el programa.
                 return Results.Problem(
                     statusCode: StatusCodes.Status400BadRequest, title: "movement.invalid");
             }
         })
         .WithName("portfolios.addMovement")
-        .WithSummary("Registra una aportación o un retiro. Las ventas se registran al vender.");
+        .WithSummary("Registra un movimiento de efectivo: aportación, retiro, traspaso, dividendo o comisión. Las ventas se registran al vender.");
     }
 
     private static IResult NoEncontrada() =>
@@ -412,8 +450,11 @@ internal static class PortfolioEndpoints
     private static bool TryParseRegistrationType(string? texto, out RegistrationType tipo) =>
         Enum.TryParse(texto, ignoreCase: true, out tipo) && Enum.IsDefined(tipo);
 
-    /// <summary>Lo que manda el formulario de una aportación o un retiro.</summary>
-    /// <param name="Kind">`Deposit` o `Withdrawal`. Cualquier otra cosa da 400.</param>
+    /// <summary>Lo que manda el formulario de una aportación, un retiro o un traspaso.</summary>
+    /// <param name="Kind">
+    /// `Deposit`, `Withdrawal`, `TransferIn`, `TransferOut`, `Dividend` o `Commission`. Cualquier otra cosa da 400.
+    /// Un traspaso NO es una aportación: el dinero ya era del titular y solo cambió de cuenta.
+    /// </param>
     /// <param name="Amount">El importe, siempre positivo: el signo lo pone el tipo.</param>
     /// <param name="Currency">La moneda. Sin ella se usa la base de la aplicación.</param>
     /// <param name="OccurredOn">El día. Nulo usa el de hoy.</param>

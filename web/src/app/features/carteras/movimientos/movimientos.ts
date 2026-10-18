@@ -149,10 +149,18 @@ export class MovimientosDeCartera {
   dia = '';
   notas = '';
 
-  /** Los dos tipos que se pueden anotar. Las ventas vienen solas y no están en la lista. */
+  /**
+   * Los tipos que se pueden anotar a mano. Las ventas vienen solas, al vender, y no están en la lista.
+   *
+   * Los traspasos van aparte de las aportaciones y los retiros a propósito: mueven efectivo igual, pero no son
+   * dinero puesto por nadie, y contarlos como aportación diría en el informe que se aportó más de lo que se
+   * aportó.
+   */
   readonly tipos = [
     { valor: 'Deposit', clave: 'movimiento.tipos.Deposit' },
     { valor: 'Withdrawal', clave: 'movimiento.tipos.Withdrawal' },
+    { valor: 'TransferIn', clave: 'movimiento.tipos.TransferIn' },
+    { valor: 'TransferOut', clave: 'movimiento.tipos.TransferOut' },
     { valor: 'Opening', clave: 'movimiento.tipos.Opening' },
     { valor: 'Dividend', clave: 'movimiento.tipos.Dividend' },
     { valor: 'Commission', clave: 'movimiento.tipos.Commission' },

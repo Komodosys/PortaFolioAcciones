@@ -19,9 +19,9 @@ describe('Informes', () => {
   let http: HttpTestingController;
 
   const filas = [
-    { portfolioId: 'a', name: 'A', ownerDisplayName: 'Titular A', registrationType: 'RegisteredRetirement', currency: 'CAD', marketValue: 100, cashValue: 10, costBasis: 50, unrealizedGain: 50, contributed: 80, withdrawn: 0, realizedGain: null, snapshotDate: '2026-10-18', hasOpening: true },
-    { portfolioId: 'b', name: 'B', ownerDisplayName: 'Titular A', registrationType: 'RegisteredSavings', currency: 'CAD', marketValue: 200, cashValue: 0, costBasis: 100, unrealizedGain: 100, contributed: 150, withdrawn: 0, realizedGain: null, snapshotDate: '2026-10-18', hasOpening: true },
-    { portfolioId: 'c', name: 'C', ownerDisplayName: 'Titular B', registrationType: 'RegisteredRetirement', currency: 'CAD', marketValue: 300, cashValue: 0, costBasis: 200, unrealizedGain: 100, contributed: 250, withdrawn: 0, realizedGain: null, snapshotDate: '2026-10-18', hasOpening: true },
+    { portfolioId: 'a', name: 'A', ownerDisplayName: 'Titular A', registrationType: 'RegisteredRetirement', currency: 'CAD', marketValue: 100, cashValue: 10, costBasis: 50, unrealizedGain: 50, contributed: 80, withdrawn: 0, transfersIn: 0, transfersOut: 0, realizedGain: null, snapshotDate: '2026-10-18', hasOpening: true },
+    { portfolioId: 'b', name: 'B', ownerDisplayName: 'Titular A', registrationType: 'RegisteredSavings', currency: 'CAD', marketValue: 200, cashValue: 0, costBasis: 100, unrealizedGain: 100, contributed: 150, withdrawn: 0, transfersIn: 0, transfersOut: 0, realizedGain: null, snapshotDate: '2026-10-18', hasOpening: true },
+    { portfolioId: 'c', name: 'C', ownerDisplayName: 'Titular B', registrationType: 'RegisteredRetirement', currency: 'CAD', marketValue: 300, cashValue: 0, costBasis: 200, unrealizedGain: 100, contributed: 250, withdrawn: 0, transfersIn: 0, transfersOut: 0, realizedGain: null, snapshotDate: '2026-10-18', hasOpening: true },
   ];
 
   beforeEach(async () => {
@@ -115,5 +115,36 @@ describe('Informes', () => {
     informe.limpiarFiltros();
 
     expect(informe.filas().length).toBe(3);
+  });
+
+  it('lo ganado NO cuenta los traspasos', async () => {
+    // Un traspaso desde otra cuenta del titular mueve dinero, pero no es ganancia. Sin restarlo, «ganado» diria
+    // que se gano todo lo que se cambio de sitio: en la cuenta real eran 13.205,66 CAD de 55.354,30.
+    const conTraspaso = {
+      ...filas[0],
+      contributed: 0,
+      transfersIn: 500,
+      transfersOut: 0,
+    };
+
+    const carga = informe.cargar();
+    http.expectOne('/api/reports/performance').flush({ rows: [conTraspaso], totals: null, currencies: ['CAD'] });
+    await carga;
+
+    // Total 110, nada aportado, 500 traspasados: lo ganado no puede salir de los 500.
+    expect(informe.totales()?.traspasosNeto).toBe(500);
+    expect(informe.totales()?.ganado).toBe(110 - 500);
+  });
+
+  it('si a una cartera no se le pudo sumar lo aportado, no se da el total', async () => {
+    // Nulo y no la suma de las que si se pudieron: se leeria como el total y le faltaria una parte.
+    const sinTipo = { ...filas[1], contributed: null };
+
+    const carga = informe.cargar();
+    http.expectOne('/api/reports/performance').flush({ rows: [filas[0], sinTipo], totals: null, currencies: ['CAD'] });
+    await carga;
+
+    expect(informe.totales()?.aportado).toBeNull();
+    expect(informe.totales()?.ganado).toBeNull();
   });
 });

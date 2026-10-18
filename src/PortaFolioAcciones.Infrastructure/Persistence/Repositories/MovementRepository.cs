@@ -161,14 +161,17 @@ internal sealed class MovementRepository : IMovementRepository
             // la comision es un coste.
             "Dividend" => Movement.Dividend(portfolioId, importe, occurredOn, notes, ahora),
             "Commission" => Movement.Commission(portfolioId, importe, occurredOn, notes, ahora),
-            // Un dividendo entra y una comision sale, pero ninguno es dinero aportado: el dividendo es ganancia, y
-            // la comision es un coste.`n            `"Dividend`" => Movement.Dividend(portfolioId, importe, occurredOn, notes, ahora),`n            `"Commission`" => Movement.Commission(portfolioId, importe, occurredOn, notes, ahora),
+
+            // Un traspaso mueve dinero como una aportacion, pero NO es dinero puesto: el dinero ya era del
+            // titular y solo cambio de cuenta. Se guarda con su propio tipo para que «lo aportado» no lo cuente.
+            "TransferIn" => Movement.TransferIn(portfolioId, importe, occurredOn, notes, ahora),
+            "TransferOut" => Movement.TransferOut(portfolioId, importe, occurredOn, notes, ahora),
 
             // Una venta NO se registra aquí: se registra al vender, porque además reduce la posición. Dejar
             // crear una venta suelta permitiría tener una venta sin su reducción, y la posición y el registro
             // dirían cosas distintas.
             _ => throw new ArgumentOutOfRangeException(
-                nameof(kind), kind, "Solo se pueden registrar aportaciones y retiros."),
+                nameof(kind), kind, "Solo se pueden registrar aportaciones, retiros, traspasos, dividendos y comisiones."),
         };
 
         // El tipo del dia del movimiento, para poder llevar el importe a la moneda de la cartera. Sin el, una

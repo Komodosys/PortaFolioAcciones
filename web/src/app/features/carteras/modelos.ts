@@ -121,6 +121,43 @@ export interface PosicionEnVista {
 }
 
 /**
+ * La evolución de una cartera en el tiempo.
+ *
+ * **No se guarda: se calcula en el servidor**, y se dice de dónde sale. No es lo mismo una serie de fotografías
+ * registradas día a día que una reconstruida desde los movimientos, los precios y los tipos de cambio: la primera
+ * es un dato y la segunda es una reconstrucción, y la pantalla tiene que poder decirlo.
+ */
+export interface EvolucionDeCartera {
+  readonly portfolioId: string;
+  readonly currency: string;
+
+  /** `Snapshots` (fotografías guardadas) o `Reconstructed` (calculada desde los movimientos). */
+  readonly source: string;
+
+  readonly points: readonly PuntoDeEvolucionCrudo[];
+
+  /** Falso si algún punto se quedó sin precio o sin tipo de cambio. Un tramo a la baja por un dato que falta es
+   * una cifra falsa con forma de dato. */
+  readonly isComplete: boolean;
+
+  /** Qué instrumentos se quedaron sin precio, para poder decir cuáles. */
+  readonly missingPrices: readonly string[];
+}
+
+/** Un punto de la evolución, tal como llega de la API. */
+export interface PuntoDeEvolucionCrudo {
+  readonly date: string;
+  readonly marketValue: number;
+  readonly cashValue: number;
+
+  /** Lo que se había puesto hasta ese día. **Nulo** cuando la serie sale de las fotografías: no se sabe. */
+  readonly contributed: number | null;
+
+  /** Posiciones más efectivo. */
+  readonly totalValue: number;
+}
+
+/**
  * Un desdoblamiento que una posicion **todavia no ha aplicado**.
  *
  * Existe porque un desdoblamiento sin aplicar **da una cifra falsa**, y de las que asustan: con un 5:1 la

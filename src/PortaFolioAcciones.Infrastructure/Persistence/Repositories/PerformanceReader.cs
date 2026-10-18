@@ -81,24 +81,45 @@ internal sealed class PerformanceReader : IPerformanceReader
         IReadOnlyList<Movement> movimientos,
         DatosDelPropietario? propietario)
     {
+        // La moneda de la foto es la base de la cartera. Sin foto se usa la de la persona, que es la que se
+        // usaría al calcularla.
+        var moneda = foto?.BaseCurrency ?? propietario?.BaseCurrency ?? Currency.Cad;
+
         // Lo aportado es el dinero que vino de fuera: las aperturas —lo que ya habia cuando se empezo a
         // contar— y las aportaciones. El retiro va aparte y resta.
-        var aportado = movimientos
-            .Where(movimiento => movimiento.Kind is MovementKind.Deposit or MovementKind.Opening)
-            .Sum(movimiento => movimiento.Amount.Amount);
+        //
+        // **Se convierte a la moneda de la fila**, igual que hace el lector de efectivo. Antes se sumaban los
+        // importes tal cual, y eso sumaba dolares a dolares canadienses: una cifra que no significa nada. No
+        // se veia porque todas las carteras eran de una sola moneda hasta que esta cuenta trajo las dos.
+        var aportado = SumarAsync(movimientos, moneda, MovementKind.Deposit, MovementKind.Opening);
+        var retirado = SumarAsync(movimientos, moneda, MovementKind.Withdrawal);
 
-        var retirado = movimientos
-            .Where(movimiento => movimiento.Kind is MovementKind.Withdrawal)
-            .Sum(movimiento => movimiento.Amount.Amount);
+        // Los traspasos, aparte y con su propia suma: mueven dinero, pero no son ganancia ni aportacion. Se
+        // restan en «lo ganado», o esa cifra diria que se gano todo lo que se cambio de cuenta.
+        var traspasosEntrada = SumarAsync(movimientos, moneda, MovementKind.TransferIn);
+        var traspasosSalida = SumarAsync(movimientos, moneda, MovementKind.TransferOut);
 
-        var ventas = movimientos.Where(movimiento => movimiento.Kind is MovementKind.Sale).ToList();
-        var ganancias = ventas.Select(venta => venta.RealizedGain()).ToList();
+        // Y la ganancia realizada, por el mismo motivo: una venta en dolares y otra en euros no se suman.
+        var ganancias = new List<decimal?>();
+
+        foreach (var venta in movimientos.Where(movimiento => movimiento.Kind is MovementKind.Sale))
+        {
+            if (venta.RealizedGain() is { } ganancia)
+            {
+                ganancias.Add(EnMoneda(ganancia, venta.RateUsed, moneda));
+            }
+            else
+            {
+                // Una venta sin coste guardado: no se sabe cuánto costó lo vendido.
+                ganancias.Add(null);
+            }
+        }
 
         // Si UNA sola venta no tiene coste, el total realizado no se puede dar: se devuelve nulo en vez de
         // sumar las que sí lo tienen, porque esa suma se leería como «lo ganado» y le faltaría una parte.
         var realizado = ganancias.Count == 0 || ganancias.Any(ganancia => ganancia is null)
             ? (decimal?)null
-            : ganancias.Sum(ganancia => ganancia!.Amount);
+            : ganancias.Sum(ganancia => ganancia!.Value);
 
         var valor = foto?.MarketValue.Amount ?? 0m;
         var efectivo = foto?.CashValue.Amount ?? 0m;
@@ -109,10 +130,7 @@ internal sealed class PerformanceReader : IPerformanceReader
             cartera.Name,
             propietario?.DisplayName ?? "?",
             cartera.RegistrationType.ToString(),
-
-            // La moneda de la foto es la base de la cartera. Sin foto se usa la de la persona, que es la que se
-            // usaría al calcularla.
-            foto?.BaseCurrency.Code ?? propietario?.BaseCurrency.Code ?? Currency.Cad.Code,
+            moneda.Code,
 
             valor,
             efectivo,
@@ -122,7 +140,48 @@ internal sealed class PerformanceReader : IPerformanceReader
             retirado,
             realizado,
             foto?.SnapshotDate,
-            movimientos.Any(movimiento => movimiento.Kind is MovementKind.Opening));
+            movimientos.Any(movimiento => movimiento.Kind is MovementKind.Opening),
+            traspasosEntrada,
+            traspasosSalida);
+    }
+
+    /// <summary>
+    /// Suma unos tipos de movimiento <b>en la moneda de la fila</b>.
+    /// </summary>
+    /// <returns>
+    /// Nulo si alguno no se pudo convertir. <b>Igual que con la ganancia realizada, una suma a la que le falta
+    /// una parte no se da como buena</b>: devolver lo que sí se pudo convertir se leería como el total.
+    /// </returns>
+    private static decimal? SumarAsync(
+        IReadOnlyList<Movement> movimientos,
+        Currency moneda,
+        params MovementKind[] tipos)
+    {
+        var total = 0m;
+
+        foreach (var movimiento in movimientos.Where(m => tipos.Contains(m.Kind)))
+        {
+            if (movimiento.AmountIn(moneda) is not { } importe)
+            {
+                return null;
+            }
+
+            total += importe.Amount;
+        }
+
+        return total;
+    }
+
+    /// <summary>Lleva un importe a la moneda de la fila con el tipo del día del movimiento.</summary>
+    /// <returns>Nulo si está en otra moneda y no hay tipo: inventar uno daría una cifra falsa.</returns>
+    private static decimal? EnMoneda(Money importe, decimal? tipo, Currency moneda)
+    {
+        if (importe.Currency == moneda)
+        {
+            return importe.Amount;
+        }
+
+        return tipo is > 0m ? importe.Amount * tipo.Value : null;
     }
 
     private static PerformanceRow ATotales(IReadOnlyList<PerformanceRow> filas, string moneda)
@@ -135,6 +194,12 @@ internal sealed class PerformanceReader : IPerformanceReader
                 ? null
                 : filas.Sum(fila => fila.RealizedGain!.Value);
 
+        // Lo aportado y lo retirado, igual: si a una cartera le falta una parte, el total no se da.
+        var aportado = filas.Any(fila => fila.Contributed is null) ? (decimal?)null : filas.Sum(fila => fila.Contributed!.Value);
+        var retirado = filas.Any(fila => fila.Withdrawn is null) ? (decimal?)null : filas.Sum(fila => fila.Withdrawn!.Value);
+        var traspasosEntrada = filas.Any(fila => fila.TransfersIn is null) ? (decimal?)null : filas.Sum(fila => fila.TransfersIn!.Value);
+        var traspasosSalida = filas.Any(fila => fila.TransfersOut is null) ? (decimal?)null : filas.Sum(fila => fila.TransfersOut!.Value);
+
         return new PerformanceRow(
             Guid.Empty,
             string.Empty,
@@ -145,14 +210,16 @@ internal sealed class PerformanceReader : IPerformanceReader
             filas.Sum(fila => fila.CashValue),
             filas.Sum(fila => fila.CostBasis),
             filas.Sum(fila => fila.UnrealizedGain),
-            filas.Sum(fila => fila.Contributed),
-            filas.Sum(fila => fila.Withdrawn),
+            aportado,
+            retirado,
             realizado,
             filas.Max(fila => fila.SnapshotDate),
 
             // TODAS, no alguna: si una sola cartera no tiene apertura, su parte de «aportado» esta incompleta y
             // el total de ganancia saldria inflado por esa parte.
-            filas.All(fila => fila.HasOpening));
+            filas.All(fila => fila.HasOpening),
+            traspasosEntrada,
+            traspasosSalida);
     }
 
     private async Task<IReadOnlyDictionary<Guid, DatosDelPropietario>> PropietariosDeAsync(

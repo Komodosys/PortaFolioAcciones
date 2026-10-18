@@ -121,9 +121,13 @@ export class DetalleDePosicion {
       : '',
   );
 
+  /** Un importe formateado, para los textos que lo llevan dentro (el aviso del borrado, sin ir más lejos). */
+  importe(valor: number, moneda: string): string {
+    return formatearImporte(valor, moneda, this.idioma.activo());
+  }
+
   readonly lotes = computed(() => {
     const posicion = this.posicion();
-
     if (!posicion) {
       return [];
     }
@@ -211,6 +215,43 @@ export class DetalleDePosicion {
   async guardarNotas(): Promise<void> {
     await this.ejecutar(async () => {
       this.posicion.set(await this.api.ponerNotas(this.id(), this.notas.trim() || null));
+    });
+  }
+
+  /**
+   * Si se esta confirmando el borrado.
+   *
+   * **Borrar una posicion no se hace de un clic**, y menos aqui: el borrado **sube el efectivo** por lo que
+   * costaba, porque el saldo se calcula restando los lotes. Quien lo pulse tiene que saberlo antes.
+   */
+  readonly confirmandoBorrado = signal(false);
+
+  pedirBorrar(): void {
+    this.confirmandoBorrado.set(true);
+  }
+
+  cancelarBorrado(): void {
+    this.confirmandoBorrado.set(false);
+  }
+
+  /**
+   * Borra la posicion, para deshacer un alta equivocada.
+   *
+   * Si tiene ventas, el servidor contesta 409 y el aviso lo dice: una venta es un hecho, y se deshace antes.
+   */
+  async borrar(): Promise<void> {
+    const posicion = this.posicion();
+
+    if (!posicion) {
+      return;
+    }
+
+    await this.ejecutar(async () => {
+      await this.api.borrar(this.id());
+
+      // Se vuelve a la cartera: la posicion ya no existe, y quedarse en su ficha daria un «no encontrada» en
+      // cuanto se refrescara.
+      await this.router.navigate(['/carteras', posicion.portfolioId]);
     });
   }
 

@@ -177,4 +177,16 @@ export class PosicionesApi {
   ponerNotas(id: string, notas: string | null): Promise<Posicion> {
     return firstValueFrom(this.http.put<Posicion>(`/api/positions/${id}/notes`, { notes: notas }));
   }
+
+  /**
+   * Borra una posicion dada de alta por error.
+   *
+   * **Sube el efectivo por el coste de lo borrado**, porque el saldo se calcula restando los lotes. Es lo
+   * correcto si la posicion nunca existio: ese dinero no salio de la cuenta.
+   *
+   * El servidor contesta **409** si la posicion tiene ventas: una venta es un hecho y se deshace antes.
+   */
+  borrar(id: string): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`/api/positions/${id}`));
+  }
 }

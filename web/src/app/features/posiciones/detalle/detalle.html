@@ -309,6 +309,47 @@
         {{ pos.isClosed ? t('posiciones.reabrir') : t('posiciones.cerrar') }}
       </button>
     </section>
+
+    <!--
+      Borrar, para deshacer un alta equivocada. Se separa del cierre a propósito: cerrar es «esto se acabo» y
+      conserva lo que costó; borrar es «esto nunca existio» y **mueve el efectivo**, porque el saldo se calcula
+      restando los lotes. Son dos cosas distintas y no deben parecer el mismo boton.
+    -->
+    <section class="mt-4 rounded-3xl border-2 border-dashed border-red-200 bg-white/60 p-5">
+      <h2 class="text-base font-bold text-slate-800">{{ t('posiciones.borrar') }}</h2>
+      <p class="mt-1 text-sm text-slate-500">{{ t('posiciones.borrarAyuda') }}</p>
+
+      @if (!confirmandoBorrado()) {
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm mt-3 text-red-600"
+          [disabled]="operando()"
+          (click)="pedirBorrar()"
+        >
+          {{ t('posiciones.borrar') }}
+        </button>
+      } @else {
+        <div class="mt-3 rounded-2xl bg-red-50 p-4">
+          <p class="text-sm text-red-800">
+            {{
+              t('posiciones.borrarAviso', {
+                coste: importe(pos.totalCost, pos.costCurrency),
+                moneda: pos.costCurrency,
+              })
+            }}
+          </p>
+
+          <div class="mt-3 flex justify-end gap-2">
+            <button type="button" class="btn btn-ghost btn-sm text-slate-600" (click)="cancelarBorrado()">
+              {{ t('comun.cancelar') }}
+            </button>
+            <button type="button" class="btn btn-error btn-sm" [disabled]="operando()" (click)="borrar()">
+              {{ t('posiciones.borrarConfirmar') }}
+            </button>
+          </div>
+        </div>
+      }
+    </section>
   } @else if (fallo(); as clave) {
     <div class="alert alert-error" role="alert">
       <span>{{ t(clave) }}</span>

@@ -157,6 +157,10 @@
     "lasCompras": "Las compras",
     "cerrar": "Cerrar la posición",
     "cerrarAyuda": "Cerrar no borra: la posición sale de los totales pero se conserva entera, con sus compras. Se puede reabrir.",
+    "borrar": "Borrar la posición",
+    "borrarAyuda": "Solo para una posición dada de alta por error. Si existió de verdad, ciérrala: eso conserva lo que costó y no toca el efectivo.",
+    "borrarAviso": "Se borrará la posición y sus compras. El efectivo subirá {{coste}} ({{moneda}}), que es lo que costaba: si el alta fue un error, ese dinero nunca salió de la cuenta. Una posición con ventas no se puede borrar.",
+    "borrarConfirmar": "Sí, borrar",
     "reabrir": "Reabrir la posición",
     "reabrirAyuda": "Vuelve a contar en los totales, con las mismas compras que tenía.",
     "cantidadInvalida": "Escribe una cantidad mayor que cero.",
@@ -373,6 +377,9 @@
     "invalid_currency": "Esa moneda no es válida. Usa un código de tres letras, como CAD.",
     "registration_required": "Elige el tipo de registro: REER, CELI o no registrada.",
     "has_positions": "Esa cartera tiene posiciones, así que no se puede borrar. Archívala: deja de contar y no se pierde nada."
+  },
+  "position": {
+    "has_sales": "Esa posición tiene ventas, así que no se puede borrar: una venta es un hecho y su ganancia realizada se perdería. Deshaz la venta entera primero."
   },
   "comun": {
     "volver": "Volver",

@@ -145,6 +145,33 @@ afectado por las posiciones **vendidas del todo**, cuyos lotes quedaron a cero y
 venta; hay un detalle de convenio con el lector de efectivo que falta por cuadrar. **No se presenta como
 terminado hasta que los dos números coincidan al céntimo.**
 
+### El borrado de posiciones, que era el hueco de auditoría (hecho el 2026-10-18)
+
+Al reconstruir la cuenta hubo que borrar 8 posiciones **por SQL**, y fue el único cambio que no dejó rastro. Ahora
+existe `DELETE /api/positions/{id}`, con la regla decidida a propósito:
+
+- [x] **Una posición con ventas no se borra: 409 `position.has_sales`.** Es la misma regla que ya protege a la
+      venta —«una venta no se borra: deshaz la venta entera»—. La ganancia realizada se calcula con esa posición,
+      y borrarla dejaría la venta apuntando a algo que no existe
+- [x] **El borrado mueve el efectivo, y se dice.** El saldo se calcula restando el coste de los lotes, así que al
+      desaparecer la posición **el saldo sube exactamente lo que costaba**. Es lo correcto si la posición se dio de
+      alta por error —ese dinero nunca salió de la cuenta— y sería falsear la contabilidad si existió de verdad,
+      que es para lo que está cerrar. La pantalla lo avisa **antes** de borrar, con el importe
+- [x] **Queda en el libro de auditoría** cuando lo hace el administrador sobre datos ajenos, que era el motivo de
+      todo esto: el interceptor ya registraba los borrados, así que el hueco no era técnico sino de que no había
+      puerta por donde entrar
+- [x] **Tres pruebas, y dos falsificadas.** Con ventas no se borra (quitando la guarda, la posición desaparece y
+      la prueba falla); el efectivo sube **exactamente** el coste (ni más ni menos); y el borrado deja su fila en
+      el libro (quitando el interceptor, la prueba falla porque no hay fila)
+- [x] **Probado de punta a punta contra la API**: en una cartera desechable con una apertura de 10.000 y una
+      posición de 1.000 USD, el `DELETE` devolvió **204** y el efectivo pasó de **8.620,80 a 10.000** —los
+      **1.379,20** que son 1.000 USD al cambio del día, que es justo lo que resta el lector de efectivo—; y contra
+      una posición real con ventas devolvió **409 `position.has_sales`** y la posición **siguió intacta**. La
+      cartera de prueba se borró después
+- **Lo que esto no arregla, porque no tiene arreglo**: las 8 posiciones borradas por SQL **ya no dejarán rastro
+  nunca**. Fabricar ahora una entrada en el libro sería peor que el hueco. Queda escrito en la documentación, que
+  es lo único honesto que se puede hacer
+
 ### El respaldo, tres cosas que hacer más adelante (decidido el 2026-10-18)
 
 La tarea diaria **está programada y probada**, pero al mirar en qué estado estaba el respaldo salieron tres

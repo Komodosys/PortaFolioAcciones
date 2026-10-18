@@ -509,6 +509,36 @@ internal sealed class PositionRepository : IPositionRepository
     /// cartera. El filtro global ya esconde las posiciones ajenas, y esta línea vuelve a comprobarlo
     /// contra la cartera por si el filtro fallara.
     /// </summary>
+    public async Task<PosicionBorrada> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var posicion = await CargarParaOperarAsync(id, cancellationToken);
+
+        if (posicion is null)
+        {
+            return PosicionBorrada.NoExiste();
+        }
+
+        // Una venta es un hecho, y su ganancia realizada se calcula con esta posición. Borrarla dejaría la venta
+        // apuntando a algo que no existe y la ganancia realizada se perdería sin dejar rastro. Se deshace la
+        // venta primero, que es lo mismo que ya se exige para borrar un movimiento.
+        var tieneVentas = await _context.Movements
+            .AnyAsync(
+                movimiento => movimiento.PositionId == id && movimiento.Kind == MovementKind.Sale,
+                cancellationToken);
+
+        if (tieneVentas)
+        {
+            return PosicionBorrada.No("position.has_sales");
+        }
+
+        // Los lotes se van con ella en cascada. Y con ellos baja lo comprado, así que el efectivo sube: si la
+        // posición se dio de alta por error, ese dinero nunca salió de la cuenta y el saldo vuelve a su sitio.
+        _context.Positions.Remove(posicion);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return PosicionBorrada.Si();
+    }
+
     private async Task<Position?> CargarParaOperarAsync(Guid id, CancellationToken cancellationToken)
     {
         if (!_currentUser.IsAuthenticated)

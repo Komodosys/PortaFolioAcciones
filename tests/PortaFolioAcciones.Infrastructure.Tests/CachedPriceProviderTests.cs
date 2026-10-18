@@ -15,25 +15,44 @@ public sealed class CachedPriceProviderTests
     /// <summary>El token de la prueba, para que una prueba colgada se pueda cancelar.</summary>
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private static (CachedPriceProvider Cache, ProveedorFalso Fuente, RelojFalso Reloj) Montar()
+    private static (CachedPriceProvider Cache, ProveedorFalso Fuente, RelojFalso Reloj, RefrescoDePrecios Refrescos) Montar()
     {
         var fuente = new ProveedorFalso { Respuesta = Datos.Cotizacion() };
         var reloj = new RelojFalso();
         var cache = new MemoryCache(new MemoryCacheOptions());
+        var refrescos = new RefrescoDePrecios(reloj);
 
         var proveedor = new CachedPriceProvider(
             fuente,
             cache,
             reloj,
-            NullLogger<CachedPriceProvider>.Instance);
+            NullLogger<CachedPriceProvider>.Instance,
+            refrescos);
 
-        return (proveedor, fuente, reloj);
+        return (proveedor, fuente, reloj, refrescos);
+    }
+
+    [Fact]
+    public async Task Invalidar_la_cache_hace_que_se_vuelva_a_preguntar()
+    {
+        // Es lo que hace que el boton de «actualizar precios» signifique algo: sin esto, pulsarlo devolveria
+        // el mismo precio guardado y pareceria que no hace nada.
+        var (cache, fuente, _, refrescos) = Montar();
+        var instrumento = Datos.Instrumento();
+
+        await cache.GetQuoteAsync(instrumento, Ct);
+        Assert.Equal(1, fuente.Llamadas);
+
+        refrescos.InvalidarCache();
+
+        await cache.GetQuoteAsync(instrumento, Ct);
+        Assert.Equal(2, fuente.Llamadas);
     }
 
     [Fact]
     public async Task La_segunda_llamada_dentro_del_plazo_no_pregunta_a_la_fuente()
     {
-        var (cache, fuente, _) = Montar();
+        var (cache, fuente, _, _) = Montar();
         var instrumento = Datos.Instrumento();
 
         await cache.GetQuoteAsync(instrumento, Ct);
@@ -47,7 +66,7 @@ public sealed class CachedPriceProviderTests
     [Fact]
     public async Task Lo_que_devuelve_es_la_cotizacion_de_la_fuente()
     {
-        var (cache, _, _) = Montar();
+        var (cache, _, _, _) = Montar();
         var instrumento = Datos.Instrumento();
 
         var primera = await cache.GetQuoteAsync(instrumento, Ct);
@@ -60,7 +79,7 @@ public sealed class CachedPriceProviderTests
     [Fact]
     public async Task Pasado_el_plazo_de_intradia_vuelve_a_preguntar()
     {
-        var (cache, fuente, reloj) = Montar();
+        var (cache, fuente, reloj, _) = Montar();
         var instrumento = Datos.Instrumento(frecuencia: PricingFrequency.IntradayDelayed);
 
         await cache.GetQuoteAsync(instrumento, Ct);
@@ -74,7 +93,7 @@ public sealed class CachedPriceProviderTests
     [Fact]
     public async Task Un_precio_de_cierre_aguanta_mas_que_uno_de_intradia()
     {
-        var (cache, fuente, reloj) = Montar();
+        var (cache, fuente, reloj, _) = Montar();
         var instrumento = Datos.Instrumento(frecuencia: PricingFrequency.EndOfDay);
 
         await cache.GetQuoteAsync(instrumento, Ct);
@@ -90,7 +109,7 @@ public sealed class CachedPriceProviderTests
     [Fact]
     public async Task Un_valor_liquidativo_aguanta_un_dia()
     {
-        var (cache, fuente, reloj) = Montar();
+        var (cache, fuente, reloj, _) = Montar();
         var instrumento = Datos.Instrumento(frecuencia: PricingFrequency.DailyNav);
 
         await cache.GetQuoteAsync(instrumento, Ct);
@@ -107,7 +126,7 @@ public sealed class CachedPriceProviderTests
     [Fact]
     public async Task Un_fallo_de_la_fuente_NO_se_guarda()
     {
-        var (cache, fuente, _) = Montar();
+        var (cache, fuente, _, _) = Montar();
         fuente.Respuesta = null;
         var instrumento = Datos.Instrumento();
 
@@ -139,7 +158,7 @@ public sealed class CachedPriceProviderTests
     [Fact]
     public async Task Un_respaldo_NO_se_guarda_en_la_cache()
     {
-        var (cache, fuente, _) = Montar();
+        var (cache, fuente, _, _) = Montar();
         fuente.Respuesta = Datos.Cotizacion(150m, esRespaldo: true);
         var instrumento = Datos.Instrumento();
 
@@ -155,7 +174,7 @@ public sealed class CachedPriceProviderTests
     [Fact]
     public async Task Dos_instrumentos_distintos_no_comparten_entrada()
     {
-        var (cache, fuente, _) = Montar();
+        var (cache, fuente, _, _) = Montar();
 
         await cache.GetQuoteAsync(Datos.Instrumento("AAPL"), Ct);
         await cache.GetQuoteAsync(Datos.Instrumento("MSFT"), Ct);

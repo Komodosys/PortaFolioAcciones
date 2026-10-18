@@ -25,4 +25,18 @@ public interface IMarketDataCollector
     public Task<DailyCollectionResult> CollectAsync(
         DateOnly dia,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Vuelve a pedir la cotización de cada instrumento y actualiza <b>solo</b> «lo último que se sabe».
+    ///
+    /// <b>No escribe el cierre del día, ni los tipos de cambio, ni la foto de las carteras.</b> Esa es toda
+    /// la diferencia con <see cref="CollectAsync"/>, y es lo que la hace segura a cualquier hora: antes del
+    /// cierre, la fuente devuelve el precio del momento, y guardarlo como cierre de hoy sería mentir sobre
+    /// el histórico. Después del cierre, la recogida diaria vuelve a pasar y escribe el de verdad.
+    ///
+    /// El llamante es quien decide si antes hay que tirar la caché. Aquí no se decide: esta operación
+    /// pregunta a la fuente lo que le digan, y quien quiera saltarse la caché la invalida antes.
+    /// </summary>
+    /// <param name="cancellationToken">Cancelación.</param>
+    public Task<QuoteRefreshResult> RefreshQuotesAsync(CancellationToken cancellationToken = default);
 }

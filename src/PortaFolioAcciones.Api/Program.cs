@@ -206,6 +206,10 @@ app.MapPositionEndpoints();
 
 app.MapAdminEndpoints();
 
+// Los refrescos de precios pedidos a mano desde la pantalla. Solo administrador: llaman a una fuente
+// externa gratuita y escriben precios.
+app.MapMarketEndpoints();
+
 // Solo en desarrollo: son andamiaje para verificar la Fase 5 mientras se construye.
 app.MapDevEndpoints();
 

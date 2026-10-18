@@ -71,6 +71,11 @@ public static class DependencyInjection
         services.AddSingleton(new OpcionesDeResiliencia());
         services.AddSingleton<GuardasDeFuentes>();
 
+        // El estado de los refrescos pedidos a mano: la generación que tira la caché y el freno que impide
+        // machacar la fuente. Es Singleton porque el estado es uno solo para toda la aplicación: si cada
+        // petición tuviera el suyo, el freno no frenaría nada y la caché no se tiraría nunca.
+        services.AddSingleton<RefrescoDePrecios>();
+
         // El buscador de instrumentos, como cliente HTTP tipado: asi el marco gestiona el ciclo de vida
         // del HttpClient, que es lo que evita el problema clasico de agotar los puertos por crear uno
         // nuevo en cada peticion.
@@ -135,7 +140,8 @@ public static class DependencyInjection
                 compuesto,
                 proveedor.GetRequiredService<IMemoryCache>(),
                 proveedor.GetRequiredService<TimeProvider>(),
-                proveedor.GetRequiredService<ILogger<CachedPriceProvider>>());
+                proveedor.GetRequiredService<ILogger<CachedPriceProvider>>(),
+                proveedor.GetRequiredService<RefrescoDePrecios>());
         });
 
         services.AddScoped<IFxRateProvider>(proveedor =>

@@ -51,17 +51,20 @@ internal sealed class CachedPriceProvider : IPriceProvider
     private readonly IMemoryCache _cache;
     private readonly TimeProvider _reloj;
     private readonly ILogger<CachedPriceProvider> _registro;
+    private readonly RefrescoDePrecios _refrescos;
 
     public CachedPriceProvider(
         IPriceProvider interior,
         IMemoryCache cache,
         TimeProvider reloj,
-        ILogger<CachedPriceProvider> registro)
+        ILogger<CachedPriceProvider> registro,
+        RefrescoDePrecios refrescos)
     {
         _interior = interior;
         _cache = cache;
         _reloj = reloj;
         _registro = registro;
+        _refrescos = refrescos;
     }
 
     public async Task<MarketQuote?> GetQuoteAsync(
@@ -124,12 +127,19 @@ internal sealed class CachedPriceProvider : IPriceProvider
     };
 
     /// <summary>
-    /// Con qué nombre se guarda. Se usa la clave de la fuente y no el identificador del instrumento
-    /// porque un mismo instrumento apuntado dos veces —o uno que todavía no está guardado— comparte
-    /// precio, y sería absurdo preguntarlo dos veces.
+    /// Con qué nombre se guarda.
+    ///
+    /// Se usa la clave de la fuente y no el identificador del instrumento porque un mismo instrumento
+    /// apuntado dos veces —o uno que todavía no está guardado— comparte precio, y sería absurdo preguntarlo
+    /// dos veces.
+    ///
+    /// Y lleva delante <b>la generación</b> de <see cref="RefrescoDePrecios"/>: cuando alguien pulsa
+    /// «actualizar», esa generación sube y todas las entradas viejas quedan inalcanzables de golpe. Es la
+    /// forma de tirar la caché sin recorrerla ni borrarla a mano, que con claves construidas así no sería
+    /// posible.
     /// </summary>
-    private static string Clave(Instrument instrument) =>
-        $"{instrument.ProviderKey}|{instrument.QuoteCurrency.Code}|{instrument.PricingFrequency}";
+    private string Clave(Instrument instrument) =>
+        $"Precios:v{_refrescos.Generacion}|{instrument.ProviderKey}|{instrument.QuoteCurrency.Code}|{instrument.PricingFrequency}";
 
     /// <summary>Lo que se guarda: el precio y cuándo se guardó.</summary>
     private sealed record Entrada(MarketQuote Cotizacion, DateTimeOffset GuardadoEnUtc);

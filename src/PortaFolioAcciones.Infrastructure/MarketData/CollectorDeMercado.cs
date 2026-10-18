@@ -177,6 +177,69 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
         return resumen;
     }
 
+    public async Task<QuoteRefreshResult> RefreshQuotesAsync(CancellationToken cancellationToken = default)
+    {
+        await using var contexto = new PortafolioDbContext(_opciones, UsuarioDelSistema.Instancia);
+
+        var instrumentos = await InstrumentosQueHacenFaltaAsync(contexto, cancellationToken);
+
+        if (instrumentos.Count == 0)
+        {
+            return new QuoteRefreshResult(0, 0, 0);
+        }
+
+        var ultimas = await contexto.LatestQuotes
+            .ToDictionaryAsync(cotizacion => cotizacion.InstrumentId, cancellationToken);
+
+        var ahora = DateTimeOffset.UtcNow;
+        var actualizados = 0;
+        var sinPrecio = 0;
+
+        foreach (var instrumento in instrumentos)
+        {
+            var cotizacion = await PedirAsync(instrumento, cancellationToken);
+
+            if (cotizacion is null)
+            {
+                sinPrecio++;
+                continue;
+            }
+
+            // Un desdoblamiento se detecta con cualquier lectura del precio, no solo con la del cierre: si la
+            // fuente ya lo refleja hoy, esperar a mañana para avisar retrasa un aviso que asusta.
+            AnotarDesdoblamientos(instrumento, cotizacion, ahora);
+
+            if (ultimas.TryGetValue(instrumento.Id, out var ultima))
+            {
+                ultima.Update(cotizacion.Price, cotizacion.AsOfUtc, cotizacion.Source, ahora);
+            }
+            else
+            {
+                contexto.LatestQuotes.Add(LatestQuote.Create(
+                    instrumento.Id,
+                    cotizacion.Price,
+                    cotizacion.AsOfUtc,
+                    cotizacion.Source,
+                    ahora));
+            }
+
+            actualizados++;
+        }
+
+        // Aquí NO se escriben `Prices`, ni los tipos de cambio, ni la foto de las carteras. Es la diferencia
+        // con `CollectAsync` y el motivo de que esta operación sea segura antes del cierre: guardar como
+        // cierre de hoy el precio de las once de la mañana ensuciaría el histórico.
+        await contexto.SaveChangesAsync(cancellationToken);
+
+        _registro.LogInformation(
+            "Cotizaciones refrescadas a mano: {Actualizados} de {Instrumentos}, {SinPrecio} sin precio.",
+            actualizados,
+            instrumentos.Count,
+            sinPrecio);
+
+        return new QuoteRefreshResult(instrumentos.Count, actualizados, sinPrecio);
+    }
+
     /// <summary>
     /// Los instrumentos que necesitan precio: los que tiene alguien en una posicion abierta.
     ///

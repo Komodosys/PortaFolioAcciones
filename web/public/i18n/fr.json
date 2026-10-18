@@ -296,6 +296,7 @@
       "Withdrawal": "Retrait",
     "Opening": "Ouverture",
     "saldo": "Liquidités",
+    "saldoEnUsd": "Soit environ {{usd}} au taux du jour (1 USD = {{tipo}} {{moneda}}). À titre indicatif.",
     "saldoDesde": "Depuis l'ouverture du {{dia}}.",
     "borrar": "Supprimer",
     "borrarPregunta": "Supprimer ce mouvement ? C'est définitif.",
@@ -307,6 +308,7 @@
       "Sale": "Vente"
     },
     "saldo": "Liquidités",
+    "saldoEnUsd": "Soit environ {{usd}} au taux du jour (1 USD = {{tipo}} {{moneda}}). À titre indicatif.",
     "saldoDesde": "Depuis l'ouverture du {{dia}}.",
     "borrar": "Supprimer",
     "borrarPregunta": "Supprimer ce mouvement ? C'est définitif.",

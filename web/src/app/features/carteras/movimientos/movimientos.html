@@ -49,6 +49,20 @@
             {{ t('movimiento.saldoDesde', { dia: efectivo.since }) }}
           </p>
 
+          <!-- La vista en dólares, solo informativa. Se dice el cambio usado y su fecha para que la cifra se
+               pueda comprobar: sin eso parecería que el saldo cambia solo. -->
+          @if (efectivo.balanceInUsd !== null && efectivo.usdRate !== null) {
+            <p class="mt-1 text-xs text-slate-400">
+              {{
+                t('movimiento.saldoEnUsd', {
+                  usd: mostrarImporte(efectivo.balanceInUsd, 'USD'),
+                  tipo: efectivo.usdRate,
+                  moneda: efectivo.currency
+                })
+              }}
+            </p>
+          }
+
           <!-- Un saldo negativo casi siempre significa que la apertura se declaró como el efectivo y no como lo
                puesto en total. Se avisa, en vez de enseñar el número y dejarlo pasar. -->
           @if (efectivo.balance < 0) {

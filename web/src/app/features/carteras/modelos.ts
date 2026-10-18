@@ -294,4 +294,13 @@ export interface SaldoDeEfectivo {
 
   /** Falso si no hay apertura o si algo no se pudo convertir: el saldo no se puede dar como bueno. */
   readonly isKnown: boolean;
+
+  /**
+   * El saldo llevado a dólares al cambio de hoy. **Solo informativo**: no se guarda ni interviene en ningún
+   * cálculo. Nulo si la cartera ya está en dólares o si no hay tipo.
+   */
+  readonly balanceInUsd: number | null;
+
+  /** El cambio usado, «1 USD = X» de la moneda de la cartera, para poder comprobar la cifra. */
+  readonly usdRate: number | null;
 }

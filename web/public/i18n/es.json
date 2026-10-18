@@ -296,6 +296,7 @@
       "Withdrawal": "Retiro",
     "Opening": "Apertura",
     "saldo": "Efectivo",
+    "saldoEnUsd": "Son unos {{usd}} al cambio de hoy (1 USD = {{tipo}} {{moneda}}). Solo informativo.",
     "saldoDesde": "Desde la apertura del {{dia}}.",
     "borrar": "Borrar",
     "borrarPregunta": "¿Borrar este movimiento? No se puede deshacer.",
@@ -307,6 +308,7 @@
       "Sale": "Venta"
     },
     "saldo": "Efectivo",
+    "saldoEnUsd": "Son unos {{usd}} al cambio de hoy (1 USD = {{tipo}} {{moneda}}). Solo informativo.",
     "saldoDesde": "Desde la apertura del {{dia}}.",
     "borrar": "Borrar",
     "borrarPregunta": "¿Borrar este movimiento? No se puede deshacer.",

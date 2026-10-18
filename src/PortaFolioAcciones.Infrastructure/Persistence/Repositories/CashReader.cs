@@ -164,6 +164,29 @@ internal sealed class CashReader : ICashReader
             }
         }
 
+        var saldo = declarado + aportado - retirado + vendido - comprado;
+
+        // La vista en dolares, solo informativa. Se calcula al cambio de hoy y no se guarda: manana valdra otra
+        // cosa, y guardarla seria tener un numero que envejece sin decirlo. El tipo se ensena al lado para que la
+        // cifra se pueda comprobar.
+        decimal? saldoEnUsd = null;
+        decimal? tipoDeHoy = null;
+
+        if (moneda != Currency.Usd)
+        {
+            var hoy = await _context.DailyFxRates
+                .AsNoTracking()
+                .Where(tipo => tipo.From == Currency.Usd && tipo.To == moneda)
+                .OrderByDescending(tipo => tipo.RateDate)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (hoy is { Rate: > 0m })
+            {
+                tipoDeHoy = hoy.Rate;
+                saldoEnUsd = saldo / hoy.Rate;
+            }
+        }
+
         return new CashBalanceSummary(
             portfolioId,
             moneda.Code,
@@ -172,9 +195,11 @@ internal sealed class CashReader : ICashReader
             retirado,
             vendido,
             comprado,
-            declarado + aportado - retirado + vendido - comprado,
+            saldo,
             desde,
-            sinConvertir);
+            sinConvertir,
+            saldoEnUsd,
+            tipoDeHoy);
     }
 
     private async Task<Currency> BaseDelDuenoAsync(Guid dueno, CancellationToken cancellationToken)

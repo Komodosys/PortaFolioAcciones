@@ -12,6 +12,14 @@ namespace PortaFolioAcciones.Application.Portfolios;
 /// <param name="Purchases">Lo pagado en las compras desde la apertura.</param>
 /// <param name="Balance">Apertura + aportaciones − retiros + ventas − compras.</param>
 /// <param name="Since">El día de la apertura. Nulo si no la hay.</param>
+/// <param name="BalanceInUsd">
+/// El saldo llevado a dolares estadounidenses al cambio de hoy. **Solo informativo**: no se guarda ni interviene
+/// en ningun calculo. Nulo si la cartera ya esta en dolares o si no hay tipo de cambio.
+/// </param>
+/// <param name="UsdRate">
+/// El cambio usado para esa vista, 1 USD = X de la moneda de la cartera. Se ensena al lado para que la cifra
+/// no parezca magia. Nulo si no se pudo calcular.
+/// </param>
 /// <param name="Unconverted">
 /// Cuántos movimientos no se han podido convertir porque no se guardó su tipo. Si es mayor que cero, el saldo
 /// <b>no está completo</b> y se dice: darlo como bueno sería peor que no darlo.
@@ -31,7 +39,9 @@ public sealed record CashBalanceSummary(
     decimal Purchases,
     decimal Balance,
     DateOnly? Since,
-    int Unconverted)
+    int Unconverted,
+    decimal? BalanceInUsd = null,
+    decimal? UsdRate = null)
 {
     /// <summary>Dice si el saldo se puede dar como bueno.</summary>
     public bool IsKnown => Since is not null && Unconverted == 0;

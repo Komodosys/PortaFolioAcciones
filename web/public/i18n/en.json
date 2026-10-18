@@ -296,6 +296,7 @@
       "Withdrawal": "Withdrawal",
     "Opening": "Opening",
     "saldo": "Cash",
+    "saldoEnUsd": "That is about {{usd}} at the rate of today (1 USD = {{tipo}} {{moneda}}). Informational only.",
     "saldoDesde": "Since the opening on {{dia}}.",
     "borrar": "Delete",
     "borrarPregunta": "Delete this movement? It cannot be undone.",
@@ -307,6 +308,7 @@
       "Sale": "Sale"
     },
     "saldo": "Cash",
+    "saldoEnUsd": "That is about {{usd}} at the rate of today (1 USD = {{tipo}} {{moneda}}). Informational only.",
     "saldoDesde": "Since the opening on {{dia}}.",
     "borrar": "Delete",
     "borrarPregunta": "Delete this movement? It cannot be undone.",

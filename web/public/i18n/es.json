@@ -271,6 +271,28 @@
   "mercado": {
     "demasiadoPronto": "Demasiado seguido. Espera {{total}} segundos y vuelve a probar."
   },
+  "movimiento": {
+    "titulo": "Movimientos",
+    "subtitulo": "El dinero que entra y sale de esta cartera, y las ventas. Las ventas no se anotan aquí: se registran al vender, porque además reducen la posición.",
+    "anotar": "Anotar un movimiento",
+    "tipo": "Tipo",
+    "importe": "Importe",
+    "moneda": "Moneda",
+    "dia": "Día",
+    "diaAyuda": "Vacío usa el de hoy.",
+    "notas": "Notas",
+    "aportado": "Aportado",
+    "retirado": "Retirado",
+    "sinMovimientos": "Todavía no hay movimientos en esta cartera.",
+    "importeObligatorio": "El importe tiene que ser mayor que cero.",
+    "tipos": {
+      "Deposit": "Aportación",
+      "Withdrawal": "Retiro",
+      "Sale": "Venta"
+    },
+    "invalid_amount": "El importe tiene que ser mayor que cero.",
+    "invalid": "Ese movimiento no se puede anotar. Para una venta, usa la venta de la posición."
+  },
   "portfolio": {
     "not_found": "No se ha encontrado esa cartera.",
     "name_required": "Ponle un nombre a la cartera.",
@@ -279,6 +301,7 @@
     "has_positions": "Esa cartera tiene posiciones, así que no se puede borrar. Archívala: deja de contar y no se pierde nada."
   },
   "comun": {
+    "volver": "Volver",
     "si": "Sí",
     "no": "No",
     "aceptar": "Aceptar",

@@ -271,6 +271,28 @@
   "mercado": {
     "demasiadoPronto": "Too soon. Wait {{total}} seconds and try again."
   },
+  "movimiento": {
+    "titulo": "Movements",
+    "subtitulo": "The money going in and out of this portfolio, and the sales. Sales are not entered here: they are recorded when you sell, because they also reduce the position.",
+    "anotar": "Record a movement",
+    "tipo": "Type",
+    "importe": "Amount",
+    "moneda": "Currency",
+    "dia": "Date",
+    "diaAyuda": "Empty uses today's.",
+    "notas": "Notes",
+    "aportado": "Contributed",
+    "retirado": "Withdrawn",
+    "sinMovimientos": "This portfolio has no movements yet.",
+    "importeObligatorio": "The amount must be greater than zero.",
+    "tipos": {
+      "Deposit": "Contribution",
+      "Withdrawal": "Withdrawal",
+      "Sale": "Sale"
+    },
+    "invalid_amount": "The amount must be greater than zero.",
+    "invalid": "That movement cannot be recorded. For a sale, use the position's sell."
+  },
   "portfolio": {
     "not_found": "That portfolio could not be found.",
     "name_required": "Give the portfolio a name.",
@@ -279,6 +301,7 @@
     "has_positions": "That portfolio has positions, so it cannot be deleted. Archive it: it stops counting and nothing is lost."
   },
   "comun": {
+    "volver": "Back",
     "si": "Yes",
     "no": "No",
     "aceptar": "OK",

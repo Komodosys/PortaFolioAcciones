@@ -45,6 +45,13 @@ export const routes: Routes = [
           import('./features/posiciones/nueva/nueva').then((m) => m.NuevaPosicion),
       },
       {
+        // Los movimientos van en su propia pantalla y no dentro del detalle: el detalle ya enseña la tabla
+        // de posiciones, y meter una segunda tabla y un formulario debajo la haría ilegible en el móvil.
+        path: 'carteras/:id/movimientos',
+        loadComponent: () =>
+          import('./features/carteras/movimientos/movimientos').then((m) => m.MovimientosDeCartera),
+      },
+      {
         path: 'posiciones/:id',
         loadComponent: () =>
           import('./features/posiciones/detalle/detalle').then((m) => m.DetalleDePosicion),

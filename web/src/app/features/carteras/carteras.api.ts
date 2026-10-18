@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { ResumenDeCartera, VistaDeCartera } from './modelos';
+import { Movimiento, NuevoMovimiento, ResumenDeCartera, VistaDeCartera } from './modelos';
 
 /**
  * El acceso a la API de carteras.
@@ -101,5 +101,33 @@ export class CarterasApi {
    */
   borrar(id: string): Promise<void> {
     return firstValueFrom(this.http.delete<void>(`/api/portfolios/${id}`));
+  }
+
+  /**
+   * Los movimientos de una cartera: aportaciones, retiros y ventas, del mas reciente al mas antiguo.
+   *
+   * Las **ventas** aparecen aqui aunque no se creen aqui: se crean al vender, porque ademas reducen la
+   * posicion. Es el registro unico, y por eso el informe puede sumar lo que entra, lo que sale y lo vendido.
+   */
+  movimientos(id: string): Promise<Movimiento[]> {
+    return firstValueFrom(this.http.get<Movimiento[]>(`/api/portfolios/${id}/movements`));
+  }
+
+  /**
+   * Registra una aportacion o un retiro.
+   *
+   * Una venta **no** se registra por aqui: se registra al vender. La API devuelve 400 si se intenta, para que
+   * no pueda existir una venta sin su reduccion de posicion.
+   */
+  anotarMovimiento(id: string, movimiento: NuevoMovimiento): Promise<Movimiento> {
+    return firstValueFrom(
+      this.http.post<Movimiento>(`/api/portfolios/${id}/movements`, {
+        kind: movimiento.tipo,
+        amount: movimiento.importe,
+        currency: movimiento.moneda,
+        occurredOn: movimiento.dia,
+        notes: movimiento.notas,
+      }),
+    );
   }
 }

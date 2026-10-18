@@ -33,6 +33,9 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
+        <a class="btn btn-ghost btn-sm text-slate-600" [routerLink]="['/carteras', cartera.portfolioId, 'movimientos']">
+          {{ t('movimiento.titulo') }}
+        </a>
         <!--
           Los refrescos a mano. Solo los ve el administrador, y lo decide el servidor: esconder el botón no
           impide llamar a la API, y las dos operaciones gastan la cuota de una fuente gratuita.

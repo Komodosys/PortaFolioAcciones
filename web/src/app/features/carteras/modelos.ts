@@ -236,3 +236,39 @@ export interface VistaDeCartera {
   /** La fecha de los tipos de cambio usados, o nula. */
   readonly ratesDate: string | null;
 }
+
+/**
+ * Un movimiento de una cartera, tal como lo devuelve la API.
+ *
+ * Los tres tipos conviven en la misma lista: aportaciones, retiros y **ventas**. Las ventas no se crean
+ * desde el formulario, pero sí se leen aquí, porque el registro es uno solo.
+ */
+export interface Movimiento {
+  readonly id: string;
+
+  /** `Deposit`, `Withdrawal` o `Sale`. */
+  readonly kind: string;
+
+  readonly occurredOn: string;
+
+  /** El importe, siempre positivo. En un retiro el signo lo pone el tipo, no el número. */
+  readonly amount: number;
+
+  readonly currency: string;
+
+  /** El símbolo vendido, o nulo en una aportación o un retiro. */
+  readonly symbol: string | null;
+
+  readonly quantity: number | null;
+  readonly pricePerUnit: number | null;
+  readonly notes: string | null;
+}
+
+/** Lo que se manda para anotar una aportación o un retiro. */
+export interface NuevoMovimiento {
+  readonly tipo: string;
+  readonly importe: number;
+  readonly moneda: string;
+  readonly dia: string | null;
+  readonly notas: string | null;
+}

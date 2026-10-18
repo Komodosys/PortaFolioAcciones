@@ -1,0 +1,166 @@
+<ng-container *transloco="let t">
+  @if (cargando()) {
+    <div class="flex items-center gap-3 rounded-3xl bg-white p-5 text-slate-500 shadow-lg">
+      <span class="loading loading-spinner loading-sm"></span>
+      <span class="text-sm">{{ t('app.cargando') }}</span>
+    </div>
+  } @else if (fallo(); as clave) {
+    <div class="alert alert-error" role="alert">
+      <span>{{ t(clave) }}</span>
+    </div>
+  } @else {
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold leading-tight text-slate-800">{{ t('movimiento.titulo') }}</h1>
+        <p class="mt-1 max-w-2xl text-sm text-slate-500">{{ t('movimiento.subtitulo') }}</p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <a class="btn btn-ghost btn-sm text-slate-500" [routerLink]="['/carteras', id()]">
+          {{ t('comun.volver') }}
+        </a>
+
+        @if (!anotando()) {
+          <button
+            type="button"
+            class="btn border-0 bg-emerald-500 font-semibold text-white shadow-sm hover:bg-emerald-600"
+            (click)="abrirFormulario()"
+          >
+            {{ t('movimiento.anotar') }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <!--
+      El resumen va arriba porque es lo que hace falta para entender la lista. Y las ventas NO cuentan como
+      aportación: el dinero ya estaba dentro y solo cambió de forma.
+    -->
+    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="rounded-3xl bg-white p-5 shadow-lg">
+        <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          {{ t('movimiento.aportado') }}
+        </p>
+        <p class="mt-1 text-2xl font-bold text-emerald-600">{{ aportado() }}</p>
+      </div>
+
+      <div class="rounded-3xl bg-white p-5 shadow-lg">
+        <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          {{ t('movimiento.retirado') }}
+        </p>
+        <p class="mt-1 text-2xl font-bold text-slate-700">{{ retirado() }}</p>
+      </div>
+    </div>
+
+    @if (anotando()) {
+      <form class="mb-6 rounded-3xl bg-white p-5 shadow-lg" (ngSubmit)="anotar()">
+        <div class="flex flex-wrap gap-4">
+          <label class="form-control min-w-[10rem] flex-1">
+            <div class="label pb-1">
+              <span class="label-text font-medium text-slate-600">{{ t('movimiento.tipo') }}</span>
+            </div>
+            <select class="select select-bordered w-full" name="tipo" [(ngModel)]="tipo">
+              @for (opcion of tipos; track opcion.valor) {
+                <option [value]="opcion.valor">{{ t(opcion.clave) }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="form-control min-w-[8rem] flex-1">
+            <div class="label pb-1">
+              <span class="label-text font-medium text-slate-600">{{ t('movimiento.importe') }}</span>
+            </div>
+            <input class="input input-bordered w-full" type="number" min="0.01" step="0.01" name="importe" [(ngModel)]="importe" />
+          </label>
+
+          <label class="form-control min-w-[6rem]">
+            <div class="label pb-1">
+              <span class="label-text font-medium text-slate-600">{{ t('movimiento.moneda') }}</span>
+            </div>
+            <input class="input input-bordered w-full" type="text" name="moneda" maxlength="3" [(ngModel)]="moneda" />
+          </label>
+
+          <label class="form-control min-w-[10rem]">
+            <div class="label pb-1">
+              <span class="label-text font-medium text-slate-600">{{ t('movimiento.dia') }}</span>
+            </div>
+            <input class="input input-bordered w-full" type="date" name="dia" [(ngModel)]="dia" />
+            <div class="label pt-1">
+              <span class="label-text-alt text-slate-400">{{ t('movimiento.diaAyuda') }}</span>
+            </div>
+          </label>
+        </div>
+
+        <label class="form-control mt-3">
+          <div class="label pb-1">
+            <span class="label-text font-medium text-slate-600">{{ t('movimiento.notas') }}</span>
+          </div>
+          <input class="input input-bordered w-full" type="text" name="notas" [(ngModel)]="notas" />
+        </label>
+
+        @if (falloDeAlta(); as clave) {
+          <div class="alert alert-error mt-4 py-2.5 text-sm" role="alert">
+            <span>{{ t(clave) }}</span>
+          </div>
+        }
+
+        <div class="mt-4 flex justify-end gap-2">
+          <button type="button" class="btn btn-ghost btn-sm text-slate-500" (click)="cancelarFormulario()">
+            {{ t('comun.cancelar') }}
+          </button>
+          <button
+            type="submit"
+            class="btn btn-sm border-0 bg-emerald-500 font-semibold text-white hover:bg-emerald-600"
+            [disabled]="guardando()"
+          >
+            @if (guardando()) {
+              <span class="loading loading-spinner loading-xs"></span>
+            }
+            {{ t('comun.guardar') }}
+          </button>
+        </div>
+      </form>
+    }
+
+    @if (movimientos().length === 0) {
+      <div class="rounded-3xl bg-white p-10 text-center shadow-lg">
+        <p class="text-sm text-slate-500">{{ t('movimiento.sinMovimientos') }}</p>
+      </div>
+    } @else {
+      <ul class="list-none space-y-3 p-0">
+        @for (movimiento of movimientos(); track movimiento.id) {
+          <li class="flex flex-wrap items-center gap-3 rounded-3xl bg-white p-4 shadow-sm">
+            <span
+              class="badge badge-sm"
+              [class]="
+                movimiento.kind === 'Deposit'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                  : movimiento.kind === 'Withdrawal'
+                    ? 'border-slate-200 bg-slate-50 text-slate-700'
+                    : 'border-amber-200 bg-amber-50 text-amber-800'
+              "
+            >
+              {{ t('movimiento.tipos.' + movimiento.kind) }}
+            </span>
+
+            <span class="text-sm text-slate-500">{{ movimiento.occurredOn }}</span>
+
+            @if (movimiento.symbol) {
+              <span class="text-sm font-semibold text-slate-700">
+                {{ movimiento.symbol }} · {{ movimiento.quantity }} × {{ movimiento.pricePerUnit }}
+              </span>
+            }
+
+            <span class="ml-auto text-base font-bold text-slate-800">
+              {{ movimiento.amount }} {{ movimiento.currency }}
+            </span>
+
+            @if (movimiento.notes) {
+              <span class="w-full text-xs text-slate-400">{{ movimiento.notes }}</span>
+            }
+          </li>
+        }
+      </ul>
+    }
+  }
+</ng-container>

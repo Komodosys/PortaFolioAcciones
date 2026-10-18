@@ -271,6 +271,28 @@
   "mercado": {
     "demasiadoPronto": "Trop rapproché. Attendez {{total}} secondes avant de réessayer."
   },
+  "movimiento": {
+    "titulo": "Mouvements",
+    "subtitulo": "L'argent qui entre et sort de ce portefeuille, et les ventes. Les ventes ne s'enregistrent pas ici : elles le sont à la vente, car elles réduisent aussi la position.",
+    "anotar": "Enregistrer un mouvement",
+    "tipo": "Type",
+    "importe": "Montant",
+    "moneda": "Devise",
+    "dia": "Date",
+    "diaAyuda": "Vide utilise celle d'aujourd'hui.",
+    "notas": "Notes",
+    "aportado": "Apporté",
+    "retirado": "Retiré",
+    "sinMovimientos": "Ce portefeuille n'a encore aucun mouvement.",
+    "importeObligatorio": "Le montant doit être supérieur à zéro.",
+    "tipos": {
+      "Deposit": "Apport",
+      "Withdrawal": "Retrait",
+      "Sale": "Vente"
+    },
+    "invalid_amount": "Le montant doit être supérieur à zéro.",
+    "invalid": "Ce mouvement ne peut pas être enregistré. Pour une vente, utilisez la vente de la position."
+  },
   "portfolio": {
     "not_found": "Ce portefeuille est introuvable.",
     "name_required": "Donnez un nom au portefeuille.",
@@ -279,6 +301,7 @@
     "has_positions": "Ce portefeuille contient des positions : il ne peut pas être supprimé. Archivez-le : il cesse d'être compté et rien n'est perdu."
   },
   "comun": {
+    "volver": "Retour",
     "si": "Oui",
     "no": "Non",
     "aceptar": "Accepter",

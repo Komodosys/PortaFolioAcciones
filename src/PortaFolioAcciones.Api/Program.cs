@@ -206,6 +206,9 @@ app.MapPositionEndpoints();
 
 app.MapAdminEndpoints();
 
+// Los informes. No requieren ser administrador: el aislamiento de las carteras decide qué se ve.
+app.MapReportEndpoints();
+
 // Los refrescos de precios pedidos a mano desde la pantalla. Solo administrador: llaman a una fuente
 // externa gratuita y escriben precios.
 app.MapMarketEndpoints();

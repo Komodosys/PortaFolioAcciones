@@ -28,7 +28,7 @@
         <div class="label pb-1">
           <span class="label-text font-medium text-slate-600">{{ t('informe.persona') }}</span>
         </div>
-        <select class="select select-bordered select-sm" [(ngModel)]="persona">
+        <select class="select select-bordered select-sm" [ngModel]="persona()" (ngModelChange)="persona.set($event)">
           <option value="">{{ t('informe.todas') }}</option>
           @for (nombre of personas(); track nombre) {
             <option [value]="nombre">{{ nombre }}</option>
@@ -40,7 +40,7 @@
         <div class="label pb-1">
           <span class="label-text font-medium text-slate-600">{{ t('informe.tipo') }}</span>
         </div>
-        <select class="select select-bordered select-sm" [(ngModel)]="tipo">
+        <select class="select select-bordered select-sm" [ngModel]="tipo()" (ngModelChange)="tipo.set($event)">
           <option value="">{{ t('informe.todos') }}</option>
           @for (valor of tipos(); track valor) {
             <option [value]="valor">{{ t('cartera.tipos.' + valor) }}</option>
@@ -48,7 +48,7 @@
         </select>
       </label>
 
-      @if (persona !== '' || tipo !== '') {
+      @if (persona() !== '' || tipo() !== '') {
         <button type="button" class="btn btn-ghost btn-sm text-slate-500" (click)="limpiarFiltros()">
           {{ t('informe.limpiar') }}
         </button>

@@ -25,9 +25,15 @@ export class Informes {
   readonly cargando = signal(true);
   readonly fallo = signal<string | null>(null);
 
-  /** Los filtros. Vacío significa «todas». */
-  persona = '';
-  tipo = '';
+  /**
+   * Los filtros. Vacío significa «todas».
+   *
+   * **Tienen que ser senales.** Se leen dentro de un computed, y un computed solo vuelve a calcularse
+   * cuando cambia una senal: con campos normales, cambiar el desplegable no recalculaba nada y las cifras se
+   * quedaban quietas. Es el error clasico de las senales, y no lo caza el compilador.
+   */
+  readonly persona = signal('');
+  readonly tipo = signal('');
 
   constructor() {
     void this.cargar();
@@ -64,8 +70,8 @@ export class Informes {
   readonly filas = computed(() =>
     (this.informe()?.rows ?? []).filter(
       (fila) =>
-        (this.persona === '' || fila.ownerDisplayName === this.persona) &&
-        (this.tipo === '' || fila.registrationType === this.tipo),
+        (this.persona() === '' || fila.ownerDisplayName === this.persona()) &&
+        (this.tipo() === '' || fila.registrationType === this.tipo()),
     ),
   );
 
@@ -117,7 +123,7 @@ export class Informes {
   }
 
   limpiarFiltros(): void {
-    this.persona = '';
-    this.tipo = '';
+    this.persona.set('');
+    this.tipo.set('');
   }
 }

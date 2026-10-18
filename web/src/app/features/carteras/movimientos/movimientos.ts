@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
@@ -35,8 +35,18 @@ export class MovimientosDeCartera {
   readonly cargando = signal(true);
   readonly fallo = signal<string | null>(null);
 
+  /**
+   * La carga va dentro de un effect y no en el cuerpo del constructor.
+   *
+   * **En el constructor, un input.required todavia no tiene valor**: Angular lanza al leerlo, el catch de
+   * cargar lo recoge y la pantalla muestra «ha ocurrido un error» sin decir nada mas. Un effect se ejecuta
+   * despues de que Angular asigne las entradas, y ademas vuelve a correr si cambia la cartera sin salir de la
+   * pantalla.
+   */
   constructor() {
-    void this.cargar();
+    effect(() => {
+      void this.cargar();
+    });
   }
 
   /** El formulario. */
@@ -81,7 +91,13 @@ export class MovimientosDeCartera {
 
     try {
       this.movimientos.set(await this.api.movimientos(this.id()));
-      this.saldo.set(await this.api.saldoDeEfectivo(this.id()));
+
+      // El saldo va aparte a proposito: si fallara, los movimientos ya cargados no se deben perder.
+      try {
+        this.saldo.set(await this.api.saldoDeEfectivo(this.id()));
+      } catch {
+        this.saldo.set(null);
+      }
     } catch (error: unknown) {
       this.movimientos.set([]);
       this.fallo.set(this.claveDe(error));

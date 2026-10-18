@@ -252,7 +252,9 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
     {
         await using var contexto = new PortafolioDbContext(_opciones, UsuarioDelSistema.Instancia);
 
-        var instrumentos = await InstrumentosQueHacenFaltaAsync(contexto, cancellationToken);
+        // El relleno es de HISTORIA, así que cuenta también lo que ya se vendió: si no, un valor cerrado no
+        // tendría cierres y la curva de la cartera saldría incompleta justo en el tramo en que sí se tenía.
+        var instrumentos = await InstrumentosQueHacenFaltaAsync(contexto, cancellationToken, incluirCerradas: true);
 
         if (instrumentos.Count == 0)
         {
@@ -570,12 +572,21 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
     /// Se excluyen los de <b>precio manual</b>. Preguntarlos seria sobrescribir la decision de quien los
     /// tiene con un dato ajeno, y ademas sin avisar.
     /// </summary>
+    /// <param name="contexto">La base.</param>
+    /// <param name="incluirCerradas">
+    /// Si se cuentan tambien las posiciones cerradas. **El relleno historico las necesita**: un valor que se
+    /// vendio entero ya no se valora —para eso esta cerrado—, pero su historia es la que explica la curva y la
+    /// ganancia realizada, y sin sus cierres el grafico sale incompleto y marcado como parcial. Se deja en
+    /// falso para la recogida diaria, que solo pide lo que hay que valorar hoy.
+    /// </param>
+    /// <param name="cancellationToken">Cancelación.</param>
     private static async Task<IReadOnlyList<Instrument>> InstrumentosQueHacenFaltaAsync(
         PortafolioDbContext contexto,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool incluirCerradas = false)
     {
         var conPosicion = await contexto.Positions
-            .Where(posicion => !posicion.IsClosed)
+            .Where(posicion => incluirCerradas || !posicion.IsClosed)
             .Select(posicion => posicion.InstrumentId)
             .Distinct()
             .ToListAsync(cancellationToken);

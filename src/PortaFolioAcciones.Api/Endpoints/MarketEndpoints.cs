@@ -82,6 +82,7 @@ internal static class MarketEndpoints
             RefrescoDePrecios refrescos,
             IMarketDataCollector colector,
             TimeProvider reloj,
+            DateOnly? desde,
             HttpContext contexto,
             CancellationToken cancelacion) =>
         {
@@ -90,11 +91,24 @@ internal static class MarketEndpoints
                 return DemasiadoPronto(contexto, espera);
             }
 
-            // Cinco años: cubre cualquier informe razonable y no multiplica las filas por gusto. Si algún día
-            // hace falta más atrás, es un parámetro y no un rediseño.
-            var desde = DateOnly.FromDateTime(reloj.GetUtcNow().UtcDateTime).AddYears(-5);
+            var hoy = DateOnly.FromDateTime(reloj.GetUtcNow().UtcDateTime);
 
-            return Results.Ok(await colector.BackfillAsync(desde, cancelacion));
+            // Cinco años por defecto: cubre cualquier informe razonable y no multiplica las filas por gusto.
+            // Pero se puede pedir más atrás, y hacía falta: la cuenta de siete años se abre en 2020 y sus
+            // gráficos no podían empezar antes de 2021 porque no había cierres.
+            var comienzo = desde ?? hoy.AddYears(-5);
+
+            // Una fecha en el futuro no rellenaría nada y devolvería «todo hecho», que es peor que decir que
+            // la petición está mal.
+            if (comienzo >= hoy)
+            {
+                return Results.Problem(
+                    title: "market.invalid_date",
+                    detail: "La fecha de comienzo tiene que ser anterior a hoy.",
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            return Results.Ok(await colector.BackfillAsync(comienzo, cancelacion));
         })
         .WithName("market.backfill")
         .WithSummary("Rellena el histórico de precios hacia atrás. Una petición por instrumento, sin sobrescribir.");

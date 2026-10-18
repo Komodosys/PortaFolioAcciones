@@ -126,6 +126,17 @@ pie, 12 CPU y 8 GB. PostgreSQL 18.6 ya está levantado encima.
     del tamaño que no es y nadie lo nota mirando. Está en `shared/graficos/graficos.ts`, con prueba de las partes,
     del reparto en «otros», del arco de vuelta entera, de la serie plana (que dividiría por cero) y de que dos
     series con la misma escala se comparan de verdad
+- [x] **El relleno de precios llega ya a 2020**, así que «Todo» empieza el **2020-09-14**, el primer día de la
+      cuenta: **20.150,10 de valor con cero posiciones** —acaba de entrar el dinero— y las posiciones aparecen
+      con la primera compra. De **21.353 a 31.539 cierres** (1.707 por instrumento, desde el 2020-01-02)
+  - El endpoint fijaba «cinco años» a mano; el comentario decía «si algún día hace falta más atrás, es un
+    parámetro y no un rediseño», y ese día llegó: ahora acepta `desde`, y rechaza una fecha futura en vez de
+    devolver «todo hecho», que sería mentir
+  - **Y un defecto que solo se veía al intentarlo**: el relleno elegía instrumentos por **posiciones abiertas**,
+    así que AAPL y DIS —vendidas enteras— se quedaban sin cierres y la serie salía **parcial**. Para rellenar
+    *historia* hay que mirar también lo que ya se vendió: esa historia es la que explica la curva. La recogida
+    diaria sigue mirando solo lo que hay que valorar hoy, que es lo correcto para ella
+  - La serie pasa a **completa**: `isComplete: true`, sin precios que falten
 
 **Queda abierto en el gráfico de evolución, y no se da por bueno:** el efectivo del último punto sale **2.269 CAD
 frente a los −1.050,39 del lector de efectivo**, una diferencia de unos **3.300 CAD**. El valor de las posiciones
@@ -133,6 +144,24 @@ es exacto —precio por unidades invertidas—, pero la parte de efectivo de la 
 afectado por las posiciones **vendidas del todo**, cuyos lotes quedaron a cero y de los que se usó el coste de la
 venta; hay un detalle de convenio con el lector de efectivo que falta por cuadrar. **No se presenta como
 terminado hasta que los dos números coincidan al céntimo.**
+
+### El respaldo, tres cosas que hacer más adelante (decidido el 2026-10-18)
+
+La tarea diaria **está programada y probada**, pero al mirar en qué estado estaba el respaldo salieron tres
+cosas que se dejan para después, a propósito:
+
+1. **Hay un respaldo FALSO en la carpeta y hay que borrarlo.** `respaldos\portafolio-17-10-2026.sql`, de **670
+   bytes**, tiene la cabecera de `pg_dump` y **ni una sola tabla**. Lo generó el paso de «copia de seguridad» de
+   [`actualizar.cmd`](../actualizar.cmd), que volca **redirigiendo la salida** —la trampa que este mismo proyecto
+   tiene documentada— y **no comprueba que el volcado sirva**. Si alguien restaurara de ahí, se quedaría con una
+   base vacía. Y como la retención solo borra los `portafolio-*.dump`, **ese fichero no se borrará nunca**.
+2. **Arreglar `actualizar.cmd`**: que su copia de seguridad sea `respaldar.cmd` —que verifica el volcado y devuelve
+   error si no sirve— y que **no siga con la migración si la copia falló**. Hoy puede parar la API, migrar y dejar
+   como «respaldo» un fichero vacío.
+3. **Copiar los respaldos fuera del equipo.** La base vive en `..\PortaFolioAcciones-datos\postgres` y los
+   respaldos en `respaldos\`: **el mismo disco**. Eso protege de un error —una migración, un borrado equivocado—
+   pero **no de que el disco muera**. Para eso hay que sacarlos a un disco externo o a la nube, y dejarlo también
+   programado.
 
 ---
 

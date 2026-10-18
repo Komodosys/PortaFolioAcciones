@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { codigoDe } from '../../../core/api/interceptores';
+import { Idioma } from '../../../core/i18n/idioma';
+import { formatearImporte } from '../../../shared/formato/numeros';
 import { CarterasApi } from '../carteras.api';
 import { Movimiento, SaldoDeEfectivo } from '../modelos';
 
@@ -25,6 +27,7 @@ import { Movimiento, SaldoDeEfectivo } from '../modelos';
 })
 export class MovimientosDeCartera {
   private readonly api = inject(CarterasApi);
+  private readonly idioma = inject(Idioma);
 
   readonly id = input.required<string>();
 
@@ -32,6 +35,19 @@ export class MovimientosDeCartera {
 
   /** El saldo de efectivo, calculado por el servidor desde la apertura. */
   readonly saldo = signal<SaldoDeEfectivo | null>(null);
+
+  /**
+   * Un importe escrito como se escribe el dinero: dos decimales y el código de la moneda.
+   *
+   * Se usa el formateador compartido, el mismo que el informe y el detalle. Antes esta pantalla escribía el
+   * número crudo, y se veían cosas como «-37544.90991321296 CAD».
+   *
+   * Se llama mostrarImporte y no importe porque el componente ya tiene un campo importe, que es el del
+   * formulario.
+   */
+  mostrarImporte(valor: number, moneda: string): string {
+    return formatearImporte(valor, moneda, this.idioma.activo());
+  }
   readonly cargando = signal(true);
   readonly fallo = signal<string | null>(null);
 

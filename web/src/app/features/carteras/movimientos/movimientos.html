@@ -44,7 +44,7 @@
         </p>
 
         @if (efectivo.isKnown) {
-          <p class="mt-1 text-3xl font-bold" [class.text-slate-800]="efectivo.balance >= 0">{{ efectivo.balance }} {{ efectivo.currency }}</p>
+          <p class="mt-1 text-3xl font-bold" [class.text-slate-800]="efectivo.balance >= 0">{{ mostrarImporte(efectivo.balance, efectivo.currency) }}</p>
           <p class="mt-1 text-xs text-slate-400">
             {{ t('movimiento.saldoDesde', { dia: efectivo.since }) }}
           </p>
@@ -73,14 +73,14 @@
         <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">
           {{ t('movimiento.aportado') }}
         </p>
-        <p class="mt-1 text-2xl font-bold text-emerald-600">{{ aportado() }}</p>
+        <p class="mt-1 text-2xl font-bold text-emerald-600">{{ mostrarImporte(aportado(), saldo()?.currency ?? 'CAD') }}</p>
       </div>
 
       <div class="rounded-3xl bg-white p-5 shadow-lg">
         <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">
           {{ t('movimiento.retirado') }}
         </p>
-        <p class="mt-1 text-2xl font-bold text-slate-700">{{ retirado() }}</p>
+        <p class="mt-1 text-2xl font-bold text-slate-700">{{ mostrarImporte(retirado(), saldo()?.currency ?? 'CAD') }}</p>
       </div>
     </div>
 
@@ -184,7 +184,7 @@
             }
 
             <span class="ml-auto text-base font-bold text-slate-800">
-              {{ movimiento.amount }} {{ movimiento.currency }}
+              {{ mostrarImporte(movimiento.amount, movimiento.currency) }}
             </span>
 
             @if (movimiento.notes) {

@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<IPasswordManager, PasswordManager>();
         services.AddScoped<IInstrumentRepository, InstrumentRepository>();
         services.AddScoped<IPositionRepository, PositionRepository>();
+        services.AddScoped<IMovementRepository, MovementRepository>();
         services.AddScoped<IPortfolioViewReader, PortfolioViewReader>();
         services.AddScoped<ILastKnownPrice, LastKnownPriceReader>();
 

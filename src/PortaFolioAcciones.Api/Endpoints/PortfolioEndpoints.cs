@@ -246,6 +246,77 @@ internal static class PortfolioEndpoints
         })
         .WithName("portfolios.delete")
         .WithSummary("Borra una cartera, SOLO si no tiene posiciones. Si las tiene, se archiva.");
+
+        // --- Los movimientos de la cartera ---------------------------------------------------------
+        //
+        // Solo aportaciones y retiros. Una venta NO se registra por aquí: se registra al vender, porque además
+        // reduce la posición, y las dos cosas tienen que ir juntas o el registro y la posición dirían cosas
+        // distintas.
+
+        group.MapGet("/{id:guid}/movements", async (
+            Guid id,
+            IPortfolioRepository carteras,
+            IMovementRepository movimientos,
+            CancellationToken cancelacion) =>
+        {
+            // El filtro global actúa sobre las carteras, y un movimiento no tiene dueño propio: hereda el de
+            // su cartera. Por eso el acceso se comprueba aquí. Sin esto, cualquiera podría leer los
+            // movimientos de la cartera de otra persona.
+            var cartera = await carteras.FindAsync(id, cancelacion);
+
+            return cartera is null
+                ? NoEncontrada()
+                : Results.Ok(await movimientos.ListAsync(id, cancelacion));
+        })
+        .WithName("portfolios.movements")
+        .WithSummary("Los movimientos de una cartera, del más reciente al más antiguo.");
+
+        group.MapPost("/{id:guid}/movements", async Task<IResult> (
+            Guid id,
+            CashMovementRequest peticion,
+            IPortfolioRepository carteras,
+            IMovementRepository movimientos,
+            TimeProvider reloj,
+            CancellationToken cancelacion) =>
+        {
+            var cartera = await carteras.FindAsync(id, cancelacion);
+
+            if (cartera is null)
+            {
+                return NoEncontrada();
+            }
+
+            if (peticion.Amount <= 0m)
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest, title: "movement.invalid_amount");
+            }
+
+            try
+            {
+                var dia = peticion.OccurredOn ?? DateOnly.FromDateTime(reloj.GetUtcNow().UtcDateTime);
+
+                var movimiento = await movimientos.AddCashAsync(
+                    id,
+                    peticion.Kind ?? string.Empty,
+                    peticion.Amount,
+                    peticion.Currency ?? Currency.Cad.Code,
+                    dia,
+                    peticion.Notes,
+                    cancelacion);
+
+                return Results.Created($"/api/portfolios/{id}/movements/{movimiento.Id}", movimiento);
+            }
+            catch (ArgumentException)
+            {
+                // Aquí caen la moneda malformada y el tipo que no es aportación ni retiro. Se devuelve 400 y no
+                // 500: es la petición la que está mal, no el programa.
+                return Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest, title: "movement.invalid");
+            }
+        })
+        .WithName("portfolios.addMovement")
+        .WithSummary("Registra una aportación o un retiro. Las ventas se registran al vender.");
     }
 
     private static IResult NoEncontrada() =>
@@ -259,6 +330,19 @@ internal static class PortfolioEndpoints
     /// </summary>
     private static bool TryParseRegistrationType(string? texto, out RegistrationType tipo) =>
         Enum.TryParse(texto, ignoreCase: true, out tipo) && Enum.IsDefined(tipo);
+
+    /// <summary>Lo que manda el formulario de una aportación o un retiro.</summary>
+    /// <param name="Kind">`Deposit` o `Withdrawal`. Cualquier otra cosa da 400.</param>
+    /// <param name="Amount">El importe, siempre positivo: el signo lo pone el tipo.</param>
+    /// <param name="Currency">La moneda. Sin ella se usa la base de la aplicación.</param>
+    /// <param name="OccurredOn">El día. Nulo usa el de hoy.</param>
+    /// <param name="Notes">Notas.</param>
+    internal sealed record CashMovementRequest(
+        string? Kind,
+        decimal Amount,
+        string? Currency,
+        DateOnly? OccurredOn,
+        string? Notes);
 
     /// <summary>Lo que manda el formulario de edición de una cartera.</summary>
     internal sealed record UpdatePortfolioRequest(

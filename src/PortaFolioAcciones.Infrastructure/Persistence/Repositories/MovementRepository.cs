@@ -77,6 +77,9 @@ internal sealed class MovementRepository : IMovementRepository
         {
             "Deposit" => Movement.Deposit(portfolioId, importe, occurredOn, notes, ahora),
             "Withdrawal" => Movement.Withdrawal(portfolioId, importe, occurredOn, notes, ahora),
+            // La apertura es el punto de partida del saldo. Se registra como un movimiento mas para que la
+            // suma cuadre, pero no cuenta como aportacion: no es dinero que entrara, es el dinero que ya habia.
+            "Opening" => Movement.Opening(portfolioId, importe, occurredOn, notes, ahora),
 
             // Una venta NO se registra aquí: se registra al vender, porque además reduce la posición. Dejar
             // crear una venta suelta permitiría tener una venta sin su reducción, y la posición y el registro

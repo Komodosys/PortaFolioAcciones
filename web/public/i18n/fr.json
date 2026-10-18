@@ -289,8 +289,17 @@
     "tipos": {
       "Deposit": "Apport",
       "Withdrawal": "Retrait",
+    "Opening": "Ouverture",
+    "saldo": "Liquidités",
+    "saldoDesde": "Depuis l'ouverture du {{dia}}.",
+    "sinApertura": "Vous n'avez pas encore déclaré ce qu'il y avait sur le compte. Enregistrez une ouverture et le solde sera compté à partir de là.",
+    "saldoIncompleto": "Le solde ne peut pas être considéré comme juste : {{total}} mouvement(s) sans taux de change, donc une partie de l'argent ne peut pas être convertie.",
       "Sale": "Vente"
     },
+    "saldo": "Liquidités",
+    "saldoDesde": "Depuis l'ouverture du {{dia}}.",
+    "sinApertura": "Vous n'avez pas encore déclaré ce qu'il y avait sur le compte. Enregistrez une ouverture et le solde sera compté à partir de là.",
+    "saldoIncompleto": "Le solde ne peut pas être considéré comme juste : {{total}} mouvement(s) sans taux de change, donc une partie de l'argent ne peut pas être convertie.",
     "invalid_amount": "Le montant doit être supérieur à zéro.",
     "invalid": "Ce mouvement ne peut pas être enregistré. Pour une vente, utilisez la vente de la position."
   },

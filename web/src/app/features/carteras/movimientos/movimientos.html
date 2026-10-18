@@ -36,6 +36,30 @@
       El resumen va arriba porque es lo que hace falta para entender la lista. Y las ventas NO cuentan como
       aportación: el dinero ya estaba dentro y solo cambió de forma.
     -->
+    <!-- El saldo de efectivo, calculado desde la apertura. -->
+    @if (saldo(); as efectivo) {
+      <div class="mb-4 rounded-3xl bg-white p-5 shadow-lg">
+        <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+          {{ t('movimiento.saldo') }}
+        </p>
+
+        @if (efectivo.isKnown) {
+          <p class="mt-1 text-3xl font-bold text-slate-800">{{ efectivo.balance }} {{ efectivo.currency }}</p>
+          <p class="mt-1 text-xs text-slate-400">
+            {{ t('movimiento.saldoDesde', { dia: efectivo.since }) }}
+          </p>
+        } @else if (efectivo.since === null) {
+          <!-- Sin apertura no hay saldo: se dice lo que hay que hacer, no un número que no significa nada. -->
+          <div class="alert alert-warning mt-2 py-2.5 text-sm" role="status">
+            <span>{{ t('movimiento.sinApertura') }}</span>
+          </div>
+        } @else {
+          <div class="alert alert-warning mt-2 py-2.5 text-sm" role="status">
+            <span>{{ t('movimiento.saldoIncompleto', { total: efectivo.unconverted }) }}</span>
+          </div>
+        }
+      </div>
+    }
     <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div class="rounded-3xl bg-white p-5 shadow-lg">
         <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">

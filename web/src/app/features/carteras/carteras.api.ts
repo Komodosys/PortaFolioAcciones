@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { Movimiento, NuevoMovimiento, ResumenDeCartera, VistaDeCartera } from './modelos';
+import { Movimiento, NuevoMovimiento, ResumenDeCartera, SaldoDeEfectivo, VistaDeCartera } from './modelos';
 
 /**
  * El acceso a la API de carteras.
@@ -111,6 +111,16 @@ export class CarterasApi {
    */
   movimientos(id: string): Promise<Movimiento[]> {
     return firstValueFrom(this.http.get<Movimiento[]>(`/api/portfolios/${id}/movements`));
+  }
+
+  /**
+   * El saldo de efectivo de la cartera, calculado desde la apertura declarada.
+   *
+   * isKnown es falso cuando no hay apertura o cuando algun importe no se pudo convertir. En ese caso el
+   * saldo **no se ensena como bueno**: un saldo incompleto con aspecto de exacto es peor que no darlo.
+   */
+  saldoDeEfectivo(id: string): Promise<SaldoDeEfectivo> {
+    return firstValueFrom(this.http.get<SaldoDeEfectivo>(`/api/portfolios/${id}/cash`));
   }
 
   /**

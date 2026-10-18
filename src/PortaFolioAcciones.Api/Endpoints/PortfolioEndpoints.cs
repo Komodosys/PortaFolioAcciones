@@ -253,6 +253,18 @@ internal static class PortfolioEndpoints
         // reduce la posición, y las dos cosas tienen que ir juntas o el registro y la posición dirían cosas
         // distintas.
 
+        group.MapGet("/{id:guid}/cash", async (
+            Guid id,
+            IPortfolioRepository carteras,
+            ICashReader saldos,
+            CancellationToken cancelacion) =>
+        {
+            var cartera = await carteras.FindAsync(id, cancelacion);
+
+            return cartera is null ? NoEncontrada() : Results.Ok(await saldos.GetAsync(id, cancelacion));
+        })
+        .WithName("portfolios.cash")
+        .WithSummary("El saldo de efectivo de una cartera, calculado desde la apertura declarada.");
         group.MapGet("/{id:guid}/movements", async (
             Guid id,
             IPortfolioRepository carteras,

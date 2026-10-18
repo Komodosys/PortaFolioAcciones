@@ -51,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<IPositionRepository, PositionRepository>();
         services.AddScoped<IMovementRepository, MovementRepository>();
         services.AddScoped<IPerformanceReader, PerformanceReader>();
+        services.AddScoped<ICashReader, CashReader>();
         services.AddScoped<IPortfolioViewReader, PortfolioViewReader>();
         services.AddScoped<ILastKnownPrice, LastKnownPriceReader>();
 

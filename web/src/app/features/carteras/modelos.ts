@@ -272,3 +272,26 @@ export interface NuevoMovimiento {
   readonly dia: string | null;
   readonly notas: string | null;
 }
+/**
+ * El saldo de efectivo de una cartera y de dónde sale cada parte.
+ *
+ * **No se guarda: se calcula**, para que siempre cuadre con los movimientos que lo produjeron.
+ */
+export interface SaldoDeEfectivo {
+  readonly currency: string;
+  readonly opening: number;
+  readonly deposits: number;
+  readonly withdrawals: number;
+  readonly sales: number;
+  readonly purchases: number;
+  readonly balance: number;
+
+  /** El día de la apertura. Nulo si no se ha declarado. */
+  readonly since: string | null;
+
+  /** Cuántos movimientos no se pudieron convertir por no tener su tipo guardado. */
+  readonly unconverted: number;
+
+  /** Falso si no hay apertura o si algo no se pudo convertir: el saldo no se puede dar como bueno. */
+  readonly isKnown: boolean;
+}

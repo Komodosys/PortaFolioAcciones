@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { codigoDe } from '../../../core/api/interceptores';
 import { CarterasApi } from '../carteras.api';
-import { Movimiento } from '../modelos';
+import { Movimiento, SaldoDeEfectivo } from '../modelos';
 
 /**
  * Los movimientos de una cartera: aportaciones, retiros y ventas.
@@ -29,6 +29,9 @@ export class MovimientosDeCartera {
   readonly id = input.required<string>();
 
   readonly movimientos = signal<readonly Movimiento[]>([]);
+
+  /** El saldo de efectivo, calculado por el servidor desde la apertura. */
+  readonly saldo = signal<SaldoDeEfectivo | null>(null);
   readonly cargando = signal(true);
   readonly fallo = signal<string | null>(null);
 
@@ -51,6 +54,7 @@ export class MovimientosDeCartera {
   readonly tipos = [
     { valor: 'Deposit', clave: 'movimiento.tipos.Deposit' },
     { valor: 'Withdrawal', clave: 'movimiento.tipos.Withdrawal' },
+    { valor: 'Opening', clave: 'movimiento.tipos.Opening' },
   ];
 
   /**
@@ -77,6 +81,7 @@ export class MovimientosDeCartera {
 
     try {
       this.movimientos.set(await this.api.movimientos(this.id()));
+      this.saldo.set(await this.api.saldoDeEfectivo(this.id()));
     } catch (error: unknown) {
       this.movimientos.set([]);
       this.fallo.set(this.claveDe(error));

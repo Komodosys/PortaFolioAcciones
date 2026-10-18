@@ -289,8 +289,17 @@
     "tipos": {
       "Deposit": "Contribution",
       "Withdrawal": "Withdrawal",
+    "Opening": "Opening",
+    "saldo": "Cash",
+    "saldoDesde": "Since the opening on {{dia}}.",
+    "sinApertura": "You have not declared what was in the account yet. Record an opening and the balance will start counting from there.",
+    "saldoIncompleto": "The balance cannot be taken as good: {{total}} movement(s) have no exchange rate, so part of the money cannot be converted.",
       "Sale": "Sale"
     },
+    "saldo": "Cash",
+    "saldoDesde": "Since the opening on {{dia}}.",
+    "sinApertura": "You have not declared what was in the account yet. Record an opening and the balance will start counting from there.",
+    "saldoIncompleto": "The balance cannot be taken as good: {{total}} movement(s) have no exchange rate, so part of the money cannot be converted.",
     "invalid_amount": "The amount must be greater than zero.",
     "invalid": "That movement cannot be recorded. For a sale, use the position's sell."
   },

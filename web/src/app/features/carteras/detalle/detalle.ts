@@ -14,9 +14,24 @@ import {
 import { CarterasApi } from '../carteras.api';
 import { DesdoblamientoPendiente, PosicionEnVista, PosicionSinValorar, VistaDeCartera } from '../modelos';
 import { Columna, compararPosiciones, ordenarPor as siguienteOrden } from '../orden';
+import { MercadoApi } from '../../../core/api/mercado.api';
 import { Sesion } from '../../../core/sesion/sesion';
 import { PosicionesApi } from '../../../core/api/posiciones/posiciones.api';
 import { AvisoDatosAjenos } from '../../../shared/aviso-datos-ajenos/aviso-datos-ajenos';
+
+/**
+ * Un aviso de la pantalla: la clave de traducción y los datos que esa clave necesita.
+ *
+ * Los datos se declaran todos opcionales porque cada aviso usa los suyos —unos el total, otros el número de
+ * fotos— y Transloco ignora los que la cadena no menciona.
+ */
+interface AvisoDePrecios {
+  readonly clave: string;
+  readonly total?: number;
+  readonly guardados?: number;
+  readonly fotos?: number;
+  readonly carteras?: number;
+}
 
 /** Una fila de la tabla, con sus textos ya formateados. */
 interface Fila {
@@ -113,6 +128,7 @@ export class DetalleDeCartera {
   private readonly idioma = inject(Idioma);
   private readonly sesion = inject(Sesion);
   private readonly posiciones = inject(PosicionesApi);
+  private readonly mercado = inject(MercadoApi);
 
   /** El identificador de la cartera, que llega de la direccion. */
   readonly id = input.required<string>();
@@ -232,6 +248,114 @@ export class DetalleDeCartera {
     // Sin sesion no se deberia llegar aqui; si se llega, se dice que es ajena. Ante la duda, avisar.
     return vista !== null && (yo === undefined || vista.ownerUserId !== yo);
   });
+
+  // ------------------------------------------------------------------------------------------------
+  // Los refrescos de precios a mano (solo administrador)
+  // ------------------------------------------------------------------------------------------------
+
+  /** Si quien mira puede refrescar precios. Lo decide el servidor; aquí solo se esconde el botón. */
+  readonly puedeRefrescar = computed(() => this.sesion.esAdministrador());
+
+  readonly refrescandoPrecios = signal(false);
+
+  /**
+   * El aviso de lo que ha pasado, **como clave de traducción** y no como texto ya traducido.
+   *
+   * Se guarda la clave para que el aviso cambie de idioma con la interfaz: si se guardara el texto, cambiar
+   * de idioma dejaría el aviso anterior en el idioma viejo.
+   */
+  readonly avisoDePrecios = signal<AvisoDePrecios | null>(null);
+
+  readonly recogiendoCierre = signal(false);
+  readonly confirmandoCierre = signal(false);
+
+  /**
+   * Vuelve a pedir la cotización de cada instrumento.
+   *
+   * No escribe el cierre del día: solo cambia «lo último que se sabe», así que se puede pulsar a cualquier
+   * hora sin estropear nada.
+   */
+  async actualizarPrecios(): Promise<void> {
+    if (this.refrescandoPrecios()) {
+      return;
+    }
+
+    this.refrescandoPrecios.set(true);
+    this.avisoDePrecios.set(null);
+
+    try {
+      const resultado = await this.mercado.refrescarCotizaciones();
+
+      this.avisoDePrecios.set(
+        resultado.instrumentos === 0
+          ? { clave: 'cartera.preciosSinNada' }
+          : { clave: 'cartera.preciosActualizados', total: resultado.actualizados },
+      );
+
+      // La pantalla lee los precios guardados, así que hay que volver a pedirla: si no, el número no cambia
+      // y parecería que el botón no ha hecho nada.
+      await this.cargar(this.id());
+    } catch (error: unknown) {
+      this.avisoDePrecios.set(this.avisoDeError(error));
+    } finally {
+      this.refrescandoPrecios.set(false);
+    }
+  }
+
+  /** Pide confirmación: esta sí escribe el cierre del día, y antes de que cierren las bolsas es provisional. */
+  pedirRecogerCierre(): void {
+    this.confirmandoCierre.set(true);
+  }
+
+  cancelarRecogerCierre(): void {
+    this.confirmandoCierre.set(false);
+  }
+
+  async recogerElCierre(): Promise<void> {
+    if (this.recogiendoCierre()) {
+      return;
+    }
+
+    this.recogiendoCierre.set(true);
+    this.avisoDePrecios.set(null);
+
+    try {
+      const resultado = await this.mercado.recogerElCierre();
+
+      this.confirmandoCierre.set(false);
+      this.avisoDePrecios.set({
+        clave: 'cartera.recogerCierreHecho',
+        guardados: resultado.guardados,
+        fotos: resultado.fotos,
+        carteras: resultado.carteras,
+      });
+
+      await this.cargar(this.id());
+    } catch (error: unknown) {
+      this.confirmandoCierre.set(false);
+      this.avisoDePrecios.set(this.avisoDeError(error));
+    } finally {
+      this.recogiendoCierre.set(false);
+    }
+  }
+
+  /**
+   * El aviso de un fallo. El 429 se cuenta aparte porque no es un error: es «espera», y decir cuánto falta
+   * es la diferencia entre entenderlo y pensar que el botón está roto.
+   */
+  private avisoDeError(error: unknown): AvisoDePrecios {
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 429) {
+        const espera = (error.error as { retryAfterSeconds?: number } | null)?.retryAfterSeconds;
+
+        return { clave: 'mercado.demasiadoPronto', total: espera ?? 0 };
+      }
+
+      return { clave: codigoDe(error) ?? 'comun.error' };
+    }
+
+    return { clave: 'comun.error' };
+  }
 
   /**
    * Los totales, formateados.

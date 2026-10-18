@@ -240,6 +240,12 @@
     "borrarAyuda": "Se borrará la cartera y no se podrá deshacer.",
     "borrarConPosiciones": "Tiene {{total}} posición(es), así que no se puede borrar. Archívala: deja de contar y no se pierde nada.",
     "cuantasPosiciones": "{{total}} posición(es)",
+    "actualizarPrecios": "Actualizar precios",
+    "recogerCierre": "Recoger el cierre del día",
+    "preciosActualizados": "{{total}} precios actualizados",
+    "preciosSinNada": "Ningún instrumento necesita precio todavía.",
+    "recogerCierreAviso": "Se guardará el cierre de hoy, los tipos de cambio y la foto de las carteras. Si las bolsas todavía no han cerrado, el precio de hoy es el del momento y no el cierre: se corregirá solo esta noche, pero hasta entonces el histórico dirá algo que no es.",
+    "recogerCierreHecho": "Cierre guardado: {{guardados}} precios, {{fotos}} fotos de {{carteras}} carteras.",
     "totalesParciales": "Faltan precios: estos totales son parciales.",
     "valorTotal": "Valor total",
     "costeTotal": "Coste total",
@@ -258,6 +264,9 @@
     "datosAjenosDetalle": "Esta cuenta es de {{persona}}. Puedes verla y modificarla porque administras.",
     "datosAjenosCuenta": "Cuenta: {{cuenta}}",
     "datosAjenosAuditoria": "Todo lo que cambies quedará anotado con tu nombre, con el valor anterior y el nuevo."
+  },
+  "mercado": {
+    "demasiadoPronto": "Demasiado seguido. Espera {{total}} segundos y vuelve a probar."
   },
   "portfolio": {
     "not_found": "No se ha encontrado esa cartera.",

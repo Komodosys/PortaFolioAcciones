@@ -32,23 +32,82 @@
         </p>
       </div>
 
-      <a
-        class="btn border-0 bg-emerald-500 font-semibold text-white shadow-sm hover:bg-emerald-600"
-        [routerLink]="['/carteras', cartera.portfolioId, 'nueva-posicion']"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="2"
-          stroke="currentColor"
-          class="h-4 w-4"
+      <div class="flex flex-wrap items-center gap-2">
+        <!--
+          Los refrescos a mano. Solo los ve el administrador, y lo decide el servidor: esconder el botón no
+          impide llamar a la API, y las dos operaciones gastan la cuota de una fuente gratuita.
+        -->
+        @if (puedeRefrescar()) {
+          <button type="button" class="btn btn-ghost btn-sm text-slate-600" [disabled]="refrescandoPrecios()" (click)="actualizarPrecios()">
+            @if (refrescandoPrecios()) {
+              <span class="loading loading-spinner loading-xs"></span>
+            } @else {
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" class="h-4 w-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+            }
+            {{ t('cartera.actualizarPrecios') }}
+          </button>
+
+          <button type="button" class="btn btn-ghost btn-sm text-slate-500" (click)="pedirRecogerCierre()">
+            {{ t('cartera.recogerCierre') }}
+          </button>
+        }
+
+        <a
+          class="btn border-0 bg-emerald-500 font-semibold text-white shadow-sm hover:bg-emerald-600"
+          [routerLink]="['/carteras', cartera.portfolioId, 'nueva-posicion']"
         >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-        {{ t('posiciones.nueva') }}
-      </a>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            class="h-4 w-4"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          {{ t('posiciones.nueva') }}
+        </a>
+      </div>
     </div>
+
+    <!-- Lo que ha pasado al refrescar. Va delante de los números, como el resto de los avisos. -->
+    @if (avisoDePrecios(); as aviso) {
+      <div class="alert alert-info mb-4 py-2.5 text-sm" role="status">
+        <span>{{ t(aviso.clave, aviso) }}</span>
+        <button type="button" class="btn btn-ghost btn-xs" (click)="avisoDePrecios.set(null)">
+          {{ t('comun.aceptar') }}
+        </button>
+      </div>
+    }
+
+    <!-- Recoger el cierre pide confirmación: esta sí escribe el histórico del día. -->
+    @if (confirmandoCierre()) {
+      <dialog class="modal modal-open">
+        <div class="modal-box rounded-3xl">
+          <h3 class="text-lg font-bold text-slate-800">{{ t('cartera.recogerCierre') }}</h3>
+          <div class="alert alert-warning mt-4 py-2.5 text-sm" role="alert">
+            <span>{{ t('cartera.recogerCierreAviso') }}</span>
+          </div>
+
+          <div class="modal-action">
+            <button type="button" class="btn btn-ghost text-slate-500" (click)="cancelarRecogerCierre()">
+              {{ t('comun.cancelar') }}
+            </button>
+            <button type="button" class="btn btn-warning" [disabled]="recogiendoCierre()" (click)="recogerElCierre()">
+              @if (recogiendoCierre()) {
+                <span class="loading loading-spinner loading-xs"></span>
+              }
+              {{ t('cartera.recogerCierre') }}
+            </button>
+          </div>
+        </div>
+
+        <button type="button" class="modal-backdrop" (click)="cancelarRecogerCierre()">{{ t('comun.cancelar') }}</button>
+      </dialog>
+    }
 
     <!--
       Los avisos van DELANTE de los numeros y no detras. Un total parcial presentado como total es una cifra

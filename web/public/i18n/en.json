@@ -240,6 +240,12 @@
     "borrarAyuda": "The portfolio will be deleted and this cannot be undone.",
     "borrarConPosiciones": "It holds {{total}} position(s), so it cannot be deleted. Archive it: it stops counting and nothing is lost.",
     "cuantasPosiciones": "{{total}} position(s)",
+    "actualizarPrecios": "Refresh prices",
+    "recogerCierre": "Collect today's close",
+    "preciosActualizados": "{{total}} prices refreshed",
+    "preciosSinNada": "No instrument needs a price yet.",
+    "recogerCierreAviso": "Today's close, the exchange rates and the portfolio snapshots will be saved. If the markets have not closed yet, today's price is the current one and not the close: it will correct itself tonight, but until then the history will say something that is not true.",
+    "recogerCierreHecho": "Close saved: {{guardados}} prices, {{fotos}} snapshots of {{carteras}} portfolios.",
     "totalesParciales": "Prices are missing: these totals are partial.",
     "valorTotal": "Total value",
     "costeTotal": "Total cost",
@@ -258,6 +264,9 @@
     "datosAjenosDetalle": "This account belongs to {{persona}}. You can see and change it because you administer.",
     "datosAjenosCuenta": "Account: {{cuenta}}",
     "datosAjenosAuditoria": "Everything you change will be recorded under your name, with the old value and the new one."
+  },
+  "mercado": {
+    "demasiadoPronto": "Too soon. Wait {{total}} seconds and try again."
   },
   "portfolio": {
     "not_found": "That portfolio could not be found.",

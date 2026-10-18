@@ -240,6 +240,12 @@
     "borrarAyuda": "Le portefeuille sera supprimé et ce ne sera pas réversible.",
     "borrarConPosiciones": "Il contient {{total}} position(s), donc il ne peut pas être supprimé. Archivez-le : il cesse d'être compté et rien n'est perdu.",
     "cuantasPosiciones": "{{total}} position(s)",
+    "actualizarPrecios": "Actualiser les prix",
+    "recogerCierre": "Enregistrer la clôture du jour",
+    "preciosActualizados": "{{total}} prix actualisés",
+    "preciosSinNada": "Aucun instrument ne nécessite encore de prix.",
+    "recogerCierreAviso": "La clôture du jour, les taux de change et la photo des portefeuilles seront enregistrés. Si les bourses n'ont pas encore fermé, le prix du jour est celui du moment et non la clôture : cela se corrigera ce soir, mais d'ici là l'historique dira quelque chose qui n'est pas.",
+    "recogerCierreHecho": "Clôture enregistrée : {{guardados}} prix, {{fotos}} photos de {{carteras}} portefeuilles.",
     "totalesParciales": "Des prix manquent : ces totaux sont partiels.",
     "valorTotal": "Valeur totale",
     "costeTotal": "Coût total",
@@ -258,6 +264,9 @@
     "datosAjenosDetalle": "Ce compte est celui de {{persona}}. Vous pouvez le voir et le modifier parce que vous administrez.",
     "datosAjenosCuenta": "Compte : {{cuenta}}",
     "datosAjenosAuditoria": "Tout ce que vous changerez sera consigné sous votre nom, avec l'ancienne valeur et la nouvelle."
+  },
+  "mercado": {
+    "demasiadoPronto": "Trop rapproché. Attendez {{total}} secondes avant de réessayer."
   },
   "portfolio": {
     "not_found": "Ce portefeuille est introuvable.",

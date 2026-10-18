@@ -16,16 +16,16 @@ probado restaurar al menos una vez.
 
 ## Qué queda pendiente, de un vistazo
 
-| # | Qué | Quién | Tamaño |
+| # | Qué | Quién | Estado |
 |---|---|---|---|
-| 1 | **Arrancar el andamiaje** — Fase 1: solución .NET, Angular, Docker Compose | yo | 🟡 |
-| 2 | Dominio, modelo de datos y sus tests — Fase 2 | yo | 🔴 |
-| 3 | Autenticación, casos de uso, API y frontend — Fases 3 a 6 | yo | 🟡 |
-| 4 | Desplegar, respaldar y verificar contra el bróker — Fase 7 | yo | 🔴 |
-| 5 | ~~Instalar Docker Desktop~~ | **hecho** | ✅ |
+| 1 | Fase 1 — andamiaje | yo | ✅ |
+| 2 | Fase 2 — dominio y modelo de datos | yo | ✅ |
+| 3 | Fases 3 a 6 — autenticación, API y frontend | yo | ✅ |
+| 4 | Fase 7 — operación y entrega | yo | ✅ |
+| 5 | Fase 8 — tipo de registro y CRUD de carteras | yo | ✅ |
 
-**Nada se bloquea salvo el punto 1**, y **ya no queda ningún dato pendiente por tu parte**: los estados
-que faltan y las fechas de compra dejaron de ser necesarios con los ADR-010 y ADR-011.
+**No queda nada pendiente por tu parte.** Lo que sigue son las mejoras de la
+[hoja de ruta](#después-del-mvp-la-hoja-de-ruta), que se abordan cuando las pidas.
 
 **Cerrado el 2026-10-12:** no habrá estados de las otras tres cuentas ni de meses anteriores a 2026
 ([ADR-010](decisiones/ADR-010-se-trabaja-con-lo-que-hay.md)), y el coste se convierte **al cambio del
@@ -1184,6 +1184,50 @@ resto es trabajo conocido. Tamaños orientativos: 🟢 pequeño · 🟡 medio ·
     la cantidad con el estado, y solo entonces preguntar
 
 ---
+
+### Fase 8 — El tipo de registro y el CRUD de carteras ✅ *(2026-10-18)*
+
+- [x] **El tipo de registro fiscal**: `RegisteredRetirement`, `RegisteredSavings` o `NotRegistered`
+  - **En el código no se llama REER**, porque el código no está en ningún idioma. Las **etiquetas** sí
+    cambian: REER y CELI en español y francés, RRSP y TFSA en inglés. Son la misma cosa con dos nombres —lo
+    que en un comprobante de Revenu Québec es REER, en uno de la CRA es RRSP— y cada uno usa el suyo al
+    hablar con su banco
+  - **Es obligatorio y no tiene valor por defecto**, y es la decisión de diseño del trozo: un valor por
+    defecto cómodo —«no registrada»— etiquetaría **en silencio** una cuenta de jubilación como no
+    registrada, y una etiqueta equivocada es peor que una que falta, porque nadie la revisa
+  - **Es informativo y no cambia ningún cálculo**, igual que `AssetType`. En particular **no** sirve para
+    vigilar los límites de aportación: esos dependen de años, ingresos y retiros, y calcularlos mal sería
+    peor que no calcularlos
+  - La migración va **en tres pasos** —añadir permitiendo nulos, rellenar, cerrar como obligatoria— porque
+    EF la generaba con `defaultValue: ""`, y una cadena vacía no es un valor del enumerado: la aplicación
+    habría reventado al leer la primera cartera. Es el mismo fallo que apareció con los desdoblamientos
+  - El relleno no es una suposición: las siete carteras se llaman «RRSP ···» o «TFSA ···», y así quedaron
+    comprobadas en la base — cuatro como REER y tres como CELI
+- [x] **La edición completa en una sola llamada**, `PUT /api/portfolios/{id}`
+  - No es comodidad: con tres llamadas una podría fallar y las otras no, y **cada una dejaría su propia
+    entrada en el libro de auditoría**, así que editar una cartera aparecería como tres cambios distintos
+- [x] **Borrar, solo si la cartera no tiene posiciones**
+  - **La regla vive en el dominio** (`Portfolio.CanBeDeleted`): esconder un botón no impide llamar a la API.
+    Una cartera con posiciones tiene lotes, y los lotes son historia
+  - Con posiciones responde **409 y no 400**: la petición es correcta, es el estado de la cartera el que no
+    lo permite
+  - «No existe» y «es de otra persona» devuelven lo mismo a propósito: distinguirlos confirmaría que la
+    cartera existe
+- [x] **El desplegable de tres acciones** en cada tarjeta, con su diálogo de edición y el de borrado
+  - La tarjeta pasa a ser un componente: hay **tres** secciones que enseñan carteras —las mías, las
+    archivadas y las de otras personas— y el menú tiene que estar en las tres
+  - El menú va **fuera del enlace**: la tarjeta entera es un `<a>`, y un botón dentro navegaría a la cartera
+    en vez de abrir el menú
+  - Borrar sale deshabilitado si hay posiciones, con el motivo a la vista. El resumen de cartera lleva
+    `positionCount`, contado en una sola consulta agrupada
+- [x] **Un hueco preexistente, encontrado de paso**: los cinco códigos de error de cartera
+      (`portfolio.not_found`, `portfolio.name_required`, `portfolio.has_positions`…) **no tenían traducción
+      en ningún idioma**, así que la pantalla los enseñaba en crudo
+- [x] **La suite de carteras, de 29 a 54 comprobaciones**: el tipo obligatorio, que la etiqueta «REER» **no**
+      vale como valor, la edición de una vez, el 409 al borrar con posiciones, el 204 al borrar una vacía y
+      el aislamiento
+  - Encontró dos fallos de verdad, y los dos por lo mismo: **la API no estaba redesplegada**. `positionCount`
+    llegaba como `undefined` y la suite lo dijo
 
 ## Después del MVP: la hoja de ruta
 

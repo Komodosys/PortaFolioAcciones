@@ -1344,3 +1344,9 @@ base está desactualizada. En la práctica se envuelve en un **comando único** 
   EF Core, dentro del mismo `SaveChanges` que la modificación. Una llamada manual en cada caso de uso es
   una auditoría que el día que se olvide no dejará rastro de que se olvidó
   ([ADR-014](decisiones/ADR-014-administrador-escritura-con-auditoria.md)).
+
+## Continúa en otro documento
+
+El trabajo del **efectivo** y la **reconstrucción de una cuenta desde sus estados de cuenta** está en
+[`12-reconstruccion-de-la-7126.md`](12-reconstruccion-de-la-7126.md). Empieza por ahí: tiene el estado, el
+plan y cómo retomarlo en una sesión nueva.

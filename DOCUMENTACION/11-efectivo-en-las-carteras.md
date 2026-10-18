@@ -139,7 +139,31 @@ ningún histórico de divisa.
 
 ---
 
-## 9. El plan, por trozos
+
+## 10. Decisiones tomadas (2026-10-18)
+
+| # | Pregunta | Decisión | Consecuencia |
+|---|---|---|---|
+| 1 | El efecto de una compra | **La aplicación convierte y guarda el tipo** | Hace falta el histórico de divisa (trozo 1). El tipo queda auditable |
+| 2 | Moneda del saldo | **Una, la de la cartera** — y la interfaz puede **enseñar el equivalente en USD al cambio de hoy**, solo informativo | Un saldo, no una tabla de dos dimensiones. La vista en USD no se guarda: es presentación |
+| 3 | Las compras existentes | **Un saldo inicial declarado** | No se reconstruye el pasado; se dice dónde se empieza |
+| 4 | Dónde se ve y se corrige | **Pantalla propia en la cartera** | Si el saldo se descuadra, hay dónde arreglarlo |
+
+### Lo que se hizo al bajar la 1 y la 3 a código
+
+**No hace falta un segundo importe.** Guardar el importe ya convertido *y* el tipo sería tener dos verdades
+que pueden divergir. Se guarda **el tipo** (`Movement.RateUsed`) y el importe en la moneda de la cartera se
+**deriva** de él con `AmountIn(baseCurrency)`.
+
+**Y un fallo real que apareció al probarlo:** convertir multiplicando conserva la moneda de origen, así que
+`500 USD × 1,4` daba **«700 USD»** donde son **700 CAD** — un número correcto con la etiqueta equivocada, que
+es la peor forma de equivocarse. Un importe convertido está en la moneda de **destino**, y así se construye.
+
+**La apertura no es una aportación.** Se modela como un tipo de movimiento propio (`Opening`) para que la suma
+del saldo funcione, pero su flujo de caja para el informe **es cero**: no es dinero que se aportara estando la
+aplicación mirando, es el punto de partida de una cuenta que ya tenía dinero. Mezclarlos haría que el informe
+dijera que se aportó mucho más de lo que se aportó.
+## 11. El plan, por trozos
 
 | # | Qué | Depende de | Tamaño |
 |---|---|---|---|

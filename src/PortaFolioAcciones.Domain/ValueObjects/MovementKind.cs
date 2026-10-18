@@ -12,12 +12,21 @@ namespace PortaFolioAcciones.Domain.ValueObjects;
 /// </summary>
 public enum MovementKind
 {
+    /// <summary>
+    /// El saldo con el que se empieza. <b>No es una aportación.</b>
+    ///
+    /// Existe porque el pasado no se puede reconstruir: de las compras que se dieron de alta antes de que
+    /// hubiera registro de efectivo no se sabe cuántos dólares salieron de la cuenta. Fingir que se puede es
+    /// peor que declarar un punto de partida y decirlo.
+    /// </summary>
+    Opening = 0,
+
     /// <summary>Dinero que entra a la cuenta desde fuera.</summary>
-    Deposit = 0,
+    Deposit = 1,
 
     /// <summary>Dinero que sale de la cuenta hacia fuera.</summary>
-    Withdrawal = 1,
+    Withdrawal = 2,
 
     /// <summary>Una venta de una posición, con su precio.</summary>
-    Sale = 2,
+    Sale = 3,
 }

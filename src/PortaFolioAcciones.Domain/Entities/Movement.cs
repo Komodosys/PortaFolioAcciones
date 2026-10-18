@@ -30,7 +30,8 @@ public sealed class Movement
         Quantity? quantity,
         Money? pricePerUnit,
         string? notes,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        decimal? rateUsed = null)
     {
         Id = id;
         PortfolioId = portfolioId;
@@ -42,6 +43,7 @@ public sealed class Movement
         PricePerUnit = pricePerUnit;
         Notes = notes;
         CreatedAtUtc = now;
+        RateUsed = rateUsed;
     }
 
     /// <summary>Constructor sin parámetros para el mapeo de la base de datos.</summary>
@@ -96,12 +98,27 @@ public sealed class Movement
     /// </summary>
     public Money? CostPerUnit { get; private set; }
 
+    /// <summary>
+    /// El tipo de cambio aplicado para llevar <see cref="Amount"/> a la moneda base de la cartera.
+    ///
+    /// **Nulo significa que el importe ya estaba en la moneda base** y no hubo conversion. Se guarda el tipo y
+    /// no el importe convertido por dos razones: el importe convertido se puede recalcular, el tipo no; y
+    /// guardar los dos seria tener dos verdades que pueden divergir si alguien corrige una.
+    /// </summary>
+    public decimal? RateUsed { get; private set; }
+
     public string? Notes { get; private set; }
 
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
-    /// <summary>Dinero que entra desde fuera.</summary>
-    public static Movement Deposit(
+    /// <summary>
+    /// El saldo con el que se empieza, declarado por la persona.
+    ///
+    /// **No es una aportacion.** Una aportacion es dinero que entro estando la aplicacion mirando; esto es el
+    /// punto de partida de una cuenta que ya tenia dinero antes de que hubiera registro. Mezclarlos haria que el
+    /// informe dijera que se aporto mucho mas de lo que se aporto.
+    /// </summary>
+    public static Movement Opening(
         Guid portfolioId,
         Money amount,
         DateOnly occurredOn,
@@ -113,8 +130,26 @@ public sealed class Movement
         ExigirPositivo(amount, nameof(amount));
 
         return new Movement(
-            Guid.NewGuid(), portfolioId, MovementKind.Deposit, occurredOn, amount,
+            Guid.NewGuid(), portfolioId, MovementKind.Opening, occurredOn, amount,
             positionId: null, quantity: null, pricePerUnit: null, notes, now);
+    }
+
+    /// <summary>Dinero que entra desde fuera.</summary>
+    public static Movement Deposit(
+        Guid portfolioId,
+        Money amount,
+        DateOnly occurredOn,
+        string? notes,
+        DateTimeOffset now,
+        decimal? rateUsed = null)
+    {
+        ArgumentNullException.ThrowIfNull(amount);
+        ExigirCartera(portfolioId);
+        ExigirPositivo(amount, nameof(amount));
+
+        return new Movement(
+            Guid.NewGuid(), portfolioId, MovementKind.Deposit, occurredOn, amount,
+            positionId: null, quantity: null, pricePerUnit: null, notes, now, rateUsed);
     }
 
     /// <summary>Dinero que sale hacia fuera.</summary>
@@ -123,7 +158,8 @@ public sealed class Movement
         Money amount,
         DateOnly occurredOn,
         string? notes,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        decimal? rateUsed = null)
     {
         ArgumentNullException.ThrowIfNull(amount);
         ExigirCartera(portfolioId);
@@ -131,7 +167,7 @@ public sealed class Movement
 
         return new Movement(
             Guid.NewGuid(), portfolioId, MovementKind.Withdrawal, occurredOn, amount,
-            positionId: null, quantity: null, pricePerUnit: null, notes, now);
+            positionId: null, quantity: null, pricePerUnit: null, notes, now, rateUsed);
     }
 
     /// <summary>
@@ -148,7 +184,8 @@ public sealed class Movement
         Money costPerUnit,
         DateOnly occurredOn,
         string? notes,
-        DateTimeOffset now)
+        DateTimeOffset now,
+        decimal? rateUsed = null)
     {
         ArgumentNullException.ThrowIfNull(quantity);
         ArgumentNullException.ThrowIfNull(pricePerUnit);
@@ -179,7 +216,7 @@ public sealed class Movement
         return new Movement(
             Guid.NewGuid(), portfolioId, MovementKind.Sale, occurredOn,
             quantity * pricePerUnit,
-            positionId, quantity, pricePerUnit, notes, now)
+            positionId, quantity, pricePerUnit, notes, now, rateUsed)
         {
             CostPerUnit = costPerUnit,
         };
@@ -196,6 +233,28 @@ public sealed class Movement
             ? (Quantity! * (precio - coste))
             : null;
 
+    /// <summary>
+    /// El importe de este movimiento <b>en la moneda de la cartera</b>, que es lo que mueve el efectivo.
+    ///
+    /// Nulo si el importe está en otra moneda y no se guardó el tipo. Devolver el importe tal cual daría un
+    /// saldo en una moneda que no es la de la cuenta, y eso no cuadra con nada.
+    /// </summary>
+    /// <param name="baseCurrency">La moneda de la cartera.</param>
+    public Money? AmountIn(Currency baseCurrency)
+    {
+        ArgumentNullException.ThrowIfNull(baseCurrency);
+
+        if (Amount.Currency == baseCurrency)
+        {
+            return Amount;
+        }
+
+        // El importe convertido esta en la moneda de DESTINO, no en la de origen. Multiplicar conservando la
+        // moneda original —que es lo que hace MultiplyBy— daria «700 USD» donde son 700 CAD: un numero
+        // correcto con la etiqueta equivocada, que es la peor forma de equivocarse.
+        return RateUsed is { } tipo ? Money.Of(Amount.Amount * tipo, baseCurrency) : null;
+    }
+
     /// <summary>Dice si es dinero que entra o sale, en vez de una operación sobre un valor.</summary>
     public bool IsCash => Kind is MovementKind.Deposit or MovementKind.Withdrawal;
 
@@ -204,6 +263,9 @@ public sealed class Movement
     ///
     /// Una venta <b>no</b> cambia lo aportado: el dinero ya estaba dentro, solo cambió de forma. Confundir eso
     /// es lo que hace que un informe de rentabilidad salga mal.
+    ///
+    /// Y <b>la apertura tampoco</b>: no es dinero que se aportara estando la aplicación mirando, es el punto
+    /// de partida de una cuenta que ya tenía dinero. Se cuenta aparte, en el informe, y se dice.
     /// </summary>
     public Money CashFlow() => Kind switch
     {

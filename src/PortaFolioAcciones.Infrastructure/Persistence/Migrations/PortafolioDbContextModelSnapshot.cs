@@ -436,6 +436,9 @@ namespace PortaFolioAcciones.Infrastructure.Persistence.Migrations
                         .HasPrecision(28, 8)
                         .HasColumnType("numeric(28,8)");
 
+                    b.Property<decimal?>("RateUsed")
+                        .HasColumnType("numeric");
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Amount", "PortaFolioAcciones.Domain.Entities.Movement.Amount#Money", b1 =>
                         {
                             b1.IsRequired();

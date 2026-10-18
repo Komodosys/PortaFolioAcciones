@@ -129,6 +129,50 @@ public sealed class MovementTests
             () => Movement.Sale(Cartera, Posicion, Quantity.Of(1m), Dolar(50m), Dolar(-1m), Dia, null, Ahora));
     }
     [Fact]
+    public void Una_apertura_no_cuenta_como_aportacion()
+    {
+        // El saldo inicial no es dinero que se aportara: es el punto de partida de una cuenta que ya tenia
+        // dinero. Contarlo como aportacion haria que el informe dijera que se puso mucho mas de lo que se puso.
+        var apertura = Movement.Opening(Cartera, Canadiense(3_500m), Dia, "lo que habia", Ahora);
+
+        Assert.Equal(MovementKind.Opening, apertura.Kind);
+        Assert.True(apertura.CashFlow().IsZero);
+    }
+
+    [Fact]
+    public void Un_movimiento_en_la_moneda_de_la_cartera_no_necesita_tipo()
+    {
+        var aportacion = Movement.Deposit(Cartera, Canadiense(1_000m), Dia, null, Ahora);
+
+        Assert.Null(aportacion.RateUsed);
+        Assert.Equal(1_000m, aportacion.AmountIn(Currency.Cad)?.Amount);
+    }
+
+    [Fact]
+    public void Un_movimiento_en_otra_moneda_se_lleva_a_la_de_la_cartera_con_su_tipo()
+    {
+        // Una venta en dolares, en una cartera en dolares canadienses. El efectivo que mueve son los CAD que
+        // entraron en la cuenta, no los USD que se cobraron.
+        var venta = Movement.Sale(
+            Cartera, Posicion, Quantity.Of(10m), Dolar(50m), Dolar(40m), Dia, null, Ahora, rateUsed: 1.4m);
+
+        Assert.Equal(700m, venta.AmountIn(Currency.Cad)?.Amount);
+        Assert.Equal("CAD", venta.AmountIn(Currency.Cad)?.Currency.Code);
+
+        // Y el importe propio sigue siendo el que se cobro, en su moneda.
+        Assert.Equal(500m, venta.Amount.Amount);
+    }
+
+    [Fact]
+    public void Sin_tipo_no_se_inventa_la_conversion()
+    {
+        // Nulo y no el importe tal cual: devolver 500 «CAD» cuando son 500 USD seria un saldo falso con
+        // aspecto de exacto.
+        var venta = Movement.Sale(Cartera, Posicion, Quantity.Of(10m), Dolar(50m), Dolar(40m), Dia, null, Ahora);
+
+        Assert.Null(venta.AmountIn(Currency.Cad));
+    }
+    [Fact]
     public void Una_venta_no_cambia_lo_aportado()
     {
         // Es la prueba que más importa de este fichero. Una venta no aporta dinero: el dinero ya estaba

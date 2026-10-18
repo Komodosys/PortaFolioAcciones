@@ -12,6 +12,20 @@ namespace PortaFolioAcciones.Infrastructure.Persistence.Repositories;
 /// **No lo guarda.** Se suma cada vez: un saldo almacenado puede dejar de coincidir con los movimientos que lo
 /// produjeron, y entonces hay dos verdades. Calculado, cuadra por construcción.
 /// </summary>
+/// <remarks>
+/// <b>La apertura es «lo que habías puesto», no «el efectivo que había».</b> Esa distinción es la que hace que
+/// el cálculo salga bien. Si la apertura fuera solo el dinero de la cuenta, las posiciones que ya existían no
+/// estarían pagadas por nadie y el efectivo saldría inflado justo en lo que costaron.
+///
+/// Con la apertura entendida así, el saldo es:
+///
+/// <code>
+/// efectivo = apertura + aportaciones − retiros + ventas − TODO lo comprado
+/// </code>
+///
+/// Y entonces lo ganado —total menos aportado neto— sale igual a la ganancia no realizada más la realizada,
+/// que es la comprobación de que el modelo está bien montado.
+/// </remarks>
 internal sealed class CashReader : ICashReader
 {
     private readonly PortafolioDbContext _context;
@@ -25,7 +39,6 @@ internal sealed class CashReader : ICashReader
         Guid portfolioId,
         CancellationToken cancellationToken = default)
     {
-        // La cartera, con su filtro: si no es accesible, no hay saldo que dar.
         var cartera = await _context.Portfolios
             .AsNoTracking()
             .SingleOrDefaultAsync(portfolio => portfolio.Id == portfolioId, cancellationToken);
@@ -42,8 +55,7 @@ internal sealed class CashReader : ICashReader
             .Where(movimiento => movimiento.PortfolioId == portfolioId)
             .ToListAsync(cancellationToken);
 
-        // La apertura: la última declarada, porque si se corrige se declara otra vez y vale la nueva. El saldo
-        // cuenta desde ahí y lo anterior no se recalcula.
+        // La apertura: la última declarada. Si se corrige, se declara otra vez y vale la nueva.
         var apertura = movimientos
             .Where(movimiento => movimiento.Kind is MovementKind.Opening)
             .OrderByDescending(movimiento => movimiento.OccurredOn)
@@ -59,12 +71,6 @@ internal sealed class CashReader : ICashReader
 
             foreach (var movimiento in movimientos.Where(m => m.Kind == tipo))
             {
-                // Lo anterior a la apertura está incorporado en lo declarado, no se resta otra vez.
-                if (desde is { } dia && movimiento.OccurredOn < dia)
-                {
-                    continue;
-                }
-
                 if (movimiento.AmountIn(moneda) is { } importe)
                 {
                     total += importe.Amount;
@@ -83,13 +89,17 @@ internal sealed class CashReader : ICashReader
         var retirado = Suma(MovementKind.Withdrawal);
         var vendido = Suma(MovementKind.Sale);
 
-        // Las compras: los lotes de las posiciones de esta cartera, posteriores a la apertura.
-        var compras = 0m;
+        // Lo comprado: lo que todavía se tiene, MÁS lo que se vendió.
+        //
+        // Lo que se tiene son los lotes; lo vendido ya no está en los lotes, pero su coste salió de la cuenta
+        // igual, y sin contarlo el efectivo saldría alto en justo esa cantidad.
+        var comprado = 0m;
+
+        // Lo que queda en cartera.
         var lotes = await (
                 from lote in _context.Lots.AsNoTracking()
                 join posicion in _context.Positions.AsNoTracking() on lote.PositionId equals posicion.Id
                 where posicion.PortfolioId == portfolioId
-                      && (desde == null || lote.PurchaseDate >= desde)
                 select lote)
             .ToListAsync(cancellationToken);
 
@@ -97,10 +107,38 @@ internal sealed class CashReader : ICashReader
         {
             if (lote.CostIn(moneda) is { } coste)
             {
-                compras += coste.Amount;
+                comprado += coste.Amount;
             }
             else
             {
+                sinConvertir++;
+            }
+        }
+
+        // Y lo ya vendido, con el coste que tenía cuando se vendió.
+        foreach (var venta in movimientos.Where(m => m.Kind is MovementKind.Sale))
+        {
+            if (venta.Quantity is { } unidades && venta.CostPerUnit is { } costeUnitario)
+            {
+                var costeVendido = unidades * costeUnitario;
+
+                if (costeVendido.Currency == moneda)
+                {
+                    comprado += costeVendido.Amount;
+                }
+                else if (venta.RateUsed is { } tipo)
+                {
+                    comprado += costeVendido.Amount * tipo;
+                }
+                else
+                {
+                    sinConvertir++;
+                }
+            }
+            else
+            {
+                // Una venta sin coste guardado: no se sabe cuánto costó lo vendido. Se cuenta como no
+                // convertida y el saldo dirá que no se puede dar como bueno.
                 sinConvertir++;
             }
         }
@@ -112,8 +150,8 @@ internal sealed class CashReader : ICashReader
             aportado,
             retirado,
             vendido,
-            compras,
-            declarado + aportado - retirado + vendido - compras,
+            comprado,
+            declarado + aportado - retirado + vendido - comprado,
             desde,
             sinConvertir);
     }

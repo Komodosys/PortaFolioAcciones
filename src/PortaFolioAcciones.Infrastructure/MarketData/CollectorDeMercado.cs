@@ -377,6 +377,9 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
 
         await contexto.SaveChangesAsync(cancellationToken);
 
+        // Y con los tipos ya guardados, se les pone el suyo a los lotes que no lo tenían.
+        await AnotarTiposDeLosLotesAsync(contexto, cancellationToken);
+
         _registro.LogInformation(
             "Relleno de divisa desde {Desde}: {Pares} pares, {Nuevos} tipos nuevos, {Repetidos} ya estaban, {SinSerie} sin serie.",
             desde, pares, nuevos, repetidos, sinSerie);
@@ -423,6 +426,98 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
             .ToListAsync(cancellationToken);
 
         return [.. deCarteras.Concat(dePerfiles).Distinct()];
+    }
+    /// <summary>
+    /// Anota el tipo de cambio a los lotes que no lo tienen, con el histórico ya cargado.
+    ///
+    /// **Hace falta para el efectivo.** Un lote sin tipo no puede decir cuánto salió de la cuenta, y el saldo
+    /// incluye todo lo comprado: sin estos tipos, las cuarenta compras anteriores a este dato dejarían el saldo
+    /// en «no se sabe» para siempre.
+    ///
+    /// Se usa el último tipo publicado <b>en o antes</b> de la compra, con el mismo criterio que al registrar
+    /// una compra nueva. Y no se toca ninguno que ya lo tenga: el tipo de una compra es un hecho de su día.
+    /// </summary>
+    private async Task<int> AnotarTiposDeLosLotesAsync(
+        PortafolioDbContext contexto,
+        CancellationToken cancellationToken)
+    {
+        var lotes = await contexto.Lots
+            .Where(lote => lote.RateUsed == null)
+            .ToListAsync(cancellationToken);
+
+        if (lotes.Count == 0)
+        {
+            return 0;
+        }
+
+        // Las carteras y sus monedas base, en una consulta.
+        var posiciones = await contexto.Positions
+            .AsNoTracking()
+            .Select(posicion => new { posicion.Id, posicion.PortfolioId })
+            .ToDictionaryAsync(fila => fila.Id, fila => fila.PortfolioId, cancellationToken);
+
+        var carteras = await contexto.Portfolios
+            .AsNoTracking()
+            .Select(cartera => new { cartera.Id, cartera.BaseCurrency, cartera.OwnerUserId })
+            .ToDictionaryAsync(fila => fila.Id, fila => fila, cancellationToken);
+
+        var perfiles = await contexto.UserProfiles
+            .AsNoTracking()
+            .Select(perfil => new { perfil.Id, perfil.BaseCurrency })
+            .ToDictionaryAsync(fila => fila.Id, fila => fila.BaseCurrency, cancellationToken);
+
+        // Los tipos, de golpe: son unos miles y se consultan en memoria.
+        var tipos = await contexto.DailyFxRates
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        var porPar = tipos
+            .GroupBy(tipo => (tipo.From.Code, tipo.To.Code))
+            .ToDictionary(
+                grupo => grupo.Key,
+                grupo => grupo.OrderBy(tipo => tipo.RateDate).ToList());
+
+        var anotados = 0;
+
+        foreach (var lote in lotes)
+        {
+            if (!posiciones.TryGetValue(lote.PositionId, out var carteraId)
+                || !carteras.TryGetValue(carteraId, out var cartera))
+            {
+                continue;
+            }
+
+            var moneda = cartera.BaseCurrency
+                         ?? (cartera.OwnerUserId is { } dueno ? perfiles.GetValueOrDefault(dueno) : null);
+
+            if (moneda is null || lote.CostCurrency == moneda)
+            {
+                continue;
+            }
+
+            if (!porPar.TryGetValue((lote.CostCurrency.Code, moneda.Code), out var serie))
+            {
+                continue;
+            }
+
+            // El último publicado en o antes de la compra.
+            var tipo = serie.LastOrDefault(fila => fila.RateDate <= lote.PurchaseDate);
+
+            if (tipo is not null)
+            {
+                lote.SetRateUsed(tipo.Rate);
+                anotados++;
+            }
+        }
+
+        if (anotados > 0)
+        {
+            await contexto.SaveChangesAsync(cancellationToken);
+
+            _registro.LogInformation("Tipos anotados a {Anotados} lotes con el histórico de divisa.", anotados);
+        }
+
+        return anotados;
     }
     /// <summary>
     /// Los instrumentos que necesitan precio: los que tiene alguien en una posicion abierta.

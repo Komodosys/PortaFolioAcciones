@@ -49,8 +49,14 @@ public sealed record PerformanceRow(
     /// Sin apertura, «lo aportado» son solo las aportaciones que se hayan anotado, y las posiciones que ya
     /// estaban no aparecerian como puestas: la ganancia saldria enorme y falsa. Nulo dice «no se sabe», que es
     /// la verdad; un numero diria que se gano eso.
+    ///
+    /// **Y sin foto tampoco**, por el mismo motivo: los importes de la fila salen de la foto del dia, y una
+    /// cartera creada despues de la ultima recogida los tiene a cero. Restarle lo aportado a cero no es una
+    /// perdida: es que todavia no se sabe.
     /// </summary>
-    public decimal? Gain => HasOpening ? TotalValue - NetContributed : null;
+    public decimal? Gain => HasOpening && SnapshotDate is not null
+        ? TotalValue - NetContributed
+        : null;
 
     /// <summary>Lo que se puso y no se ha retirado.</summary>
     public decimal NetContributed => Contributed - Withdrawn;

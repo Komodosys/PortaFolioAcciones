@@ -297,13 +297,13 @@
     "Opening": "Apertura",
     "saldo": "Efectivo",
     "saldoDesde": "Desde la apertura del {{dia}}.",
-    "sinApertura": "Todavía no has declarado cuánto había en la cuenta. Anota una apertura y el saldo empezará a contarse desde ahí.",
+    "sinApertura": "Todavía no has declarado la apertura: lo que habías puesto en total en esta cuenta, contando lo que costó lo que ya estaba comprado. Y el saldo empezará a contarse desde ahí.",
     "saldoIncompleto": "El saldo no se puede dar como bueno: hay {{total}} movimiento(s) sin tipo de cambio, así que parte del dinero no se puede convertir.",
       "Sale": "Venta"
     },
     "saldo": "Efectivo",
     "saldoDesde": "Desde la apertura del {{dia}}.",
-    "sinApertura": "Todavía no has declarado cuánto había en la cuenta. Anota una apertura y el saldo empezará a contarse desde ahí.",
+    "sinApertura": "Todavía no has declarado la apertura: lo que habías puesto en total en esta cuenta, contando lo que costó lo que ya estaba comprado. Y el saldo empezará a contarse desde ahí.",
     "saldoIncompleto": "El saldo no se puede dar como bueno: hay {{total}} movimiento(s) sin tipo de cambio, así que parte del dinero no se puede convertir.",
     "invalid_amount": "El importe tiene que ser mayor que cero.",
     "invalid": "Ese movimiento no se puede anotar. Para una venta, usa la venta de la posición."

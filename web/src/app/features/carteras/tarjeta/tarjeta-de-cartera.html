@@ -6,8 +6,20 @@
     otras personas— y el menú tiene que estar en los tres. Copiarlo tres veces serían tres sitios donde
     arreglar cada cosa, y el que se olvidara dejaría una pantalla sin poder editar.
   -->
+  <!--
+    `hover:z-20` y `focus-within:z-20` no son decoración: sin ellos, el menú abierto queda **tapado por la
+    tarjeta siguiente**.
+
+    Las tarjetas son hermanas dentro de una rejilla, y la que viene después se pinta encima. El `z-50` del
+    desplegable no sirve para escapar de ahí: el `z-index` solo ordena dentro del contexto de apilamiento
+    más cercano, y la tarjeta siguiente es un hermano posterior, no un hijo. Subiendo la tarjeta mientras
+    se usa su menú, el menú queda por encima de sus vecinas y se ve entero.
+
+    Se sube con `hover` y con `focus-within` porque el menú también se abre con el teclado, y ahí no hay
+    ratón.
+  -->
   <li
-    class="relative rounded-3xl transition-all hover:-translate-y-0.5"
+    class="relative rounded-3xl transition-all hover:z-20 hover:-translate-y-0.5 focus-within:z-20"
     [class]="
       aspecto() === 'ajena'
         ? 'border-2 border-dashed border-amber-300 bg-white shadow-sm hover:shadow-lg'
@@ -83,7 +95,7 @@
         }
       </button>
 
-      <ul class="menu dropdown-content z-30 mt-1 w-52 rounded-box bg-base-100 p-2 shadow-xl">
+      <ul class="menu dropdown-content z-50 mt-1 w-52 rounded-box bg-base-100 p-2 shadow-xl">
         <li>
           <button type="button" (click)="editar.emit(cartera())">{{ t('cartera.editar') }}</button>
         </li>

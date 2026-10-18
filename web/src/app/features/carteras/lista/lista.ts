@@ -1,12 +1,12 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { codigoDe } from '../../../core/api/interceptores';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Sesion } from '../../../core/sesion/sesion';
 import { CarterasApi } from '../carteras.api';
 import { ResumenDeCartera } from '../modelos';
+import { TarjetaDeCartera } from '../tarjeta/tarjeta-de-cartera';
 
 /** Las carteras de una persona, para poder agruparlas. */
 interface Grupo {
@@ -25,7 +25,7 @@ interface Grupo {
  */
 @Component({
   selector: 'app-lista-de-carteras',
-  imports: [FormsModule, RouterLink, TranslocoDirective],
+  imports: [FormsModule, TranslocoDirective, TarjetaDeCartera],
   templateUrl: './lista.html',
   // El estilo vive en la plantilla, con clases de Tailwind: no queda SCSS que mantener.
   host: { class: 'block' },
@@ -161,5 +161,132 @@ export class ListaDeCarteras {
     } finally {
       this.guardando.set(false);
     }
+  }
+
+  // ------------------------------------------------------------------------------------------------
+  // Las tres acciones de la tarjeta
+  // ------------------------------------------------------------------------------------------------
+
+  /** La cartera que se está editando, o nula si el diálogo está cerrado. */
+  readonly editando = signal<ResumenDeCartera | null>(null);
+  readonly guardandoEdicion = signal(false);
+  readonly falloDeEdicion = signal<string | null>(null);
+
+  /** Lo que se está escribiendo en el diálogo de edición. */
+  editarNombre = '';
+  editarTipo = '';
+  editarMoneda = '';
+
+  /** La cartera que se quiere borrar, o nula. */
+  readonly borrando = signal<ResumenDeCartera | null>(null);
+  readonly borrandoEnCurso = signal(false);
+
+  /** La cartera cuya acción está en marcha, para deshabilitar su menú y no pulsar dos veces. */
+  readonly ocupada = signal<string | null>(null);
+
+  abrirEdicion(cartera: ResumenDeCartera): void {
+    this.editarNombre = cartera.name;
+    this.editarTipo = cartera.registrationType;
+    this.editarMoneda = cartera.inheritsBaseCurrency ? '' : cartera.baseCurrency;
+    this.falloDeEdicion.set(null);
+    this.editando.set(cartera);
+  }
+
+  cancelarEdicion(): void {
+    this.editando.set(null);
+    this.falloDeEdicion.set(null);
+  }
+
+  async guardarEdicion(): Promise<void> {
+    const cartera = this.editando();
+
+    if (!cartera || this.guardandoEdicion()) {
+      return;
+    }
+
+    if (!this.editarNombre.trim() || !this.editarTipo) {
+      this.falloDeEdicion.set('cartera.nombreObligatorio');
+      return;
+    }
+
+    this.guardandoEdicion.set(true);
+    this.falloDeEdicion.set(null);
+
+    try {
+      // Una sola llamada: nombre, tipo y moneda a la vez. Con tres, una podría fallar y dejar la cartera a
+      // medio editar, y el libro de auditoría tendría tres entradas para un solo cambio.
+      await this.api.editar(
+        cartera.id,
+        this.editarNombre.trim(),
+        this.editarTipo,
+        this.editarMoneda.trim() || null,
+      );
+
+      this.editando.set(null);
+      await this.cargar();
+    } catch (error: unknown) {
+      this.falloDeEdicion.set(this.claveDe(error));
+    } finally {
+      this.guardandoEdicion.set(false);
+    }
+  }
+
+  abrirBorrado(cartera: ResumenDeCartera): void {
+    this.borrando.set(cartera);
+  }
+
+  cancelarBorrado(): void {
+    this.borrando.set(null);
+  }
+
+  async confirmarBorrado(): Promise<void> {
+    const cartera = this.borrando();
+
+    if (!cartera || this.borrandoEnCurso()) {
+      return;
+    }
+
+    this.borrandoEnCurso.set(true);
+
+    try {
+      await this.api.borrar(cartera.id);
+      this.borrando.set(null);
+      await this.cargar();
+    } catch (error: unknown) {
+      // Lo normal aquí es 409: la cartera tiene posiciones. El mensaje lo pone la traducción del código
+      // `portfolio.has_positions`, así que se cierra el diálogo y se enseña el motivo arriba.
+      this.borrando.set(null);
+      this.fallo.set(this.claveDe(error));
+    } finally {
+      this.borrandoEnCurso.set(false);
+    }
+  }
+
+  /** Archiva o desarchiva, según cómo esté. */
+  async alternarArchivo(cartera: ResumenDeCartera): Promise<void> {
+    if (this.ocupada()) {
+      return;
+    }
+
+    this.ocupada.set(cartera.id);
+
+    try {
+      if (cartera.isArchived) {
+        await this.api.desarchivar(cartera.id);
+      } else {
+        await this.api.archivar(cartera.id);
+      }
+
+      await this.cargar();
+    } catch (error: unknown) {
+      this.fallo.set(this.claveDe(error));
+    } finally {
+      this.ocupada.set(null);
+    }
+  }
+
+  /** El código de error de la API, o el genérico. */
+  private claveDe(error: unknown): string {
+    return error instanceof HttpErrorResponse ? (codigoDe(error) ?? 'comun.error') : 'comun.error';
   }
 }

@@ -230,6 +230,16 @@
       "NotRegistered": "Non-registered"
     },
     "tipoDeRegistroAyuda": "RRSP and REER are the same thing, and so are TFSA and CELI: the name depends on which form you are reading. It groups and presents; it changes no calculation.",
+    "acciones": "Portfolio actions",
+    "editar": "Edit",
+    "archivar": "Archive",
+    "desarchivar": "Unarchive",
+    "borrar": "Delete",
+    "editarTitulo": "Edit the portfolio",
+    "borrarTitulo": "Delete the portfolio",
+    "borrarAyuda": "The portfolio will be deleted and this cannot be undone.",
+    "borrarConPosiciones": "It holds {{total}} position(s), so it cannot be deleted. Archive it: it stops counting and nothing is lost.",
+    "cuantasPosiciones": "{{total}} position(s)",
     "totalesParciales": "Prices are missing: these totals are partial.",
     "valorTotal": "Total value",
     "costeTotal": "Total cost",
@@ -248,6 +258,13 @@
     "datosAjenosDetalle": "This account belongs to {{persona}}. You can see and change it because you administer.",
     "datosAjenosCuenta": "Account: {{cuenta}}",
     "datosAjenosAuditoria": "Everything you change will be recorded under your name, with the old value and the new one."
+  },
+  "portfolio": {
+    "not_found": "That portfolio could not be found.",
+    "name_required": "Give the portfolio a name.",
+    "invalid_currency": "That currency is not valid. Use a three-letter code, such as CAD.",
+    "registration_required": "Choose the registration type: RRSP, TFSA or non-registered.",
+    "has_positions": "That portfolio has positions, so it cannot be deleted. Archive it: it stops counting and nothing is lost."
   },
   "comun": {
     "si": "Yes",

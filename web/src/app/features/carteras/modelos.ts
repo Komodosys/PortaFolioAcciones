@@ -31,6 +31,14 @@ export interface ResumenDeCartera {
   readonly sortOrder: number;
 
   /**
+   * Cuantas posiciones tiene.
+   *
+   * Esta a la vista porque es lo que decide **si se puede borrar**: una cartera con posiciones se archiva,
+   * no se borra. Sin este dato la pantalla tendria que enseñar un boton que va a fallar.
+   */
+  readonly positionCount: number;
+
+  /**
    * De quien es la cartera.
    *
    * Existe porque **el administrador ve las carteras de todas las personas en la misma lista**. Sin esto,

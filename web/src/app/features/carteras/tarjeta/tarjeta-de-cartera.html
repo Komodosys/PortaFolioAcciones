@@ -1,0 +1,117 @@
+<ng-container *transloco="let t">
+  <!--
+    Una tarjeta de cartera, con su menú de tres acciones.
+
+    Existe como componente porque hay **tres** sitios que enseñan carteras —las mías, las archivadas y las de
+    otras personas— y el menú tiene que estar en los tres. Copiarlo tres veces serían tres sitios donde
+    arreglar cada cosa, y el que se olvidara dejaría una pantalla sin poder editar.
+  -->
+  <li
+    class="relative rounded-3xl transition-all hover:-translate-y-0.5"
+    [class]="
+      aspecto() === 'ajena'
+        ? 'border-2 border-dashed border-amber-300 bg-white shadow-sm hover:shadow-lg'
+        : aspecto() === 'archivada'
+          ? 'bg-white shadow-sm opacity-60 hover:opacity-100'
+          : 'bg-white shadow-lg hover:shadow-xl'
+    "
+  >
+    <a class="flex items-center gap-4 p-5 pr-14" [routerLink]="['/carteras', cartera().id]">
+      <span
+        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+        [class]="
+          aspecto() === 'ajena' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-600'
+        "
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.6"
+          stroke="currentColor"
+          class="h-5 w-5"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3"
+          />
+        </svg>
+      </span>
+
+      <div class="min-w-0 flex-1">
+        <h2 class="truncate text-base font-bold leading-tight text-slate-800">{{ cartera().name }}</h2>
+        <p class="mt-1 flex flex-wrap items-center gap-2">
+          <!--
+            El tipo de registro, con su etiqueta de cada idioma: REER y CELI en español y francés, RRSP y
+            TFSA en inglés. Es la misma cosa con dos nombres, y cada uno usa el suyo.
+          -->
+          <span class="badge badge-sm border-emerald-200 bg-emerald-50 text-emerald-800">
+            {{ t('cartera.tipos.' + cartera().registrationType) }}
+          </span>
+          <span class="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+            {{ cartera().baseCurrency }}
+          </span>
+          @if (cartera().inheritsBaseCurrency) {
+            <span class="badge badge-ghost badge-sm">{{ t('cartera.heredada') }}</span>
+          }
+          <span class="text-[11px] text-slate-400">
+            {{ t('cartera.cuantasPosiciones', { total: cartera().positionCount }) }}
+          </span>
+        </p>
+      </div>
+    </a>
+
+    <!--
+      El menú va **fuera del enlace** y no dentro, y es importante: la tarjeta entera es un `<a>`, así que
+      un botón dentro navegaría a la cartera en vez de abrir el menú. Poniéndolo al lado, como hermano, no
+      hay propagación que cortar ni nada que se rompa el día que alguien «limpie» el `stopPropagation`.
+    -->
+    <div class="dropdown dropdown-end absolute right-2 top-2">
+      <button
+        type="button"
+        class="btn btn-ghost btn-circle btn-xs text-slate-400"
+        [attr.aria-label]="t('cartera.acciones')"
+        [disabled]="ocupada()"
+      >
+        @if (ocupada()) {
+          <span class="loading loading-spinner loading-xs"></span>
+        } @else {
+          <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-4 w-4">
+            <path d="M12 8a2 2 0 100-4 2 2 0 000 4zm0 6a2 2 0 100-4 2 2 0 000 4zm0 6a2 2 0 100-4 2 2 0 000 4z" />
+          </svg>
+        }
+      </button>
+
+      <ul class="menu dropdown-content z-30 mt-1 w-52 rounded-box bg-base-100 p-2 shadow-xl">
+        <li>
+          <button type="button" (click)="editar.emit(cartera())">{{ t('cartera.editar') }}</button>
+        </li>
+        <li>
+          <button type="button" (click)="archivar.emit(cartera())">
+            {{ cartera().isArchived ? t('cartera.desarchivar') : t('cartera.archivar') }}
+          </button>
+        </li>
+        <li>
+          <!--
+            Borrar solo si está vacía. La regla de verdad la aplica el servidor; aquí se deshabilita para no
+            ofrecer algo que va a fallar, y se dice por qué.
+          -->
+          <button
+            type="button"
+            class="text-red-600"
+            [disabled]="cartera().positionCount > 0"
+            [attr.title]="
+              cartera().positionCount > 0
+                ? t('cartera.borrarConPosiciones', { total: cartera().positionCount })
+                : null
+            "
+            (click)="borrar.emit(cartera())"
+          >
+            {{ t('cartera.borrar') }}
+          </button>
+        </li>
+      </ul>
+    </div>
+  </li>
+</ng-container>

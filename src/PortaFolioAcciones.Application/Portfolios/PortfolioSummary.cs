@@ -21,6 +21,13 @@ namespace PortaFolioAcciones.Application.Portfolios;
 /// </param>
 /// <param name="IsArchived">Si está archivada.</param>
 /// <param name="SortOrder">Orden en el que se quiere ver.</param>
+/// <param name="PositionCount">
+/// Cuántas posiciones tiene.
+///
+/// Existe a la vista porque es lo que decide si la cartera <b>se puede borrar</b>: una con posiciones se
+/// archiva, no se borra. Sin este dato, la pantalla tendría que enseñar un botón que va a fallar, o pedir
+/// el detalle de cada cartera solo para saberlo.
+/// </param>
 /// <param name="OwnerUserId">De quién es.</param>
 /// <param name="OwnerDisplayName">Cómo se llama esa persona, para poder enseñarlo.</param>
 /// <remarks>
@@ -38,5 +45,6 @@ public sealed record PortfolioSummary(
     string RegistrationType,
     bool IsArchived,
     int SortOrder,
+    int PositionCount,
     Guid OwnerUserId,
     string OwnerDisplayName);

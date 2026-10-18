@@ -60,4 +60,46 @@ export class CarterasApi {
   obtener(id: string): Promise<ResumenDeCartera> {
     return firstValueFrom(this.http.get<ResumenDeCartera>(`/api/portfolios/${id}`));
   }
+
+  /**
+   * Edita el nombre, el tipo de registro y la moneda base **de una vez**.
+   *
+   * Una sola llamada y no tres, y no es comodidad de la pantalla: con tres, una podria fallar y las otras
+   * no, y la cartera quedaria a medio editar. Ademas el libro de auditoria tendria tres entradas para lo
+   * que fue un solo cambio.
+   */
+  editar(
+    id: string,
+    nombre: string,
+    tipoDeRegistro: string,
+    monedaBase: string | null,
+  ): Promise<ResumenDeCartera> {
+    return firstValueFrom(
+      this.http.put<ResumenDeCartera>(`/api/portfolios/${id}`, {
+        name: nombre,
+        registrationType: tipoDeRegistro,
+        baseCurrency: monedaBase,
+      }),
+    );
+  }
+
+  /** Archiva una cartera: deja de contarse, pero no se pierde nada de lo que tiene. */
+  archivar(id: string): Promise<ResumenDeCartera> {
+    return firstValueFrom(this.http.post<ResumenDeCartera>(`/api/portfolios/${id}/archive`, {}));
+  }
+
+  /** La vuelve a poner en uso. */
+  desarchivar(id: string): Promise<ResumenDeCartera> {
+    return firstValueFrom(this.http.post<ResumenDeCartera>(`/api/portfolios/${id}/unarchive`, {}));
+  }
+
+  /**
+   * Borra una cartera, **solo si no tiene posiciones**.
+   *
+   * Si las tiene, la API responde 409 y no borra nada. El motivo del fallo llega como codigo en el
+   * `title` del problema, y es lo que se le enseña a la persona: «tiene posiciones, archívala».
+   */
+  borrar(id: string): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`/api/portfolios/${id}`));
+  }
 }

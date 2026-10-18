@@ -49,8 +49,9 @@ internal sealed class PortfolioRepository : IPortfolioRepository
             .ToListAsync(cancellationToken);
 
         var propietarios = await PropietariosDeAsync(carteras, cancellationToken);
+        var posiciones = await ContarPosicionesAsync(carteras, cancellationToken);
 
-        return [.. carteras.Select(cartera => AResumen(cartera, propietarios))];
+        return [.. carteras.Select(cartera => AResumen(cartera, propietarios, posiciones))];
     }
 
     public async Task<PortfolioSummary?> FindAsync(Guid id, CancellationToken cancellationToken = default)
@@ -171,6 +172,29 @@ internal sealed class PortfolioRepository : IPortfolioRepository
         return DeleteOutcome.Deleted;
     }
 
+    /// <summary>
+    /// Cuenta las posiciones de cada cartera, <b>en una sola consulta</b>.
+    ///
+    /// Hace falta para que la pantalla pueda decir si una cartera se puede borrar antes de intentarlo. Con
+    /// una consulta por cartera, listar las siete cuentas de la casa serían siete viajes más a la base; y
+    /// en la lista del administrador, que ve todas, muchas más.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<Guid, int>> ContarPosicionesAsync(
+        IReadOnlyList<Portfolio> carteras,
+        CancellationToken cancellationToken)
+    {
+        var ids = carteras.Select(cartera => cartera.Id).ToList();
+
+        var cuentas = await _context.Positions
+            .AsNoTracking()
+            .Where(posicion => ids.Contains(posicion.PortfolioId))
+            .GroupBy(posicion => posicion.PortfolioId)
+            .Select(grupo => new { PortfolioId = grupo.Key, Cuantas = grupo.Count() })
+            .ToDictionaryAsync(fila => fila.PortfolioId, fila => fila.Cuantas, cancellationToken);
+
+        return cuentas;
+    }
+
     public Task<PortfolioSummary?> ReorderAsync(
         Guid id,
         int sortOrder,
@@ -208,8 +232,9 @@ internal sealed class PortfolioRepository : IPortfolioRepository
     private async Task<PortfolioSummary> AResumenAsync(Portfolio cartera, CancellationToken cancellationToken)
     {
         var propietarios = await PropietariosDeAsync([cartera], cancellationToken);
+        var posiciones = await ContarPosicionesAsync([cartera], cancellationToken);
 
-        return AResumen(cartera, propietarios);
+        return AResumen(cartera, propietarios, posiciones);
     }
 
     /// <summary>
@@ -243,7 +268,8 @@ internal sealed class PortfolioRepository : IPortfolioRepository
     /// </summary>
     private static PortfolioSummary AResumen(
         Portfolio cartera,
-        IReadOnlyDictionary<Guid, DatosDelPropietario> propietarios)
+        IReadOnlyDictionary<Guid, DatosDelPropietario> propietarios,
+        IReadOnlyDictionary<Guid, int> posiciones)
     {
         var propietario = propietarios.GetValueOrDefault(cartera.OwnerUserId);
 
@@ -255,6 +281,7 @@ internal sealed class PortfolioRepository : IPortfolioRepository
             cartera.RegistrationType.ToString(),
             cartera.IsArchived,
             cartera.SortOrder,
+            posiciones.GetValueOrDefault(cartera.Id),
             cartera.OwnerUserId,
             propietario?.DisplayName ?? "?");
     }

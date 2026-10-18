@@ -230,6 +230,16 @@
       "NotRegistered": "No registrado"
     },
     "tipoDeRegistroAyuda": "REER y RRSP son lo mismo, y CELI y TFSA también: el nombre cambia según el documento. Sirve para agrupar y presentar, no cambia ningún cálculo.",
+    "acciones": "Acciones de la cartera",
+    "editar": "Editar",
+    "archivar": "Archivar",
+    "desarchivar": "Desarchivar",
+    "borrar": "Borrar",
+    "editarTitulo": "Editar la cartera",
+    "borrarTitulo": "Borrar la cartera",
+    "borrarAyuda": "Se borrará la cartera y no se podrá deshacer.",
+    "borrarConPosiciones": "Tiene {{total}} posición(es), así que no se puede borrar. Archívala: deja de contar y no se pierde nada.",
+    "cuantasPosiciones": "{{total}} posición(es)",
     "totalesParciales": "Faltan precios: estos totales son parciales.",
     "valorTotal": "Valor total",
     "costeTotal": "Coste total",
@@ -248,6 +258,13 @@
     "datosAjenosDetalle": "Esta cuenta es de {{persona}}. Puedes verla y modificarla porque administras.",
     "datosAjenosCuenta": "Cuenta: {{cuenta}}",
     "datosAjenosAuditoria": "Todo lo que cambies quedará anotado con tu nombre, con el valor anterior y el nuevo."
+  },
+  "portfolio": {
+    "not_found": "No se ha encontrado esa cartera.",
+    "name_required": "Ponle un nombre a la cartera.",
+    "invalid_currency": "Esa moneda no es válida. Usa un código de tres letras, como CAD.",
+    "registration_required": "Elige el tipo de registro: REER, CELI o no registrada.",
+    "has_positions": "Esa cartera tiene posiciones, así que no se puede borrar. Archívala: deja de contar y no se pierde nada."
   },
   "comun": {
     "si": "Sí",

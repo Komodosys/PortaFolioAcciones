@@ -230,6 +230,16 @@
       "NotRegistered": "Non enregistré"
     },
     "tipoDeRegistroAyuda": "REER et RRSP sont la même chose, tout comme CELI et TFSA : le nom change selon le document. Sert à regrouper et à présenter, sans changer aucun calcul.",
+    "acciones": "Actions du portefeuille",
+    "editar": "Modifier",
+    "archivar": "Archiver",
+    "desarchivar": "Désarchiver",
+    "borrar": "Supprimer",
+    "editarTitulo": "Modifier le portefeuille",
+    "borrarTitulo": "Supprimer le portefeuille",
+    "borrarAyuda": "Le portefeuille sera supprimé et ce ne sera pas réversible.",
+    "borrarConPosiciones": "Il contient {{total}} position(s), donc il ne peut pas être supprimé. Archivez-le : il cesse d'être compté et rien n'est perdu.",
+    "cuantasPosiciones": "{{total}} position(s)",
     "totalesParciales": "Des prix manquent : ces totaux sont partiels.",
     "valorTotal": "Valeur totale",
     "costeTotal": "Coût total",
@@ -248,6 +258,13 @@
     "datosAjenosDetalle": "Ce compte est celui de {{persona}}. Vous pouvez le voir et le modifier parce que vous administrez.",
     "datosAjenosCuenta": "Compte : {{cuenta}}",
     "datosAjenosAuditoria": "Tout ce que vous changerez sera consigné sous votre nom, avec l'ancienne valeur et la nouvelle."
+  },
+  "portfolio": {
+    "not_found": "Ce portefeuille est introuvable.",
+    "name_required": "Donnez un nom au portefeuille.",
+    "invalid_currency": "Cette devise n'est pas valide. Utilisez un code de trois lettres, comme CAD.",
+    "registration_required": "Choisissez le type de régime : REER, CELI ou non enregistré.",
+    "has_positions": "Ce portefeuille contient des positions : il ne peut pas être supprimé. Archivez-le : il cesse d'être compté et rien n'est perdu."
   },
   "comun": {
     "si": "Oui",

@@ -318,6 +318,40 @@ internal static class PortfolioEndpoints
         })
         .WithName("portfolios.opening")
         .WithSummary("Corrige la apertura de la cartera. Hay una sola: se reemplaza, no se suma.");
+        // Borrar un movimiento anotado por error. Una venta no se puede: lo que hay que deshacer es la venta
+        // entera, no su apunte, o la posicion y el registro dirian cosas distintas.
+        group.MapDelete("/{id:guid}/movements/{movementId:guid}", async Task<IResult> (
+            Guid id,
+            Guid movementId,
+            IPortfolioRepository carteras,
+            IMovementRepository movimientos,
+            CancellationToken cancelacion) =>
+        {
+            var cartera = await carteras.FindAsync(id, cancelacion);
+
+            if (cartera is null)
+            {
+                return NoEncontrada();
+            }
+
+            var resultado = await movimientos.DeleteAsync(id, movementId, cancelacion);
+
+            if (!resultado.Existe)
+            {
+                return Results.Problem(
+                    title: "movement.not_found",
+                    statusCode: StatusCodes.Status404NotFound);
+            }
+
+            return resultado.Borrado
+                ? Results.NoContent()
+                : Results.Problem(
+                    title: resultado.Motivo,
+                    detail: "Una venta no se borra: deshaz la venta entera.",
+                    statusCode: StatusCodes.Status409Conflict);
+        })
+        .WithName("portfolios.movement.delete")
+        .WithSummary("Borra un movimiento, salvo una venta. Un movimiento anotado por error se puede deshacer.");
         group.MapPost("/{id:guid}/movements", async Task<IResult> (
             Guid id,
             CashMovementRequest peticion,

@@ -50,6 +50,20 @@ public interface IMovementRepository
         string? notes,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Borra un movimiento anotado por error.
+    ///
+    /// **Una venta no se borra.** Una venta es el registro de la reduccion de una posicion: borrarla dejaria la
+    /// posicion vendida y sin venta, y la ganancia realizada saldria mal para siempre.
+    /// </summary>
+    /// <returns>
+    /// <c>null</c> si no existe, y <see cref="MovementDeleteResult"/> con el motivo cuando no se puede borrar.
+    /// </returns>
+    public Task<MovimientoBorrado> DeleteAsync(
+        Guid portfolioId,
+        Guid movementId,
+        CancellationToken cancellationToken = default);
+
     public Task<MovementSummary> AddCashAsync(
         Guid portfolioId,
         string kind,

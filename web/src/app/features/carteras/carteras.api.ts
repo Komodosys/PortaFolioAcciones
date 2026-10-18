@@ -114,6 +114,15 @@ export class CarterasApi {
   }
 
   /**
+   * Borra un movimiento anotado por error.
+   *
+   * El servidor no deja borrar una venta: lo que hay que deshacer es la venta entera, no su apunte.
+   */
+  borrarMovimiento(id: string, movimientoId: string): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`/api/portfolios/${id}/movements/${movimientoId}`));
+  }
+
+  /**
    * Corrige la apertura de la cartera.
    *
    * **Hay una sola y se reemplaza**: declarar otra no se suma a la anterior. Si se declara dos veces el mismo

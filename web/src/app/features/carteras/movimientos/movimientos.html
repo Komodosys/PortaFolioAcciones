@@ -249,6 +249,20 @@
               {{ mostrarImporte(movimiento.amount, movimiento.currency) }}
             </span>
 
+            <!-- Borrar. Una venta no: es el registro de que una posición se redujo, y deshacerla es deshacer
+                 la venta entera, no su apunte. Por eso el botón no aparece en las ventas. -->
+            @if (movimiento.kind !== 'Sale') {
+              <button
+                type="button"
+                class="btn btn-ghost btn-xs text-slate-400 hover:text-rose-600"
+                [attr.aria-label]="t('movimiento.borrar')"
+                [title]="t('movimiento.borrar')"
+                (click)="borrar(movimiento)"
+              >
+                ✕
+              </button>
+            }
+
             @if (movimiento.notes) {
               <span class="w-full text-xs text-slate-400">{{ movimiento.notes }}</span>
             }

@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { TranslocoDirective } from '@jsverse/transloco';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { codigoDe } from '../../../core/api/interceptores';
 import { Idioma } from '../../../core/i18n/idioma';
 import { formatearImporte } from '../../../shared/formato/numeros';
@@ -28,6 +28,7 @@ import { Movimiento, SaldoDeEfectivo } from '../modelos';
 export class MovimientosDeCartera {
   private readonly api = inject(CarterasApi);
   private readonly idioma = inject(Idioma);
+  private readonly transloco = inject(TranslocoService);
 
   readonly id = input.required<string>();
 
@@ -49,6 +50,25 @@ export class MovimientosDeCartera {
 
   /** La apertura guardada, para poder corregirla. */
   readonly aperturaActual = computed(() => this.movimientos().find((m) => m.kind === 'Opening') ?? null);
+
+  /**
+   * Borra un movimiento, preguntando antes.
+   *
+   * Se pregunta porque no hay forma de recuperarlo: el borrado es definitivo y la confirmacion cuesta un clic
+   * menos que volver a anotar el movimiento.
+   */
+  async borrar(movimiento: Movimiento): Promise<void> {
+    if (!confirm(this.transloco.translate('movimiento.borrarPregunta'))) {
+      return;
+    }
+
+    try {
+      await this.api.borrarMovimiento(this.id(), movimiento.id);
+      await this.cargar();
+    } catch (error) {
+      this.fallo.set(this.claveDe(error));
+    }
+  }
 
   abrirCorreccion(): void {
     const actual = this.aperturaActual();

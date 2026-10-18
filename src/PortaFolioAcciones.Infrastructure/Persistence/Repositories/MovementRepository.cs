@@ -61,6 +61,34 @@ internal sealed class MovementRepository : IMovementRepository
         ];
     }
 
+    public async Task<MovimientoBorrado> DeleteAsync(
+        Guid portfolioId,
+        Guid movementId,
+        CancellationToken cancellationToken = default)
+    {
+        var movimiento = await _context.Movements
+            .SingleOrDefaultAsync(
+                fila => fila.Id == movementId && fila.PortfolioId == portfolioId,
+                cancellationToken);
+
+        if (movimiento is null)
+        {
+            return MovimientoBorrado.NoExiste();
+        }
+
+        // Una venta no se borra: es el registro de que una posicion se redujo. Borrarla dejaria la posicion
+        // vendida y sin venta, y la ganancia realizada saldria mal para siempre. Si la venta fue un error, lo
+        // que hay que deshacer es la venta entera, no su apunte.
+        if (movimiento.Kind is MovementKind.Sale)
+        {
+            return MovimientoBorrado.No("movement.sale_cannot_be_deleted");
+        }
+
+        _context.Movements.Remove(movimiento);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return MovimientoBorrado.Si();
+    }
     public async Task<MovementSummary?> CorrectOpeningAsync(
         Guid portfolioId,
         decimal amount,

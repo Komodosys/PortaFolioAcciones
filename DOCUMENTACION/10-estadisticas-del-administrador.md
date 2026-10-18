@@ -134,24 +134,76 @@ se pierde. Lo demás se puede hacer cuando sea.
 
 ---
 
-## 6. Decisiones que necesito
+## 6. Decisiones tomadas (2026-10-18)
 
-1. **¿El administrador ve todo junto o siempre filtrado?** Yo haría **las dos**: una vista «todo el mundo»
-   para saber el total de la casa, y el filtro por persona a un clic. Pero si el uso real es «mirar el
-   total», la vista por persona sobra.
-2. **¿Basta el rendimiento del precio, o hace falta «aportado contra ganado»?** El segundo es lo que la
-   gente quiere de verdad —«he puesto 40.000 y tengo 47.000»— y cuesta bastante más, porque exige registrar
-   cada movimiento. El primero da «el precio subió un 8 %», que responde otra pregunta.
-3. **¿Se exporta?** Pantalla, o además CSV para abrirlo en una hoja de cálculo. El CSV es barato y para dos
-   personas que llevan su propia contabilidad suele ser lo que se acaba usando.
-4. **¿Se compara con algo?** «8 % este año» no dice si es bueno. Contra un índice —el S&P/TSX, por
-   ejemplo— sí. Es un salto de alcance: hay que descargar y guardar el índice igual que un instrumento.
-5. **¿Cada cuánto se mira?** Si es una vez al mes, un informe mensual calculado al vuelo basta. Si es a
-   diario, conviene guardar los totales ya sumados en vez de recalcularlos.
+| # | Decisión | Respuesta | Consecuencia |
+|---|---|---|---|
+| 1 | Los huecos de datos | **Cerrar los tres**, incluido el relleno del histórico | Los informes de periodo funcionan desde el primer día |
+| 2 | Qué significa «cuánto he ganado» | **Aportado contra ganado**, con registro de movimientos | Es la decisión que más cambia el proyecto: ver §7 |
+| 3 | Salida | **Pantalla y CSV** | El CSV se genera desde los mismos datos, sin lógica duplicada |
+| 4 | Referencia | **Índice configurable** | Hace falta guardar un índice y compararlo |
+| 5 | Frecuencia de consulta | **Casi a diario** | Los totales diarios ya se guardan (las fotos): no hace falta nada nuevo para eso |
+| 6 | Alcance del administrador | **Total de la casa y por persona** | Dos vistas sobre los mismos cálculos |
 
----
+## 7. Lo que cambia con la decisión 2: el registro de movimientos pasa al centro
 
-## 7. Lo que NO incluiría
+Las otras cinco decisiones son ajustes. **Esta no.** Pedir «aportado contra ganado» no es pedir un informe:
+es pedir el **registro de cada movimiento** —aportaciones, compras, ventas y retiros, con su fecha y su
+importe—, y ese registro es la base sobre la que se calculan casi todos los demás informes.
+
+De hecho, con el registro:
+
+| Informe | Antes (§2) | Con el registro |
+|---|---|---|
+| Ganancia **realizada** | **No** — no se guarda el precio de venta | **Sí**: una venta es un movimiento con precio |
+| Ganancia **por periodo** | Solo si la cantidad no cambió | **Sí, siempre**: la cantidad en cada fecha se reconstruye |
+| **Aportado contra ganado** | **No** | **Sí**, y es el informe central |
+| Efecto **divisa** | Necesita guardar los tipos | Sí, y con más precisión |
+| TWR / MWR | Fuera de alcance | **Posibles** |
+
+Y desaparece la trampa del §4: la marca de «se movió en el periodo» deja de hacer falta, porque el registro
+dice exactamente qué se movió y cuándo.
+
+**El coste es que el proyecto crece.** Esto ya no es «añadir una pantalla de estadísticas»: es modelar los
+movimientos, importarlos, validarlos y después construir los informes sobre ellos. Es una fase nueva, no un
+trozo de una.
+
+### La versión mínima que ya da el 80 %
+
+El registro completo tiene cuatro tipos de movimiento. **Solo hacen falta dos para el informe central:**
+
+| Movimiento | ¿Hace falta para «aportado contra ganado»? |
+|---|---|
+| **Aportación** (dinero que entra a una cuenta) | **Sí** — es el «aportado» |
+| **Compra** | Sí, pero **ya está en los 40 lotes**, con fecha y precio |
+| Venta | No: afecta a la ganancia realizada, que es otro informe |
+| Retiro | No: es una aportación con el signo cambiado |
+
+Es decir: **con aportaciones y lotes, el informe central funciona**, y los lotes ya existen. Las ventas
+pueden llegar después sin rehacer nada, porque un registro de movimientos admite añadir tipos.
+
+Eso convierte «meses» en algo mucho más razonable, y es por donde yo empezaría.
+
+## 8. El plan, con estas decisiones
+
+| Fase | Qué | Qué desbloquea | Tamaño |
+|---|---|---|---|
+| **1** | Precio de venta y tipos de cambio guardados | Nada visible, pero **deja de perderse información cada día** | pequeño |
+| **2** | Relleno del histórico de precios | Serie de precios con años, no con días | medio |
+| **3** | **Registro de movimientos: aportaciones y compras** | El informe central, y la base de todo lo demás | grande |
+| **4** | **Aportado contra ganado**, por persona y por tipo | La pregunta que de verdad se hace | medio |
+| **5** | Ganancia realizada y por periodo | Ya con el registro completo | medio |
+| **6** | Rendimiento por instrumento, concentración y por moneda | «¿Qué funciona?» | medio |
+| **7** | Índice de referencia configurable | «¿Es bueno el 8 %?» | medio |
+| **8** | Exportación a CSV | Llevárselo a una hoja de cálculo | pequeño |
+
+**La 1 va primero y no es negociable en el orden**: cada día que pasa sin guardar el precio de venta y el
+tipo de cambio son datos que no se pueden recuperar. Todo lo demás se puede hacer cuando sea.
+
+**La 4 es la que hay que enseñar cuanto antes.** Con la 3 hecha, es la que justifica todo el trabajo, y si
+no convence, mejor saberlo antes de construir las otras cuatro.
+
+## 9. Lo que NO incluiría
 
 - **Proyecciones y jubilación.** Es otro producto: exige supuestos de rentabilidad e inflación que aquí no
   se pueden justificar.

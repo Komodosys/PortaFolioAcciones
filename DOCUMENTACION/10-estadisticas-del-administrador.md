@@ -203,10 +203,34 @@ tipo de cambio son datos que no se pueden recuperar. Todo lo demás se puede hac
 **La 4 es la que hay que enseñar cuanto antes.** Con la 3 hecha, es la que justifica todo el trabajo, y si
 no convence, mejor saberlo antes de construir las otras cuatro.
 
-## 9. Lo que NO incluiría
+## 9. Fase 1, hecha — y un hallazgo que cambia la fase
 
-- **Proyecciones y jubilación.** Es otro producto: exige supuestos de rentabilidad e inflación que aquí no
-  se pueden justificar.
+**Hecho: los tipos de cambio se guardan.** Antes se pedían, se usaban para convertir y se tiraban; el propio
+código lo decía («no hay tabla de tipos de cambio»). Ahora hay una tabla `DailyFxRates` cuya clave es **el
+par y el día**, así que pedir el mismo par dos veces el mismo día actualiza en vez de duplicar. Comprobado
+contra la base: `USD/CAD = 1.4161` del 2026-10-16.
+
+**Y el hallazgo: «el precio de venta» no es un campo, es un formulario.**
+
+La fase 1 estaba descrita como «precio de venta y tipos de cambio guardados», como si el precio de venta
+fuera un dato que la aplicación ya tuviera y solo hubiera que conservar. **No lo es.** La aplicación conoce
+el **precio de mercado** del día, y eso no es a lo que se vendió: en una venta real el precio lo pone el
+bróker, y casi nunca coincide con el último cierre.
+
+Guardar el precio de mercado como «precio de venta» sería apuntar una cifra que suena exacta y no lo es, y
+la ganancia realizada saldría mal por un margen que nadie podría explicar después.
+
+**Consecuencia:** el precio de venta solo se puede guardar si **la persona lo escribe**, y eso es exactamente
+un **movimiento** —fecha, cantidad y precio—. Es decir: **pertenece a la fase 3**, no a la fase 1.
+
+Lo que sí se puede hacer sin preguntar nada, y queda hecho, es guardar **el precio de mercado en el momento
+de cerrar**, etiquetado como tal. Es un dato honesto y sirve de aproximación declarada; la cifra exacta
+llegará con el registro.
+
+## 10. Lo que NO incluiría
+
+- **Proyecciones y jubilación.** Es otro producto: exige supuestos de rentabilidad e inflación que aquí no se
+  pueden justificar.
 - **Comparación entre personas como si fuera una competición.** El administrador ve las carteras de todos
   por necesidad de administración, no para comparar a nadie. Un informe que ordene a los miembros de la
   familia por rendimiento sobra.

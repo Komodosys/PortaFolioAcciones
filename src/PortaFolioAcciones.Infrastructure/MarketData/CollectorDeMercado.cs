@@ -343,11 +343,15 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
     }
 
     /// <summary>
-    /// Pide los tipos de cambio del dia para calentarlos.
+    /// Pide los tipos de cambio del día y <b>los guarda</b>.
     ///
-    /// No se guardan en ningun sitio —no hay tabla de tipos de cambio—, pero pedirlos aqui hace que la
-    /// primera consulta de la mañana y la foto del dia usen <b>los mismos</b>: sin esto, cada una preguntaria
-    /// por su cuenta y podrian salir numeros distintos del mismo dia.
+    /// Guardarlos no es un extra: sin ellos se puede decir que la cartera subió un 3 %, pero **no se puede
+    /// descomponer** —si fue porque subieron las acciones o porque se movió el dólar—. Y no se puede
+    /// reconstruir después: el tipo que se usó ese día no está en ningún otro sitio.
+    ///
+    /// Pedirlos aquí tiene además una segunda razón: hace que la primera consulta de la mañana y la foto del
+    /// día usen <b>los mismos</b>. Sin esto, cada una preguntaría por su cuenta y podrían salir números
+    /// distintos del mismo día.
     /// </summary>
     private async Task CalentarTiposDeCambioAsync(
         PortafolioDbContext contexto,
@@ -380,7 +384,9 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
         {
             try
             {
-                await _tiposDeCambio.GetRatesAsync(divisa, divisas, cancellationToken);
+                var tipos = await _tiposDeCambio.GetRatesAsync(divisa, divisas, cancellationToken);
+
+                await GuardarTiposAsync(contexto, tipos, cancellationToken);
             }
             catch (Exception error) when (error is not OperationCanceledException)
             {
@@ -392,6 +398,56 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
                     divisa);
             }
         }
+    }
+
+    /// <summary>
+    /// Guarda los tipos de cambio que se acaban de usar, <b>sin duplicar</b>.
+    ///
+    /// El par y el día son la clave: pedir el mismo par dos veces el mismo día actualiza el valor en vez de
+    /// dejar dos filas con números distintos, que sería peor que no guardar nada. Y no se piden todos de
+    /// golpe a la base: se piden solo los del día que se está recogiendo.
+    /// </summary>
+    private async Task GuardarTiposAsync(
+        PortafolioDbContext contexto,
+        IReadOnlyList<FxRate> tipos,
+        CancellationToken cancellationToken)
+    {
+        if (tipos.Count == 0)
+        {
+            return;
+        }
+
+        var fechas = tipos.Select(tipo => tipo.RateDate).Distinct().ToList();
+
+        var guardados = await contexto.DailyFxRates
+            .Where(tipo => fechas.Contains(tipo.RateDate))
+            .ToListAsync(cancellationToken);
+
+        var porClave = guardados.ToDictionary(tipo => tipo.Key);
+        var ahora = DateTimeOffset.UtcNow;
+        var nuevos = 0;
+        var actualizados = 0;
+
+        foreach (var tipo in tipos)
+        {
+            if (porClave.TryGetValue((tipo.From.Code, tipo.To.Code, tipo.RateDate), out var guardado))
+            {
+                guardado.Update(tipo.Rate, ahora);
+                actualizados++;
+            }
+            else
+            {
+                contexto.DailyFxRates.Add(DailyFxRate.FromValue(tipo, ahora));
+                nuevos++;
+            }
+        }
+
+        await contexto.SaveChangesAsync(cancellationToken);
+
+        _registro.LogInformation(
+            "Tipos de cambio guardados: {Nuevos} nuevos, {Actualizados} actualizados.",
+            nuevos,
+            actualizados);
     }
 
     /// <summary>

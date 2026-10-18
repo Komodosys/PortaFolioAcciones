@@ -64,6 +64,14 @@ public sealed class PortafolioDbContext : IdentityDbContext<ApplicationUser, Ide
     public DbSet<PortfolioSnapshot> PortfolioSnapshots => Set<PortfolioSnapshot>();
 
     /// <summary>
+    /// Los tipos de cambio que se han usado, con su fecha.
+    ///
+    /// Se guardan para poder <b>descomponer</b> una variación del patrimonio: sin ellos se puede decir que la
+    /// cartera subió un 3 %, pero no si fue porque subieron las acciones o porque se movió el dólar.
+    /// </summary>
+    public DbSet<DailyFxRate> DailyFxRates => Set<DailyFxRate>();
+
+    /// <summary>
     /// El libro de auditoria. Es de <b>solo anadir</b>: la base de datos rechaza modificarlo o borrarlo.
     /// </summary>
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();

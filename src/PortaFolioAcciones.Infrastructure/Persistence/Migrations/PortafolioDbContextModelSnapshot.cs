@@ -200,6 +200,40 @@ namespace PortaFolioAcciones.Infrastructure.Persistence.Migrations
                     b.ToTable("AuditLogs", (string)null);
                 });
 
+            modelBuilder.Entity("PortaFolioAcciones.Domain.Entities.DailyFxRate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("From")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<decimal>("Rate")
+                        .HasPrecision(18, 10)
+                        .HasColumnType("numeric(18,10)");
+
+                    b.Property<DateOnly>("RateDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("To")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("From", "To", "RateDate")
+                        .IsUnique();
+
+                    b.ToTable("DailyFxRates", (string)null);
+                });
+
             modelBuilder.Entity("PortaFolioAcciones.Domain.Entities.Instrument", b =>
                 {
                     b.Property<Guid>("Id")

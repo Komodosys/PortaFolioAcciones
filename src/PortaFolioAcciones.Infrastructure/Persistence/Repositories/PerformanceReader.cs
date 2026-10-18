@@ -81,8 +81,10 @@ internal sealed class PerformanceReader : IPerformanceReader
         IReadOnlyList<Movement> movimientos,
         DatosDelPropietario? propietario)
     {
+        // Lo aportado es el dinero que vino de fuera: las aperturas —lo que ya habia cuando se empezo a
+        // contar— y las aportaciones. El retiro va aparte y resta.
         var aportado = movimientos
-            .Where(movimiento => movimiento.Kind is MovementKind.Deposit)
+            .Where(movimiento => movimiento.Kind is MovementKind.Deposit or MovementKind.Opening)
             .Sum(movimiento => movimiento.Amount.Amount);
 
         var retirado = movimientos
@@ -99,6 +101,7 @@ internal sealed class PerformanceReader : IPerformanceReader
             : ganancias.Sum(ganancia => ganancia!.Amount);
 
         var valor = foto?.MarketValue.Amount ?? 0m;
+        var efectivo = foto?.CashValue.Amount ?? 0m;
         var coste = foto?.CostBasis.Amount ?? 0m;
 
         return new PerformanceRow(
@@ -112,12 +115,14 @@ internal sealed class PerformanceReader : IPerformanceReader
             foto?.BaseCurrency.Code ?? propietario?.BaseCurrency.Code ?? Currency.Cad.Code,
 
             valor,
+            efectivo,
             coste,
             valor - coste,
             aportado,
             retirado,
             realizado,
-            foto?.SnapshotDate);
+            foto?.SnapshotDate,
+            movimientos.Any(movimiento => movimiento.Kind is MovementKind.Opening));
     }
 
     private static PerformanceRow ATotales(IReadOnlyList<PerformanceRow> filas, string moneda)
@@ -137,12 +142,17 @@ internal sealed class PerformanceReader : IPerformanceReader
             string.Empty,
             moneda,
             filas.Sum(fila => fila.MarketValue),
+            filas.Sum(fila => fila.CashValue),
             filas.Sum(fila => fila.CostBasis),
             filas.Sum(fila => fila.UnrealizedGain),
             filas.Sum(fila => fila.Contributed),
             filas.Sum(fila => fila.Withdrawn),
             realizado,
-            filas.Max(fila => fila.SnapshotDate));
+            filas.Max(fila => fila.SnapshotDate),
+
+            // TODAS, no alguna: si una sola cartera no tiene apertura, su parte de «aportado» esta incompleta y
+            // el total de ganancia saldria inflado por esa parte.
+            filas.All(fila => fila.HasOpening));
     }
 
     private async Task<IReadOnlyDictionary<Guid, DatosDelPropietario>> PropietariosDeAsync(

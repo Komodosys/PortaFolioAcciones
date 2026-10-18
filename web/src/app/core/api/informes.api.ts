@@ -13,6 +13,9 @@ export interface FilaDeRendimiento {
 
   readonly currency: string;
   readonly marketValue: string | number;
+
+  /** El dinero que hay en la cuenta. */
+  readonly cashValue: string | number;
   readonly costBasis: string | number;
   readonly unrealizedGain: string | number;
   readonly contributed: string | number;
@@ -28,6 +31,9 @@ export interface FilaDeRendimiento {
 
   /** El día de las cifras de valor y coste, o nulo si esa cartera aún no tiene foto. */
   readonly snapshotDate: string | null;
+
+  /** Si la cartera tiene apertura declarada. Sin ella, «ganado» no se puede calcular. */
+  readonly hasOpening: boolean;
 }
 
 /** El informe completo. */

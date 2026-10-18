@@ -9,6 +9,7 @@ namespace PortaFolioAcciones.Application.Portfolios;
 /// <param name="RegistrationType">REER, CELI o no registrada.</param>
 /// <param name="Currency">La moneda en la que están todas las cifras de esta fila.</param>
 /// <param name="MarketValue">Lo que valen hoy las posiciones abiertas.</param>
+/// <param name="CashValue">El dinero que hay en la cuenta.</param>
 /// <param name="CostBasis">Lo que costaron esas mismas posiciones.</param>
 /// <param name="UnrealizedGain"><paramref name="MarketValue"/> menos <paramref name="CostBasis"/>.</param>
 /// <param name="Contributed">El dinero que ha entrado desde fuera.</param>
@@ -33,15 +34,34 @@ public sealed record PerformanceRow(
     string RegistrationType,
     string Currency,
     decimal MarketValue,
+    decimal CashValue,
     decimal CostBasis,
     decimal UnrealizedGain,
     decimal Contributed,
     decimal Withdrawn,
     decimal? RealizedGain,
-    DateOnly? SnapshotDate)
+    DateOnly? SnapshotDate,
+    bool HasOpening)
 {
+    /// <summary>
+    /// Lo ganado de verdad: el total menos lo aportado neto. **Nulo si no hay apertura declarada.**
+    ///
+    /// Sin apertura, «lo aportado» son solo las aportaciones que se hayan anotado, y las posiciones que ya
+    /// estaban no aparecerian como puestas: la ganancia saldria enorme y falsa. Nulo dice «no se sabe», que es
+    /// la verdad; un numero diria que se gano eso.
+    /// </summary>
+    public decimal? Gain => HasOpening ? TotalValue - NetContributed : null;
+
     /// <summary>Lo que se puso y no se ha retirado.</summary>
     public decimal NetContributed => Contributed - Withdrawn;
+
+    /// <summary>
+    /// Lo que vale la cartera entera: las posiciones **mas el efectivo**.
+    ///
+    /// Es la cifra que responde «cuanto tengo», y es la que hay que comparar con lo aportado. Comparar solo el
+    /// valor de las posiciones haria que el dinero sin invertir pareciera perdido.
+    /// </summary>
+    public decimal TotalValue => MarketValue + CashValue;
 }
 
 /// <summary>

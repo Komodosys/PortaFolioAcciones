@@ -88,12 +88,25 @@ export class Informes {
         ? null
         : suma('realizedGain');
 
+    const valor = suma('marketValue');
+    const efectivo = suma('cashValue');
+
     return {
-      valor: suma('marketValue'),
+      valor,
+      efectivo,
+      total: valor + efectivo,
       coste: suma('costBasis'),
       noRealizada: suma('unrealizedGain'),
       aportado: suma('contributed'),
       retirado: suma('withdrawn'),
+
+      // Lo ganado de verdad: el total menos lo aportado. El efectivo ya incorpora lo cobrado en las ventas,
+      // asi que la ganancia realizada no se suma aparte: se contaria dos veces.
+      // Sin apertura declarada, el total menos lo aportado no es la ganancia: saldria enorme y falsa. Se dice
+      // que no se sabe en vez de dar un numero.
+      ganado: filas.some((fila) => !fila.hasOpening)
+        ? null
+        : valor + efectivo - (suma('contributed') - suma('withdrawn')),
       realizado,
     };
   });

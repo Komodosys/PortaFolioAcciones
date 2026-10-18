@@ -65,12 +65,19 @@ internal sealed class CashReader : ICashReader
         var desde = apertura?.OccurredOn;
         var sinConvertir = 0;
 
-        decimal Suma(MovementKind tipo)
+        // Solo lo que paso DESDE la apertura. Un deposito anterior ya esta dentro de lo declarado, y sumarlo
+        // otra vez lo contaria dos veces: el mismo fallo que tenia la apertura consigo misma.
+        decimal SumaDesde(MovementKind tipo)
         {
             var total = 0m;
 
             foreach (var movimiento in movimientos.Where(m => m.Kind == tipo))
             {
+                if (desde is { } dia && movimiento.OccurredOn < dia)
+                {
+                    continue;
+                }
+
                 if (movimiento.AmountIn(moneda) is { } importe)
                 {
                     total += importe.Amount;
@@ -99,9 +106,9 @@ internal sealed class CashReader : ICashReader
                 sinConvertir++;
             }
         }
-        var aportado = Suma(MovementKind.Deposit);
-        var retirado = Suma(MovementKind.Withdrawal);
-        var vendido = Suma(MovementKind.Sale);
+        var aportado = SumaDesde(MovementKind.Deposit);
+        var retirado = SumaDesde(MovementKind.Withdrawal);
+        var vendido = SumaDesde(MovementKind.Sale);
 
         // Lo comprado: lo que todavía se tiene, MÁS lo que se vendió.
         //

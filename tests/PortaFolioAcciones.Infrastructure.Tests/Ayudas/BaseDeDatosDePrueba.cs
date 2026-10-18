@@ -2,6 +2,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using PortaFolioAcciones.Application.Abstractions;
 using PortaFolioAcciones.Infrastructure.Persistence;
+using PortaFolioAcciones.Infrastructure.Persistence.Interceptors;
 
 namespace PortaFolioAcciones.Infrastructure.Tests.Ayudas;
 
@@ -67,13 +68,24 @@ internal sealed class BaseDeDatosDePrueba : IDisposable
         return base_;
     }
 
-    /// <summary>Un contexto nuevo sobre la misma base. Se tira al terminar, como el de verdad.</summary>
-    public PortafolioDbContext CrearContexto() =>
-        new(
-            new DbContextOptionsBuilder<PortafolioDbContext>()
-                .UseSqlite(_conexion)
-                .Options,
-            Usuario);
+    /// <summary>
+    /// Un contexto nuevo sobre la misma base. Se tira al terminar, como el de verdad.
+    /// </summary>
+    /// <param name="auditar">
+    /// Si se conecta el libro de auditoría. Va apagado por omisión para que las pruebas que no van de eso no
+    /// paguen su coste; se enciende cuando lo que se prueba **es** el rastro.
+    /// </param>
+    public PortafolioDbContext CrearContexto(bool auditar = false)
+    {
+        var constructor = new DbContextOptionsBuilder<PortafolioDbContext>().UseSqlite(_conexion);
+
+        if (auditar)
+        {
+            constructor.AddInterceptors(new AuditInterceptor(Usuario));
+        }
+
+        return new PortafolioDbContext(constructor.Options, Usuario);
+    }
 
     public void Dispose() => _conexion.Dispose();
 }

@@ -159,6 +159,32 @@ internal static class PositionEndpoints
         .WithName("positions.close")
         .WithSummary("Cierra la posicion, conservando lo que habia costado.");
 
+        // Borrar una posicion. Es para la que se dio de alta por ERROR, no para quitar de en medio una que
+        // existio: para eso esta cerrarla, que conserva los lotes y el coste. El 409 con `position.has_sales` es
+        // la mitad de la regla, y la otra mitad esta escrita en el repositorio.
+        porPosicion.MapDelete("/{id:guid}", async (
+            Guid id,
+            IPositionRepository repositorio,
+            CancellationToken cancelacion) =>
+        {
+            var resultado = await repositorio.DeleteAsync(id, cancelacion);
+
+            return resultado switch
+            {
+                { Existe: false } => NoEncontrada(),
+
+                // 409 y no 400: la peticion esta bien; es el estado de la posicion el que no lo permite.
+                { Borrado: false } => Results.Problem(
+                    statusCode: StatusCodes.Status409Conflict,
+                    title: resultado.Motivo,
+                    detail: "Una posicion con ventas no se borra: deshaz la venta entera primero."),
+
+                _ => Results.NoContent(),
+            };
+        })
+        .WithName("positions.delete")
+        .WithSummary("Borra una posicion dada de alta por error. Con ventas, devuelve 409.");
+
         porPosicion.MapPost("/{id:guid}/reopen", async (
             Guid id,
             IPositionRepository repositorio,

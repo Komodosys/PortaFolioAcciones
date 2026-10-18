@@ -157,6 +157,10 @@
     "lasCompras": "Les achats",
     "cerrar": "Clôturer la position",
     "cerrarAyuda": "Clôturer n'efface rien : la position sort des totaux mais reste entière, avec ses achats. Elle peut être rouverte.",
+    "borrar": "Supprimer la position",
+    "borrarAyuda": "Uniquement pour une position saisie par erreur. Si elle a vraiment existé, clôturez-la : cela conserve ce qu'elle a coûté et ne touche pas au solde.",
+    "borrarAviso": "La position et ses achats seront supprimés. Le solde augmentera de {{coste}} ({{moneda}}), son coût : si la saisie était une erreur, cet argent n'a jamais quitté le compte. Une position avec des ventes ne peut pas être supprimée.",
+    "borrarConfirmar": "Oui, supprimer",
     "reabrir": "Rouvrir la position",
     "reabrirAyuda": "Elle recompte dans les totaux, avec les mêmes achats.",
     "cantidadInvalida": "Saisissez une quantité supérieure à zéro.",
@@ -373,6 +377,9 @@
     "invalid_currency": "Cette devise n'est pas valide. Utilisez un code de trois lettres, comme CAD.",
     "registration_required": "Choisissez le type de régime : REER, CELI ou non enregistré.",
     "has_positions": "Ce portefeuille contient des positions : il ne peut pas être supprimé. Archivez-le : il cesse d'être compté et rien n'est perdu."
+  },
+  "position": {
+    "has_sales": "Cette position a des ventes : elle ne peut pas être supprimée, car une vente est un fait et sa plus-value réalisée serait perdue. Annulez d'abord la vente entière."
   },
   "comun": {
     "volver": "Retour",

@@ -157,6 +157,10 @@
     "lasCompras": "The purchases",
     "cerrar": "Close the position",
     "cerrarAyuda": "Closing deletes nothing: the position leaves the totals but is kept whole, with its purchases. It can be reopened.",
+    "borrar": "Delete the position",
+    "borrarAyuda": "Only for a position entered by mistake. If it really existed, close it: that keeps what it cost and leaves the cash alone.",
+    "borrarAviso": "The position and its purchases will be deleted. Cash will rise by {{coste}} ({{moneda}}), which is what it cost: if it was entered by mistake, that money never left the account. A position with sales cannot be deleted.",
+    "borrarConfirmar": "Yes, delete",
     "reabrir": "Reopen the position",
     "reabrirAyuda": "It counts in the totals again, with the same purchases.",
     "cantidadInvalida": "Type a quantity above zero.",
@@ -373,6 +377,9 @@
     "invalid_currency": "That currency is not valid. Use a three-letter code, such as CAD.",
     "registration_required": "Choose the registration type: RRSP, TFSA or non-registered.",
     "has_positions": "That portfolio has positions, so it cannot be deleted. Archive it: it stops counting and nothing is lost."
+  },
+  "position": {
+    "has_sales": "That position has sales, so it cannot be deleted: a sale is a fact and its realised gain would be lost. Undo the whole sale first."
   },
   "comun": {
     "volver": "Back",

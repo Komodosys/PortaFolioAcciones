@@ -99,4 +99,19 @@ public interface IPositionRepository
         Guid id,
         string? notes,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Borra una posición <b>dada de alta por error</b>, con sus lotes.
+    /// </summary>
+    /// <remarks>
+    /// <b>Una posición con ventas no se borra</b>, por la misma razón por la que no se borra una venta:
+    /// la ganancia realizada es un hecho, y borrar la posición la dejaría apuntando a algo que no existe.
+    /// Para una posición que existió de verdad está cerrarla, que conserva los lotes y el coste.
+    ///
+    /// El borrado <b>sube el efectivo</b> por el coste de lo borrado, porque el saldo se calcula restando los
+    /// lotes. Si la posición fue un error, es lo correcto: ese dinero nunca salió de la cuenta.
+    /// </remarks>
+    /// <param name="id">La posición.</param>
+    /// <param name="cancellationToken">Cancelación.</param>
+    public Task<PosicionBorrada> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

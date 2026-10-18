@@ -227,7 +227,54 @@ Lo que sí se puede hacer sin preguntar nada, y queda hecho, es guardar **el pre
 de cerrar**, etiquetado como tal. Es un dato honesto y sirve de aproximación declarada; la cifra exacta
 llegará con el registro.
 
-## 10. Lo que NO incluiría
+
+## 11. Fase 3, empezada: el modelo de movimientos
+
+**La decisión que lo define: la compra ya existe.**
+
+Un `Lot` tiene cantidad, coste por unidad y fecha de compra. Eso **es** una compra. Duplicarla en una tabla
+de movimientos sería tener el mismo hecho en dos sitios, y el día que uno se corrigiera sin el otro dejarían
+de cuadrar sin que nada fallara.
+
+Así que la tabla `Movements` guarda **lo que hoy no existe**:
+
+| Tipo | ¿Estaba? | Qué aporta |
+|---|---|---|
+| **Aportación** | No | El dinero que entra: el «cuánto he puesto» |
+| **Retiro** | No | El dinero que sale |
+| **Venta** | **No** | Cuántas unidades, a qué precio y qué día → la ganancia realizada |
+| Compra | **Sí, como `Lot`** | No se duplica |
+
+Y el «registro completo» de una cartera es **la unión de sus lotes y sus movimientos**: una consulta, no una
+tabla copiada.
+
+### Dos decisiones más, y las dos están en el código
+
+1. **Una venta calcula su importe, no lo acepta.** Si se pudiera pasar, alguien podría registrar «10 unidades
+   a 50» con un importe de 900, y la ganancia realizada saldría mal sin que nada lo delatara.
+2. **Una venta no cambia lo aportado.** El dinero ya estaba dentro; solo cambió de forma. Es la prueba que
+   más importa de este trozo, porque contarla como aportación haría que el informe dijera que se puso mucho
+   más de lo que se puso.
+
+### Lo que todavía hay que decidir: el efectivo
+
+La aplicación **no tiene cuenta de efectivo**. Eso hoy no importa —está todo invertido—, pero convierte en
+impreciso el informe central en cuanto haya dinero sin invertir o un retiro grande:
+
+> Si se ingresan 10.000 y se compran 8.000, el patrimonio en valores vale 8.000. Sin registrar los 2.000 en
+> efectivo, «puse 10.000 y tengo 8.000» diría que se perdió un 20 % cuando no se perdió nada.
+
+Hay dos salidas, y es una decisión de producto, no técnica:
+
+- **Registrar el efectivo** como parte de la cartera. Es el modelo completo y el informe sale exacto, pero
+  añade un saldo que hay que mantener al día.
+- **Definir el informe como «coste aportado contra valor de mercado»** —lo que la aplicación ya calcula— y
+  llamarlo por su nombre, en vez de «aportado contra ganado». Es exacto y no hace falta nada nuevo, pero no
+  responde «cuánto puse de mi bolsillo».
+
+Mientras no se decida, lo construido sirve: el registro de ventas ya da la ganancia realizada, y las
+aportaciones están guardadas aunque todavía no se use su saldo.
+## 12. Lo que NO incluiría
 
 - **Proyecciones y jubilación.** Es otro producto: exige supuestos de rentabilidad e inflación que aquí no se
   pueden justificar.

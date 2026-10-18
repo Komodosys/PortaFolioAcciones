@@ -35,6 +35,14 @@ internal static class ValueObjectMapping
         quantity => quantity.Value,
         value => Quantity.Of(value));
 
+    /// <summary>
+    /// Lo mismo, para una cantidad <b>opcional</b>: en un movimiento, no tener cantidad no es tener cero.
+    /// Una aportación no tiene unidades, y guardar un cero haría creer que se vendieron cero acciones.
+    /// </summary>
+    public static readonly ValueConverter<Quantity?, decimal?> NullableQuantityConverter = new(
+        quantity => quantity == null ? null : quantity.Value,
+        value => value == null ? null : Quantity.Of(value.Value));
+
     /// <summary>Un simbolo se guarda como texto.</summary>
     public static readonly ValueConverter<Ticker, string> TickerConverter = new(
         ticker => ticker.Value,

@@ -72,6 +72,13 @@ public sealed class PortafolioDbContext : IdentityDbContext<ApplicationUser, Ide
     public DbSet<DailyFxRate> DailyFxRates => Set<DailyFxRate>();
 
     /// <summary>
+    /// Los movimientos de las carteras: dinero que entra y sale, y ventas.
+    ///
+    /// <b>Las compras no están aquí</b>: son los <see cref="Lot"/>, que ya tienen cantidad, coste y fecha.
+    /// </summary>
+    public DbSet<Movement> Movements => Set<Movement>();
+
+    /// <summary>
     /// El libro de auditoria. Es de <b>solo anadir</b>: la base de datos rechaza modificarlo o borrarlo.
     /// </summary>
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();

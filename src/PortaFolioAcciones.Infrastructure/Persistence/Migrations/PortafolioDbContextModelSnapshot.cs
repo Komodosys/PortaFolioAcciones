@@ -405,6 +405,74 @@ namespace PortaFolioAcciones.Infrastructure.Persistence.Migrations
                     b.ToTable("Lots", (string)null);
                 });
 
+            modelBuilder.Entity("PortaFolioAcciones.Domain.Entities.Movement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateOnly>("OccurredOn")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("PortfolioId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("PositionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("Quantity")
+                        .HasPrecision(28, 8)
+                        .HasColumnType("numeric(28,8)");
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "Amount", "PortaFolioAcciones.Domain.Entities.Movement.Amount#Money", b1 =>
+                        {
+                            b1.IsRequired();
+
+                            b1.Property<decimal>("Amount")
+                                .HasPrecision(28, 4)
+                                .HasColumnType("numeric(28,4)");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)");
+                        });
+
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "PricePerUnit", "PortaFolioAcciones.Domain.Entities.Movement.PricePerUnit#Money", b1 =>
+                        {
+                            b1.Property<decimal>("Amount")
+                                .HasPrecision(28, 6)
+                                .HasColumnType("numeric(28,6)");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)");
+                        });
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PortfolioId", "OccurredOn")
+                        .HasDatabaseName("IX_Movements_PortfolioId_OccurredOn");
+
+                    b.HasIndex("PositionId", "OccurredOn")
+                        .HasDatabaseName("IX_Movements_PositionId_OccurredOn");
+
+                    b.ToTable("Movements", (string)null);
+                });
+
             modelBuilder.Entity("PortaFolioAcciones.Domain.Entities.Portfolio", b =>
                 {
                     b.Property<Guid>("Id")

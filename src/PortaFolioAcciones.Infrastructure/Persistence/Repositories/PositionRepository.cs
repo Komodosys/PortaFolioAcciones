@@ -159,6 +159,8 @@ internal sealed class PositionRepository : IPositionRepository
             }
 
             DeclararLoteNuevo(nuevo!);
+        await AnotarTipoDelLoteAsync(nuevo!, instrumento.QuoteCurrency, posicion.PortfolioId, cancellationToken);
+            await AnotarTipoDelLoteAsync(nuevo!, instrumento.QuoteCurrency, posicion.PortfolioId, cancellationToken);
         }
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -166,6 +168,37 @@ internal sealed class PositionRepository : IPositionRepository
         return PositionResult.Ok(ADetalle(posicion, instrumento));
     }
 
+    /// <summary>
+    /// Anota en el lote el tipo de cambio de la moneda en que se compró, <b>el de su fecha de compra</b>.
+    ///
+    /// Se hace con el lote ya creado y no antes porque el lote lo construye el dominio, que no tiene por qué
+    /// saber de tipos de cambio. El valor queda fijado una sola vez: el tipo de una compra es un hecho del día
+    /// en que se compró.
+    /// </summary>
+    private async Task AnotarTipoDelLoteAsync(
+        Lot lote,
+        Currency divisa,
+        Guid portfolioId,
+        CancellationToken cancellationToken)
+    {
+        var baseDeLaCartera = await BaseDeLaCarteraAsync(portfolioId, cancellationToken);
+
+        if (baseDeLaCartera is null || divisa == baseDeLaCartera)
+        {
+            // Sin moneda base no hay a qué convertir, y si coinciden no hace falta.
+            return;
+        }
+
+        // El mismo criterio que en la venta: el último publicado en o antes de la compra, sin cambiarle la
+        // fecha al dato.
+        var tasa = await _context.DailyFxRates
+            .AsNoTracking()
+            .Where(tipo => tipo.From == divisa && tipo.To == baseDeLaCartera && tipo.RateDate <= lote.PurchaseDate)
+            .OrderByDescending(tipo => tipo.RateDate)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        lote.SetRateUsed(tasa?.Rate);
+    }
     public async Task<PositionResult> AddLotAsync(
         Guid id,
         LotInput lot,
@@ -198,6 +231,7 @@ internal sealed class PositionRepository : IPositionRepository
         }
 
         DeclararLoteNuevo(nuevo!);
+        await AnotarTipoDelLoteAsync(nuevo!, instrumento.QuoteCurrency, posicion.PortfolioId, cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
 

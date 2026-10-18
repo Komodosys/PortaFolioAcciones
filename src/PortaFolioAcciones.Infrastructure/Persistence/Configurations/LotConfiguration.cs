@@ -27,6 +27,10 @@ internal sealed class LotConfiguration : IEntityTypeConfiguration<Lot>
 
         builder.Property(lot => lot.PurchaseDate).IsRequired();
         builder.Property(lot => lot.DateAccuracy).StoreAsText().IsRequired();
+        // El tipo aplicado al coste. Anulable: los lotes anteriores a este dato no lo tienen, y decir que
+        // valia uno cualquiera seria inventarse el pasado.
+        builder.Property(lot => lot.RateUsed).HasPrecision(18, 10);
+
         builder.Property(lot => lot.Notes).HasMaxLength(ColumnPrecision.Notes);
 
         // Los lotes se consultan siempre por su posicion.

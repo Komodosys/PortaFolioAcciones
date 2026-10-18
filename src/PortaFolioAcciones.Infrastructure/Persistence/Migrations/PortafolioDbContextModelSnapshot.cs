@@ -384,6 +384,10 @@ namespace PortaFolioAcciones.Infrastructure.Persistence.Migrations
                         .HasPrecision(28, 8)
                         .HasColumnType("numeric(28,8)");
 
+                    b.Property<decimal?>("RateUsed")
+                        .HasPrecision(18, 10)
+                        .HasColumnType("numeric(18,10)");
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "CostPerUnit", "PortaFolioAcciones.Domain.Entities.Lot.CostPerUnit#Money", b1 =>
                         {
                             b1.IsRequired();

@@ -55,6 +55,47 @@ public sealed class Lot
     /// <summary>Cuanto de fiable es <see cref="PurchaseDate"/>.</summary>
     public DateAccuracy DateAccuracy { get; private set; }
 
+    /// <summary>
+    /// El tipo de cambio aplicado para llevar el coste a la moneda base de la cartera, el del dia de la
+    /// compra.
+    ///
+    /// **Nulo significa una de dos cosas**, y las dos se dicen en el saldo en vez de inventarse: el coste ya
+    /// estaba en la moneda de la cartera, o el lote se dio de alta antes de que se guardaran los tipos —los
+    /// cuarenta que ya existian—, y de esos no se sabe cuanto salio de la cuenta.
+    /// </summary>
+    public decimal? RateUsed { get; private set; }
+
+    /// <summary>
+    /// Anota el tipo de cambio con el que se compro. **Solo se pone una vez**: el tipo de una compra es un hecho
+    /// del dia en que se compro, y poder cambiarlo despues seria poder reescribir el pasado.
+    /// </summary>
+    public void SetRateUsed(decimal? rateUsed)
+    {
+        if (rateUsed is > 0m && RateUsed is null)
+        {
+            RateUsed = rateUsed;
+        }
+    }
+
+    /// <summary>
+    /// El coste del lote **en la moneda de la cartera**, que es lo que salio de la cuenta.
+    ///
+    /// Nulo si el coste esta en otra moneda y no se guardo el tipo: devolverlo tal cual daria un efectivo en una
+    /// moneda que no es la de la cuenta.
+    /// </summary>
+    public Money? CostIn(Currency baseCurrency)
+    {
+        ArgumentNullException.ThrowIfNull(baseCurrency);
+
+        if (CostCurrency == baseCurrency)
+        {
+            return TotalCost;
+        }
+
+        // El coste convertido esta en la moneda de DESTINO, igual que en los movimientos.
+        return RateUsed is { } tipo ? Money.Of(TotalCost.Amount * tipo, baseCurrency) : null;
+    }
+
     /// <summary>Notas libres.</summary>
     public string? Notes { get; private set; }
 

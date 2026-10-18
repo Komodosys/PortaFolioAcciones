@@ -83,6 +83,19 @@ public sealed class Movement
     /// <summary>A qué precio se vendió cada unidad. Nula en las aportaciones y los retiros.</summary>
     public Money? PricePerUnit { get; private set; }
 
+    /// <summary>
+    /// Lo que había costado cada unidad vendida, en el momento de vender. Nula en las aportaciones y los
+    /// retiros.
+    ///
+    /// <b>Existe porque sin esto la ganancia realizada no se puede calcular.</b> Saber que se vendieron 10
+    /// unidades a 50 dice cuánto se cobró, no cuánto se ganó: falta lo que costaron. Y no se puede deducir
+    /// después, porque vender reduce los lotes y el coste que había antes se pierde.
+    ///
+    /// Se guarda el coste <b>medio por unidad</b> y no el total, porque es lo que el modelo usa: vender reparte
+    /// la cantidad proporcionalmente entre los lotes para conservar el coste medio, igual que hace el bróker.
+    /// </summary>
+    public Money? CostPerUnit { get; private set; }
+
     public string? Notes { get; private set; }
 
     public DateTimeOffset CreatedAtUtc { get; private set; }
@@ -122,7 +135,7 @@ public sealed class Movement
     }
 
     /// <summary>
-    /// Una venta: cuántas unidades y a qué precio.
+    /// Una venta: cuántas unidades, a qué precio y **cuánto habían costado**.
     ///
     /// El importe <b>se calcula</b> y no se recibe. Si se pudiera pasar, alguien podría registrar «10 unidades
     /// a 50» con un importe de 900, y la ganancia realizada saldría mal sin que nada lo delatara.
@@ -132,12 +145,14 @@ public sealed class Movement
         Guid positionId,
         Quantity quantity,
         Money pricePerUnit,
+        Money costPerUnit,
         DateOnly occurredOn,
         string? notes,
         DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(quantity);
         ArgumentNullException.ThrowIfNull(pricePerUnit);
+        ArgumentNullException.ThrowIfNull(costPerUnit);
 
         ExigirCartera(portfolioId);
 
@@ -154,11 +169,32 @@ public sealed class Movement
 
         ExigirPositivo(pricePerUnit, nameof(pricePerUnit));
 
+        // El coste sí puede ser cero —un lote que se dio de alta sin coste—, pero no negativo.
+        if (costPerUnit.Amount < 0m)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(costPerUnit), costPerUnit.Amount, "El coste no puede ser negativo.");
+        }
+
         return new Movement(
             Guid.NewGuid(), portfolioId, MovementKind.Sale, occurredOn,
             quantity * pricePerUnit,
-            positionId, quantity, pricePerUnit, notes, now);
+            positionId, quantity, pricePerUnit, notes, now)
+        {
+            CostPerUnit = costPerUnit,
+        };
     }
+
+    /// <summary>
+    /// La ganancia realizada de esta venta: lo cobrado menos lo que costó.
+    ///
+    /// Nula si no es una venta o si no se guardó el coste, que es el caso de las ventas registradas antes de
+    /// que existiera este dato. <b>Devolver cero sería peor</b>: diría que no se ganó nada.
+    /// </summary>
+    public Money? RealizedGain() =>
+        Kind is MovementKind.Sale && PricePerUnit is { } precio && CostPerUnit is { } coste
+            ? (Quantity! * (precio - coste))
+            : null;
 
     /// <summary>Dice si es dinero que entra o sale, en vez de una operación sobre un valor.</summary>
     public bool IsCash => Kind is MovementKind.Deposit or MovementKind.Withdrawal;

@@ -39,6 +39,9 @@ internal sealed class MovementConfiguration : IEntityTypeConfiguration<Movement>
         builder.ComplexProperty(movimiento => movimiento.PricePerUnit,
             dinero => dinero.ConfigureMoney(ColumnPrecision.Price));
 
+        builder.ComplexProperty(movimiento => movimiento.CostPerUnit,
+            dinero => dinero.ConfigureMoney(ColumnPrecision.Price));
+
         builder.Property(movimiento => movimiento.Quantity)
             .HasConversion(ValueObjectMapping.NullableQuantityConverter)
             .HasPrecision(ColumnPrecision.NumericTotal, ColumnPrecision.Quantity);

@@ -247,6 +247,10 @@ internal sealed class PositionRepository : IPositionRepository
             return PositionResult.Failed("position.instrument_missing");
         }
 
+        // El coste medio se toma ANTES de vender: es lo que cuesta lo que se vende, y despues de vender ya
+        // no se puede saber, porque los lotes se han reducido.
+        var costeMedio = posicion.AverageCostPerUnit;
+
         posicion.Sell(vendida, ahora);
 
         // La venta se registra como movimiento, y en el MISMO guardado que la reducción de la posición: si se
@@ -257,6 +261,7 @@ internal sealed class PositionRepository : IPositionRepository
             posicion.Id,
             vendida,
             Money.Of(command.PricePerUnit, instrumento.QuoteCurrency),
+            costeMedio,
             command.OccurredOn ?? DateOnly.FromDateTime(ahora.UtcDateTime),
             command.Notes,
             ahora));

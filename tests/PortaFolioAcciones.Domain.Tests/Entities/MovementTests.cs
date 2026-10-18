@@ -49,7 +49,7 @@ public sealed class MovementTests
     [Fact]
     public void Una_venta_calcula_el_importe()
     {
-        var venta = Movement.Sale(Cartera, Posicion, Quantity.Of(10m), Dolar(50m), Dia, null, Ahora);
+        var venta = Movement.Sale(Cartera, Posicion, Quantity.Of(10m), Dolar(50m), Dolar(40m), Dia, null, Ahora);
 
         Assert.Equal(500m, venta.Amount.Amount);
         Assert.Equal("USD", venta.Amount.Currency.Code);
@@ -61,7 +61,7 @@ public sealed class MovementTests
     public void Una_venta_sin_cantidad_positiva_se_rechaza()
     {
         Assert.Throws<ArgumentOutOfRangeException>(
-            () => Movement.Sale(Cartera, Posicion, Quantity.Of(0m), Dolar(50m), Dia, null, Ahora));
+            () => Movement.Sale(Cartera, Posicion, Quantity.Of(0m), Dolar(50m), Dolar(40m), Dia, null, Ahora));
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public sealed class MovementTests
             () => Movement.Withdrawal(Guid.Empty, Canadiense(1m), Dia, null, Ahora));
 
         Assert.Throws<ArgumentException>(
-            () => Movement.Sale(Guid.Empty, Posicion, Quantity.Of(1m), Dolar(1m), Dia, null, Ahora));
+            () => Movement.Sale(Guid.Empty, Posicion, Quantity.Of(1m), Dolar(1m), Dolar(1m), Dia, null, Ahora));
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public sealed class MovementTests
     {
         Assert.True(Movement.Deposit(Cartera, Canadiense(1m), Dia, null, Ahora).IsCash);
         Assert.True(Movement.Withdrawal(Cartera, Canadiense(1m), Dia, null, Ahora).IsCash);
-        Assert.False(Movement.Sale(Cartera, Posicion, Quantity.Of(1m), Dolar(1m), Dia, null, Ahora).IsCash);
+        Assert.False(Movement.Sale(Cartera, Posicion, Quantity.Of(1m), Dolar(1m), Dolar(1m), Dia, null, Ahora).IsCash);
     }
 
     [Fact]
@@ -98,12 +98,43 @@ public sealed class MovementTests
     }
 
     [Fact]
+    public void La_ganancia_realizada_es_lo_cobrado_menos_lo_que_costo()
+    {
+        var venta = Movement.Sale(Cartera, Posicion, Quantity.Of(10m), Dolar(50m), Dolar(40m), Dia, null, Ahora);
+
+        Assert.Equal(100m, venta.RealizedGain()?.Amount);
+        Assert.Equal("USD", venta.RealizedGain()?.Currency.Code);
+    }
+
+    [Fact]
+    public void Una_venta_a_perdida_da_ganancia_negativa()
+    {
+        // Negativa y no cero: una pérdida es una pérdida, y esconderla con un cero sería mentir en el informe.
+        var venta = Movement.Sale(Cartera, Posicion, Quantity.Of(10m), Dolar(30m), Dolar(40m), Dia, null, Ahora);
+
+        Assert.Equal(-100m, venta.RealizedGain()?.Amount);
+    }
+
+    [Fact]
+    public void Una_aportacion_no_tiene_ganancia_realizada()
+    {
+        // Nula y no cero: una aportación no gana ni pierde nada, y un cero diría que se vendió sin ganar.
+        Assert.Null(Movement.Deposit(Cartera, Canadiense(1_000m), Dia, null, Ahora).RealizedGain());
+    }
+
+    [Fact]
+    public void Una_venta_con_coste_negativo_se_rechaza()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => Movement.Sale(Cartera, Posicion, Quantity.Of(1m), Dolar(50m), Dolar(-1m), Dia, null, Ahora));
+    }
+    [Fact]
     public void Una_venta_no_cambia_lo_aportado()
     {
         // Es la prueba que más importa de este fichero. Una venta no aporta dinero: el dinero ya estaba
         // dentro y solo cambió de forma. Contarla como aportación haría que un informe de rentabilidad
         // dijera que se ha puesto mucho más de lo que se puso, y la ganancia saldría mal.
-        var venta = Movement.Sale(Cartera, Posicion, Quantity.Of(10m), Dolar(50m), Dia, null, Ahora);
+        var venta = Movement.Sale(Cartera, Posicion, Quantity.Of(10m), Dolar(50m), Dolar(40m), Dia, null, Ahora);
 
         Assert.True(venta.CashFlow().IsZero);
     }

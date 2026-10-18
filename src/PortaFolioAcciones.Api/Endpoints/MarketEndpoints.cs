@@ -98,6 +98,29 @@ internal static class MarketEndpoints
         })
         .WithName("market.backfill")
         .WithSummary("Rellena el histórico de precios hacia atrás. Una petición por instrumento, sin sobrescribir.");
+
+        // El de divisa es otro relleno y va aparte: son fuentes distintas y se pueden querer por separado. Sin
+        // él, el efectivo de una compra vieja se convertiría con el tipo de hoy, y el saldo de una cuenta no
+        // cambia cuando se mueve el dólar.
+        group.MapPost("/backfill-fx", async Task<IResult> (
+            RefrescoDePrecios refrescos,
+            IMarketDataCollector colector,
+            TimeProvider reloj,
+            HttpContext contexto,
+            CancellationToken cancelacion) =>
+        {
+            if (refrescos.EsperarPara() is { } espera)
+            {
+                return DemasiadoPronto(contexto, espera);
+            }
+
+            // Los mismos cinco años que los precios: no tiene sentido tener cierres de 2021 y tipos desde 2025.
+            var desde = DateOnly.FromDateTime(reloj.GetUtcNow().UtcDateTime).AddYears(-5);
+
+            return Results.Ok(await colector.BackfillFxAsync(desde, cancelacion));
+        })
+        .WithName("market.backfillFx")
+        .WithSummary("Rellena el histórico de tipos de cambio, que es lo que permite convertir el efectivo de una compra antigua.");
     }
 
     /// <summary>

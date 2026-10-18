@@ -151,6 +151,8 @@ public static class DependencyInjection
                 proveedor.GetRequiredService<RefrescoDePrecios>());
         });
 
+        services.AddScoped<IFxHistoryProvider>(proveedor => proveedor.GetRequiredService<FrankfurterFxRateProvider>());
+
         services.AddScoped<IFxRateProvider>(proveedor =>
         {
             var fuente = proveedor.GetRequiredService<FrankfurterFxRateProvider>();

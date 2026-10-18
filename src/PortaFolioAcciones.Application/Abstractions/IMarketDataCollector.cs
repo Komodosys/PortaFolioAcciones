@@ -55,4 +55,18 @@ public interface IMarketDataCollector
     public Task<BackfillResult> BackfillAsync(
         DateOnly desde,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Rellena el histórico de <b>tipos de cambio</b>, que es lo que hace falta para el efectivo.
+    ///
+    /// Una compra de enero se pagó al tipo de enero. Convertirla con el de hoy daría un saldo que sube y baja
+    /// solo cuando se mueve el dólar, y el saldo de una cuenta no hace eso.
+    ///
+    /// Como el de precios, <b>no sobrescribe</b>: un tipo que ya está se comprobó cuando se guardó.
+    /// </summary>
+    /// <param name="desde">El día más antiguo que interesa.</param>
+    /// <param name="cancellationToken">Cancelación.</param>
+    public Task<FxBackfillResult> BackfillFxAsync(
+        DateOnly desde,
+        CancellationToken cancellationToken = default);
 }

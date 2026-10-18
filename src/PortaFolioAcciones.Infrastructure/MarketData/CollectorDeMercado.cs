@@ -36,6 +36,7 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
     private readonly IPriceProvider _precios;
     private readonly IPriceHistoryProvider _historico;
     private readonly IFxRateProvider _tiposDeCambio;
+    private readonly IFxHistoryProvider _historicoDeCambio;
     private readonly ILogger<CollectorDeMercado> _registro;
 
     public CollectorDeMercado(
@@ -43,12 +44,14 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
         IPriceProvider precios,
         IPriceHistoryProvider historico,
         IFxRateProvider tiposDeCambio,
+        IFxHistoryProvider historicoDeCambio,
         ILogger<CollectorDeMercado> registro)
     {
         _opciones = opciones;
         _precios = precios;
         _historico = historico;
         _tiposDeCambio = tiposDeCambio;
+        _historicoDeCambio = historicoDeCambio;
         _registro = registro;
     }
 
@@ -316,6 +319,111 @@ internal sealed class CollectorDeMercado : IMarketDataCollector
         return new BackfillResult(instrumentos.Count, nuevos, repetidos, sinSerie);
     }
 
+    public async Task<FxBackfillResult> BackfillFxAsync(
+        DateOnly desde,
+        CancellationToken cancellationToken = default)
+    {
+        await using var contexto = new PortafolioDbContext(_opciones, UsuarioDelSistema.Instancia);
+
+        var divisas = await DivisasQueHacenFaltaAsync(contexto, cancellationToken);
+        var bases = await BasesQueHacenFaltaAsync(contexto, cancellationToken);
+
+        if (divisas.Count == 0 || bases.Count == 0)
+        {
+            return new FxBackfillResult(0, 0, 0, 0);
+        }
+
+        // Lo ya guardado en la ventana, en una consulta. Las claves son el par y el día.
+        var yaEstan = (await contexto.DailyFxRates
+                .Where(tipo => tipo.RateDate >= desde)
+                .Select(tipo => new { tipo.From, tipo.To, tipo.RateDate })
+                .ToListAsync(cancellationToken))
+            .Select(fila => (fila.From.Code, fila.To.Code, fila.RateDate))
+            .ToHashSet();
+
+        var pares = 0;
+        var nuevos = 0;
+        var repetidos = 0;
+        var sinSerie = 0;
+
+        foreach (var baseMoneda in bases)
+        {
+            foreach (var divisa in divisas.Where(divisa => divisa != baseMoneda))
+            {
+                pares++;
+
+                var serie = await _historicoDeCambio.GetHistoryAsync(
+                    divisa, baseMoneda, desde, cancellationToken);
+
+                if (serie.Count == 0)
+                {
+                    sinSerie++;
+                    continue;
+                }
+
+                foreach (var tipo in serie)
+                {
+                    if (!yaEstan.Add((tipo.From.Code, tipo.To.Code, tipo.RateDate)))
+                    {
+                        repetidos++;
+                        continue;
+                    }
+
+                    contexto.DailyFxRates.Add(DailyFxRate.FromValue(tipo, DateTimeOffset.UtcNow));
+                    nuevos++;
+                }
+            }
+        }
+
+        await contexto.SaveChangesAsync(cancellationToken);
+
+        _registro.LogInformation(
+            "Relleno de divisa desde {Desde}: {Pares} pares, {Nuevos} tipos nuevos, {Repetidos} ya estaban, {SinSerie} sin serie.",
+            desde, pares, nuevos, repetidos, sinSerie);
+
+        return new FxBackfillResult(pares, nuevos, repetidos, sinSerie);
+    }
+
+    /// <summary>Las monedas de los instrumentos que tienen posición abierta.</summary>
+    private static async Task<IReadOnlyList<Currency>> DivisasQueHacenFaltaAsync(
+        PortafolioDbContext contexto,
+        CancellationToken cancellationToken)
+    {
+        var conPosicion = await contexto.Positions
+            .Where(posicion => !posicion.IsClosed)
+            .Select(posicion => posicion.InstrumentId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        if (conPosicion.Count == 0)
+        {
+            return [];
+        }
+
+        return await contexto.Instruments
+            .Where(instrumento => conPosicion.Contains(instrumento.Id))
+            .Select(instrumento => instrumento.QuoteCurrency)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>Las monedas base: las de las carteras que la tienen propia, y las de los perfiles.</summary>
+    private static async Task<IReadOnlyList<Currency>> BasesQueHacenFaltaAsync(
+        PortafolioDbContext contexto,
+        CancellationToken cancellationToken)
+    {
+        var deCarteras = await contexto.Portfolios
+            .Where(cartera => cartera.BaseCurrency != null)
+            .Select(cartera => cartera.BaseCurrency!)
+            .ToListAsync(cancellationToken);
+
+        var dePerfiles = await contexto.UserProfiles
+            .Select(perfil => perfil.BaseCurrency)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        return [.. deCarteras.Concat(dePerfiles).Distinct()];
+    }
     /// <summary>
     /// Los instrumentos que necesitan precio: los que tiene alguien en una posicion abierta.
     ///

@@ -17,7 +17,7 @@ namespace PortaFolioAcciones.Infrastructure.MarketData;
 /// de la Fase 5. Aquí, si la fuente no responde, se devuelve <b>sin ese par</b> y quien pregunte decide:
 /// lo que no se hace nunca es inventarse un uno a uno para poder seguir sumando.
 /// </summary>
-internal sealed partial class FrankfurterFxRateProvider : IFxRateProvider
+internal sealed partial class FrankfurterFxRateProvider : IFxRateProvider, IFxHistoryProvider
 {
     private const string Ruta = "v1/latest";
 
@@ -66,12 +66,90 @@ internal sealed partial class FrankfurterFxRateProvider : IFxRateProvider
         return tasas;
     }
 
+    /// <summary>
+    /// La serie histórica de un par, en <b>una sola petición por rango</b>.
+    /// </summary>
+    /// <remarks>
+    /// Se pide el rango entero y no día a día: cinco años son unas 1.300 publicaciones, y pedirlas de una en una
+    /// sería la misma barbaridad que con los precios. El servicio devuelve solo los días en que publica, y los
+    /// huecos <b>no se rellenan</b>: un tipo con la fecha de un domingo en que no se publicó sería un dato
+    /// inventado.
+    /// </remarks>
+    public async Task<IReadOnlyList<FxRate>> GetHistoryAsync(
+        Currency from,
+        Currency to,
+        DateOnly desde,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(from);
+        ArgumentNullException.ThrowIfNull(to);
+
+        // Un par consigo mismo es la identidad y no se pregunta, igual que al cotizar.
+        if (from == to)
+        {
+            return [];
+        }
+
+        var hasta = DateOnly.FromDateTime(DateTime.UtcNow);
+        var ruta = $"v1/{desde:yyyy-MM-dd}..{hasta:yyyy-MM-dd}" +
+                   $"?base={Uri.EscapeDataString(from.Code)}&symbols={Uri.EscapeDataString(to.Code)}";
+
+        try
+        {
+            using var respuesta = await _http.GetAsync(new Uri(ruta, UriKind.Relative), cancellationToken);
+
+            if (!respuesta.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "No se pudo conseguir el histórico de {Desde} a {Hasta}: respondió {Codigo}.",
+                    from.Code, to.Code, (int)respuesta.StatusCode);
+
+                return [];
+            }
+
+            var datos = await respuesta.Content.ReadFromJsonAsync<FrankfurterSerieResponse>(cancellationToken);
+
+            if (datos?.Rates is null)
+            {
+                return [];
+            }
+
+            var tipos = new List<FxRate>();
+
+            foreach (var (fecha, valores) in datos.Rates)
+            {
+                if (!DateOnly.TryParse(fecha, out var dia)
+                    || !valores.TryGetValue(to.Code, out var valor)
+                    || valor <= 0m)
+                {
+                    continue;
+                }
+
+                tipos.Add(FxRate.Of(from, to, valor, dia));
+            }
+
+            return [.. tipos.OrderBy(tipo => tipo.RateDate)];
+        }
+        catch (HttpRequestException excepcion)
+        {
+            _logger.LogWarning(
+                excepcion, "No se pudo conseguir el histórico de {Desde} a {Hasta}.", from.Code, to.Code);
+
+            return [];
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogWarning(
+                "El histórico de {Desde} a {Hasta} agotó el tiempo de espera.", from.Code, to.Code);
+
+            return [];
+        }
+    }
     private async Task<FxRate?> PedirAsync(
         Currency from,
         Currency to,
         DateOnly hoy,
-        CancellationToken cancellationToken)
-    {
+        CancellationToken cancellationToken)    {
         var ruta = $"{Ruta}?base={Uri.EscapeDataString(from.Code)}&symbols={Uri.EscapeDataString(to.Code)}";
 
         try
@@ -118,6 +196,11 @@ internal sealed partial class FrankfurterFxRateProvider : IFxRateProvider
             return null;
         }
     }
+
+    /// <summary>Lo que devuelve el servicio al pedir un rango: un valor por día publicado.</summary>
+    private sealed record FrankfurterSerieResponse(
+        [property: JsonPropertyName("base")] string? Base,
+        [property: JsonPropertyName("rates")] Dictionary<string, Dictionary<string, decimal>>? Rates);
 
     /// <summary>Lo que devuelve el servicio. Solo se declara lo que se usa.</summary>
     private sealed record FrankfurterResponse(

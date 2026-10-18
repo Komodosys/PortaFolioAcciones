@@ -18,7 +18,7 @@ const r = (valor, n = 4) => Math.round(valor * 10 ** n) / 10 ** n;
 c.titulo('Preparacion');
 await admin.entrar('admin', claveDelAdmin());
 
-const cartera = await admin.pedir('POST', '/api/portfolios', { name: `Vista ${Date.now()}`, baseCurrency: 'CAD' });
+const cartera = await admin.pedir('POST', '/api/portfolios', { name: `Vista ${Date.now()}`, registrationType: 'NotRegistered', baseCurrency: 'CAD' });
 c.comprobar('cartera creada, con CAD como moneda base', 201, cartera.estado);
 const idCartera = cartera.json?.id;
 

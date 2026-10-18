@@ -15,7 +15,7 @@ const r = (valor, n = 4) => Math.round(valor * 10 ** n) / 10 ** n;
 c.titulo('Preparacion: entrar, una cartera y el instrumento');
 await admin.entrar('admin', claveDelAdmin());
 
-const cartera = await admin.pedir('POST', '/api/portfolios', { name: `Posiciones ${Date.now()}`, baseCurrency: 'CAD' });
+const cartera = await admin.pedir('POST', '/api/portfolios', { name: `Posiciones ${Date.now()}`, registrationType: 'RegisteredSavings', baseCurrency: 'CAD' });
 c.comprobar('se crea la cartera', 201, cartera.estado);
 const idCartera = cartera.json?.id;
 

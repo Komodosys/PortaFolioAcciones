@@ -13,7 +13,7 @@ const admin = crearCliente('admin');
 c.titulo('1. El administrador entra y crea su cartera');
 await admin.entrar('admin', claveDelAdmin());
 
-const carteraDelAdmin = await admin.pedir('POST', '/api/portfolios', { name: 'Cartera de Titular A', baseCurrency: 'CAD' });
+const carteraDelAdmin = await admin.pedir('POST', '/api/portfolios', { name: 'Cartera de Titular A', registrationType: 'RegisteredSavings', baseCurrency: 'CAD' });
 c.comprobar('el administrador crea su cartera', 201, carteraDelAdmin.estado);
 const idAdmin = carteraDelAdmin.json?.id;
 c.nota(`cartera del administrador: ${idAdmin}`);
@@ -38,7 +38,7 @@ c.titulo('3. Titular B entra y crea la suya');
 const titularB = crearCliente('titularB');
 c.comprobar('Titular B entra', 200, (await titularB.entrar(usuarioTitularB, claveTitularB)).estado);
 
-const carteraDeTitularB = await titularB.pedir('POST', '/api/portfolios', { name: 'Cartera de Titular B', baseCurrency: 'CAD' });
+const carteraDeTitularB = await titularB.pedir('POST', '/api/portfolios', { name: 'Cartera de Titular B', registrationType: 'NotRegistered', baseCurrency: 'CAD' });
 c.comprobar('Titular B crea su cartera', 201, carteraDeTitularB.estado);
 const idTitularB = carteraDeTitularB.json?.id;
 c.nota(`cartera de Titular B: ${idTitularB}`);

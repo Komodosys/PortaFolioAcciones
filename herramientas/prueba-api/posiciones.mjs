@@ -56,7 +56,7 @@ c.comprobar('los lotes vienen del mas antiguo al mas reciente', '2026-06-05', al
 c.titulo('2. El coste por unidad sobrevive a una venta proporcional');
 // ESTA es la comprobacion que importa: si la venta repartiera el coste de cualquier manera, el coste
 // por unidad cambiaria y la aplicacion dejaria de cuadrar con el estado de cuenta del broker.
-const venta = await admin.pedir('POST', `/api/positions/${idPosicion}/sell`, { quantity: 11 });
+const venta = await admin.pedir('POST', `/api/positions/${idPosicion}/sell`, { quantity: 11, pricePerUnit: 210.5 });
 c.comprobar('se vende', 200, venta.estado);
 c.comprobar('quedan 23 acciones', 23, venta.json?.quantity);
 c.comprobar('el coste por unidad NO cambia', 165.5424, r(venta.json?.averageCostPerUnit));
@@ -64,13 +64,15 @@ c.comprobar('el coste total baja a lo que corresponde', 3807.4761, r(venta.json?
 c.nota(`la suma de los lotes sigue siendo exacta: ${r((venta.json?.lots ?? []).reduce((s, l) => s + l.quantity, 0), 8)}`);
 
 c.titulo('3. No se puede vender mas de lo que se tiene');
-const deMas = await admin.pedir('POST', `/api/positions/${idPosicion}/sell`, { quantity: 100 });
+const deMas = await admin.pedir('POST', `/api/positions/${idPosicion}/sell`, { quantity: 100, pricePerUnit: 210.5 });
 c.comprobar('da 400', 400, deMas.estado);
 c.comprobar('y dice por que', 'position.insufficient_quantity', deMas.json?.title);
 
 c.titulo('4. Ni vender una cantidad que no tiene sentido');
-c.comprobar('vender 0 da 400', 400, (await admin.pedir('POST', `/api/positions/${idPosicion}/sell`, { quantity: 0 })).estado);
-c.comprobar('vender -5 da 400', 400, (await admin.pedir('POST', `/api/positions/${idPosicion}/sell`, { quantity: -5 })).estado);
+// Sin precio no se puede calcular la ganancia realizada: vender y apuntar mal es peor que no vender.
+c.comprobar('vender sin precio da 400', 400, (await admin.pedir('POST', '/api/positions/' + idPosicion + '/sell', { quantity: 1 })).estado);
+c.comprobar('vender 0 da 400', 400, (await admin.pedir('POST', `/api/positions/${idPosicion}/sell`, { quantity: 0, pricePerUnit: 210.5 })).estado);
+c.comprobar('vender -5 da 400', 400, (await admin.pedir('POST', `/api/positions/${idPosicion}/sell`, { quantity: -5, pricePerUnit: 210.5 })).estado);
 
 c.titulo('5. Anadir otra compra recalcula la media');
 const compra = await admin.pedir('POST', `/api/positions/${idPosicion}/lots`, {
@@ -149,7 +151,7 @@ c.comprobar('entra', 200, (await titularB.entrar(`pos${sufijo}`, claveTitularB))
 c.comprobar('no ve la posicion', 404, (await titularB.pedir('GET', `/api/positions/${idPosicion}`)).estado);
 c.comprobar('no ve la cartera', 404, (await titularB.pedir('GET', `/api/portfolios/${idCartera}`)).estado);
 c.comprobar('el listado le viene vacio', 0, (await titularB.pedir('GET', `/api/portfolios/${idCartera}/positions`)).json?.length ?? -1);
-c.comprobar('no puede vender', 404, (await titularB.pedir('POST', `/api/positions/${idPosicion}/sell`, { quantity: 1 })).estado);
+c.comprobar('no puede vender', 404, (await titularB.pedir('POST', `/api/positions/${idPosicion}/sell`, { quantity: 1, pricePerUnit: 210.5 })).estado);
 c.comprobar('no puede cerrarla', 404, (await titularB.pedir('POST', `/api/positions/${idPosicion}/close`)).estado);
 
 const intacta = await admin.pedir('GET', `/api/positions/${idPosicion}`);

@@ -103,12 +103,18 @@ internal static class PositionEndpoints
             IPositionRepository repositorio,
             CancellationToken cancelacion) =>
         {
-            var resultado = await repositorio.SellAsync(id, new SellCommand(peticion.Quantity), cancelacion);
+            var comando = new SellCommand(
+                peticion.Quantity,
+                peticion.PricePerUnit,
+                peticion.OccurredOn,
+                peticion.Notes);
+
+            var resultado = await repositorio.SellAsync(id, comando, cancelacion);
 
             return resultado.Succeeded ? Results.Ok(resultado.Position) : Problem(resultado);
         })
         .WithName("positions.sell")
-        .WithSummary("Vende una cantidad, repartida proporcionalmente entre los lotes para conservar el coste medio.");
+        .WithSummary("Vende una cantidad y registra la venta con su precio, para poder calcular la ganancia realizada.");
 
         porPosicion.MapPut("/{id:guid}/manual-price", async (
             Guid id,
@@ -219,7 +225,11 @@ internal static class PositionEndpoints
         string? Notes);
 
     /// <summary>Una venta.</summary>
-    internal sealed record SellRequest(decimal Quantity);
+    internal sealed record SellRequest(
+        decimal Quantity,
+        decimal PricePerUnit,
+        DateOnly? OccurredOn = null,
+        string? Notes = null);
 
     /// <summary>Un precio a mano, con su fecha y su moneda.</summary>
     internal sealed record ManualPriceRequest(decimal Amount, string Currency, DateOnly Date);

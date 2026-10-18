@@ -223,6 +223,11 @@ internal sealed class PositionRepository : IPositionRepository
             return PositionResult.Failed("position.invalid_quantity");
         }
 
+        if (command.PricePerUnit <= 0m)
+        {
+            return PositionResult.Failed("position.invalid_price");
+        }
+
         var vendida = Quantity.Of(command.Quantity);
 
         // Se comprueba ANTES de llamar al dominio para poder decir «no tienes tantas» en vez de un error
@@ -232,11 +237,33 @@ internal sealed class PositionRepository : IPositionRepository
             return PositionResult.Failed("position.insufficient_quantity");
         }
 
-        posicion.Sell(vendida, DateTimeOffset.UtcNow);
+        var ahora = DateTimeOffset.UtcNow;
+        var instrumento = await InstrumentoDeAsync(posicion, cancellationToken);
+
+        if (instrumento is null)
+        {
+            // Sin el instrumento no se sabe en qué moneda se vendió, y registrar la venta con una moneda
+            // supuesta daría una ganancia realizada falsa. Mejor no vender que vender y apuntar mal.
+            return PositionResult.Failed("position.instrument_missing");
+        }
+
+        posicion.Sell(vendida, ahora);
+
+        // La venta se registra como movimiento, y en el MISMO guardado que la reducción de la posición: si se
+        // guardara por separado, un fallo entre las dos dejaría la posición vendida y la venta sin registrar
+        // —o al revés—, y la ganancia realizada saldría mal para siempre.
+        _context.Movements.Add(Movement.Sale(
+            posicion.PortfolioId,
+            posicion.Id,
+            vendida,
+            Money.Of(command.PricePerUnit, instrumento.QuoteCurrency),
+            command.OccurredOn ?? DateOnly.FromDateTime(ahora.UtcDateTime),
+            command.Notes,
+            ahora));
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return PositionResult.Ok(ADetalle(posicion, await InstrumentoDeAsync(posicion, cancellationToken)));
+        return PositionResult.Ok(ADetalle(posicion, instrumento));
     }
 
     public async Task<PositionResult> SetManualPriceAsync(

@@ -29,7 +29,20 @@ public sealed record AddPositionCommand(
 
 /// <summary>Una venta.</summary>
 /// <param name="Quantity">Cuántas unidades se venden.</param>
-public sealed record SellCommand(decimal Quantity);
+/// <param name="PricePerUnit">
+/// A qué precio se vendió cada una, <b>en la moneda del instrumento</b>.
+///
+/// Es obligatorio y no se deduce del último precio de mercado: en una venta real el precio lo pone el bróker
+/// y casi nunca coincide con el último cierre. Deducirlo daría una ganancia realizada que parece exacta y no
+/// lo es, y nadie podría explicar después de dónde sale la diferencia.
+/// </param>
+/// <param name="OccurredOn">El día de la venta. Nulo usa el de hoy.</param>
+/// <param name="Notes">Notas.</param>
+public sealed record SellCommand(
+    decimal Quantity,
+    decimal PricePerUnit,
+    DateOnly? OccurredOn = null,
+    string? Notes = null);
 
 /// <summary>Un precio puesto a mano.</summary>
 /// <param name="Amount">El precio.</param>

@@ -223,6 +223,13 @@
     "noEncontrada": "No se ha encontrado esa cartera.",
     "subtitulo": "Cada cartera es una cuenta, con su propia moneda base.",
     "sinCarteras": "Todavía no tienes ninguna cartera. Crea una para empezar.",
+    "tipoDeRegistro": "Tipo de registro",
+    "tipos": {
+      "RegisteredRetirement": "REER",
+      "RegisteredSavings": "CELI",
+      "NotRegistered": "No registrado"
+    },
+    "tipoDeRegistroAyuda": "REER y RRSP son lo mismo, y CELI y TFSA también: el nombre cambia según el documento. Sirve para agrupar y presentar, no cambia ningún cálculo.",
     "totalesParciales": "Faltan precios: estos totales son parciales.",
     "valorTotal": "Valor total",
     "costeTotal": "Coste total",

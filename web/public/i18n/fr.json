@@ -223,6 +223,13 @@
     "noEncontrada": "Ce portefeuille est introuvable.",
     "subtitulo": "Chaque portefeuille est un compte, avec sa propre devise de référence.",
     "sinCarteras": "Vous n'avez encore aucun portefeuille. Créez-en un pour commencer.",
+    "tipoDeRegistro": "Type de régime",
+    "tipos": {
+      "RegisteredRetirement": "REER",
+      "RegisteredSavings": "CELI",
+      "NotRegistered": "Non enregistré"
+    },
+    "tipoDeRegistroAyuda": "REER et RRSP sont la même chose, tout comme CELI et TFSA : le nom change selon le document. Sert à regrouper et à présenter, sans changer aucun calcul.",
     "totalesParciales": "Des prix manquent : ces totaux sont partiels.",
     "valorTotal": "Valeur totale",
     "costeTotal": "Coût total",

@@ -223,6 +223,13 @@
     "noEncontrada": "That portfolio could not be found.",
     "subtitulo": "Each portfolio is an account, with its own base currency.",
     "sinCarteras": "You don't have any portfolios yet. Create one to get started.",
+    "tipoDeRegistro": "Registration type",
+    "tipos": {
+      "RegisteredRetirement": "RRSP",
+      "RegisteredSavings": "TFSA",
+      "NotRegistered": "Non-registered"
+    },
+    "tipoDeRegistroAyuda": "RRSP and REER are the same thing, and so are TFSA and CELI: the name depends on which form you are reading. It groups and presents; it changes no calculation.",
     "totalesParciales": "Prices are missing: these totals are partial.",
     "valorTotal": "Total value",
     "costeTotal": "Total cost",

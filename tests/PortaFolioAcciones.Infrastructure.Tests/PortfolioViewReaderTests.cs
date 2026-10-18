@@ -179,7 +179,7 @@ public sealed class PortfolioViewReaderTests
         var persona = User.Create("Persona de prueba", Currency.Cad, AppLanguage.Spanish, Ahora);
         bd.Usuario.Id = persona.Id;
 
-        var cartera = Portfolio.Create(persona.Id, "Cartera de prueba", Ahora);
+        var cartera = Portfolio.Create(persona.Id, "Cartera de prueba", RegistrationType.NotRegistered, Ahora);
 
         var abierto = Instrument.Create(
             Ticker.From("ABIERTA"), "Abierta", AssetType.Equity, Currency.Cad, "XTSE",

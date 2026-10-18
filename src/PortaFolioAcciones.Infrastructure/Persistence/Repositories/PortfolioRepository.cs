@@ -62,6 +62,7 @@ internal sealed class PortfolioRepository : IPortfolioRepository
 
     public async Task<PortfolioSummary> CreateAsync(
         string name,
+        RegistrationType registrationType,
         string? baseCurrency,
         CancellationToken cancellationToken = default)
     {
@@ -75,7 +76,7 @@ internal sealed class PortfolioRepository : IPortfolioRepository
 
         // El dueno sale del contexto autenticado, NUNCA de un parametro. Es lo que impide crear una
         // cartera a nombre de otra persona.
-        var cartera = Portfolio.Create(dueno, name, ahora);
+        var cartera = Portfolio.Create(dueno, name, registrationType, ahora);
 
         if (!string.IsNullOrWhiteSpace(baseCurrency))
         {
@@ -203,6 +204,7 @@ internal sealed class PortfolioRepository : IPortfolioRepository
             cartera.Name,
             cartera.BaseCurrency?.Code ?? propietario?.BaseCurrency.Code ?? Currency.Cad.Code,
             cartera.BaseCurrency is null,
+            cartera.RegistrationType.ToString(),
             cartera.IsArchived,
             cartera.SortOrder,
             cartera.OwnerUserId,

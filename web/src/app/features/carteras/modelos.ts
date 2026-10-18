@@ -18,6 +18,15 @@ export interface ResumenDeCartera {
    */
   readonly inheritsBaseCurrency: boolean;
 
+  /**
+   * Como esta registrada a efectos fiscales: `RegisteredRetirement`, `RegisteredSavings` o `NotRegistered`.
+   *
+   * Viaja como el **nombre del valor**, no traducido y no como numero: el idioma lo pone la pantalla. Y no
+   * se traduce en la API porque el servidor no sabe en que idioma esta mirando cada persona — y ademas la
+   * misma cosa se llama REER en un comprobante de Revenu Quebec y RRSP en uno de la CRA.
+   */
+  readonly registrationType: string;
+
   readonly isArchived: boolean;
   readonly sortOrder: number;
 

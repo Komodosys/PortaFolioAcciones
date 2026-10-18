@@ -18,6 +18,14 @@ internal sealed class PortfolioConfiguration : IEntityTypeConfiguration<Portfoli
             .HasMaxLength(Portfolio.MaxNameLength)
             .IsRequired();
 
+        // Se guarda como TEXTO y no como numero, como el resto de enumerados del proyecto: un 1 en la base
+        // de datos no dice nada a quien la mire, y reordenar el enumerado en el codigo cambiaria el
+        // significado de todas las filas sin que nada fallara.
+        builder.Property(portfolio => portfolio.RegistrationType)
+            .StoreAsText()
+            .HasMaxLength(ColumnPrecision.Name)
+            .IsRequired();
+
         // Nula = hereda la moneda de la persona. No es un dato que falte: es una decision.
         builder.Property(portfolio => portfolio.BaseCurrency)
             .HasMaxLength(ColumnPrecision.CurrencyCode)

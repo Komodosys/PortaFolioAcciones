@@ -27,11 +27,20 @@ export class CarterasApi {
    * Crea una cartera.
    *
    * El dueño lo pone el servidor a partir de la sesion: aqui no se manda, y ese es justo el punto.
+   *
+   * El tipo de registro es **obligatorio**: la API lo rechaza si falta, y no le pone un valor por defecto.
+   * Es a proposito — etiquetar en silencio una cuenta de jubilacion como no registrada es peor que no
+   * dejar crearla.
    */
-  crear(nombre: string, monedaBase: string | null): Promise<ResumenDeCartera> {
+  crear(
+    nombre: string,
+    tipoDeRegistro: string,
+    monedaBase: string | null,
+  ): Promise<ResumenDeCartera> {
     return firstValueFrom(
       this.http.post<ResumenDeCartera>('/api/portfolios', {
         name: nombre,
+        registrationType: tipoDeRegistro,
         baseCurrency: monedaBase,
       }),
     );

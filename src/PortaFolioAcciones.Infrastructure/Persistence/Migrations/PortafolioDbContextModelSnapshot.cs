@@ -395,6 +395,11 @@ namespace PortaFolioAcciones.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("OwnerUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("RegistrationType")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<int>("SortOrder")
                         .HasColumnType("integer");
 

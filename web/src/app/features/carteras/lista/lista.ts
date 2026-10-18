@@ -45,6 +45,21 @@ export class ListaDeCarteras {
   nuevaCartera = '';
   nuevaMoneda = '';
 
+  /**
+   * El tipo de registro elegido.
+   *
+   * **Arranca vacío a propósito**, y el formulario no deja guardar sin elegirlo. Poner «no registrado» por
+   * defecto sería la etiqueta equivocada en una cuenta de jubilación, y nadie la revisaría.
+   */
+  nuevoTipo = '';
+
+  /** Las tres opciones. Las claves van escritas enteras para que el comprobador de idiomas las vea. */
+  readonly tipos = [
+    { valor: 'RegisteredRetirement', clave: 'cartera.tipos.RegisteredRetirement' },
+    { valor: 'RegisteredSavings', clave: 'cartera.tipos.RegisteredSavings' },
+    { valor: 'NotRegistered', clave: 'cartera.tipos.NotRegistered' },
+  ];
+
   /** El error del formulario, como codigo de la API. */
   readonly falloDeAlta = signal<string | null>(null);
 
@@ -116,6 +131,7 @@ export class ListaDeCarteras {
     this.creando.set(false);
     this.nuevaCartera = '';
     this.nuevaMoneda = '';
+    this.nuevoTipo = '';
     this.falloDeAlta.set(null);
   }
 
@@ -126,7 +142,7 @@ export class ListaDeCarteras {
 
     this.falloDeAlta.set(null);
 
-    if (!this.nuevaCartera.trim()) {
+    if (!this.nuevaCartera.trim() || !this.nuevoTipo) {
       this.falloDeAlta.set('cartera.nombreObligatorio');
       return;
     }
@@ -135,7 +151,7 @@ export class ListaDeCarteras {
 
     try {
       // Moneda vacia significa «heredar la de mi perfil», y por eso se manda nula y no una cadena vacia.
-      await this.api.crear(this.nuevaCartera.trim(), this.nuevaMoneda.trim() || null);
+      await this.api.crear(this.nuevaCartera.trim(), this.nuevoTipo, this.nuevaMoneda.trim() || null);
       this.cancelarFormulario();
       await this.cargar();
     } catch (error: unknown) {

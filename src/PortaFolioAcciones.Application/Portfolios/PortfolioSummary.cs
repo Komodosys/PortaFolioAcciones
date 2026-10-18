@@ -11,6 +11,14 @@ namespace PortaFolioAcciones.Application.Portfolios;
 /// hereda, cambiarla en el perfil cambia también la de esta cartera, y quien la mire tiene derecho a
 /// saberlo sin abrir la configuración.
 /// </param>
+/// <param name="RegistrationType">
+/// Cómo está registrada a efectos fiscales: <c>RegisteredRetirement</c> (REER/RRSP),
+/// <c>RegisteredSavings</c> (CELI/TFSA) o <c>NotRegistered</c>.
+///
+/// Viaja como el <b>nombre del valor</b> y no como un número, y el idioma lo pone el frontend: si viajara
+/// como número habría que traducirlo dos veces, y si viajara traducido el servidor tendría que saber en qué
+/// idioma está mirando cada persona.
+/// </param>
 /// <param name="IsArchived">Si está archivada.</param>
 /// <param name="SortOrder">Orden en el que se quiere ver.</param>
 /// <param name="OwnerUserId">De quién es.</param>
@@ -27,6 +35,7 @@ public sealed record PortfolioSummary(
     string Name,
     string BaseCurrency,
     bool InheritsBaseCurrency,
+    string RegistrationType,
     bool IsArchived,
     int SortOrder,
     Guid OwnerUserId,

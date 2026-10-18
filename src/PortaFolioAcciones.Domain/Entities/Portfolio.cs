@@ -18,11 +18,13 @@ public sealed class Portfolio
         Guid id,
         Guid ownerUserId,
         string name,
+        RegistrationType registrationType,
         DateTimeOffset now)
     {
         Id = id;
         OwnerUserId = ownerUserId;
         Name = name;
+        RegistrationType = registrationType;
         SortOrder = 0;
         CreatedAtUtc = now;
         UpdatedAtUtc = now;
@@ -41,6 +43,15 @@ public sealed class Portfolio
 
     public string Name { get; private set; }
 
+    /// <summary>
+    /// Como esta registrada a efectos fiscales: REER, CELI o no registrada.
+    ///
+    /// Es <b>obligatoria y sin valor por defecto</b>, y no es rigidez: un valor por defecto comodo —«no
+    /// registrada»— etiquetaria en silencio una cuenta de jubilacion como no registrada, y una etiqueta
+    /// equivocada es peor que una que falta, porque nadie la revisa.
+    /// </summary>
+    public RegistrationType RegistrationType { get; private set; }
+
     /// <summary>Moneda de visualizacion propia, o nula para heredar la del usuario.</summary>
     public Currency? BaseCurrency { get; private set; }
 
@@ -55,7 +66,15 @@ public sealed class Portfolio
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
     /// <summary>Crea una cartera vacia.</summary>
-    public static Portfolio Create(Guid ownerUserId, string name, DateTimeOffset now)
+    /// <param name="ownerUserId">Persona a la que pertenece.</param>
+    /// <param name="name">Nombre visible.</param>
+    /// <param name="registrationType">Como esta registrada a efectos fiscales.</param>
+    /// <param name="now">El instante.</param>
+    public static Portfolio Create(
+        Guid ownerUserId,
+        string name,
+        RegistrationType registrationType,
+        DateTimeOffset now)
     {
         if (ownerUserId == Guid.Empty)
         {
@@ -63,7 +82,7 @@ public sealed class Portfolio
         }
 
         ValidarNombre(name);
-        return new Portfolio(Guid.NewGuid(), ownerUserId, name.Trim(), now);
+        return new Portfolio(Guid.NewGuid(), ownerUserId, name.Trim(), registrationType, now);
     }
 
     /// <summary>
@@ -98,6 +117,13 @@ public sealed class Portfolio
     {
         ValidarNombre(name);
         Name = name.Trim();
+        Touch(now);
+    }
+
+    /// <summary>Cambia como esta registrada a efectos fiscales.</summary>
+    public void SetRegistrationType(RegistrationType registrationType, DateTimeOffset now)
+    {
+        RegistrationType = registrationType;
         Touch(now);
     }
 

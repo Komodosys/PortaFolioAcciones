@@ -173,6 +173,26 @@ function comoSeValora(tipoDeActivo) {
     : { valuationMode: 'Market', pricingFrequency: 'IntradayDelayed' };
 }
 
+/**
+ * El tipo de cuenta del broker -> el tipo de registro del dominio.
+ *
+ * El estado de cuenta usa los nombres INGLESES (RRSP, TFSA). Y si algun día trae uno que no se conoce, se
+ * dice «no registrado» en vez de inventarle una ventaja fiscal que quizá no tiene.
+ */
+function tipoDeRegistro(tipoCuenta) {
+  const enMayusculas = (tipoCuenta ?? '').toUpperCase();
+
+  if (enMayusculas.startsWith('RRSP')) {
+    return 'RegisteredRetirement';
+  }
+
+  if (enMayusculas.startsWith('TFSA')) {
+    return 'RegisteredSavings';
+  }
+
+  return 'NotRegistered';
+}
+
 /** El nombre de la cartera: el tipo de cuenta y los últimos caracteres, que bastan para distinguirlas. */
 function nombreDeLaCartera(tipoCuenta, cuenta) {
   return `${tipoCuenta} ···${cuenta.slice(-3)}`;
@@ -452,7 +472,13 @@ for (const persona of plan.personas) {
         continue;
       }
 
-      const alta = await suyo.pedir('POST', '/api/portfolios', { name: cuenta.nombre, baseCurrency: 'CAD' });
+      const alta = await suyo.pedir('POST', '/api/portfolios', {
+        name: cuenta.nombre,
+        // Obligatorio: la API no le pone un valor por defecto, para no etiquetar como no registrada una
+        // cuenta de jubilación sin que nadie lo note.
+        registrationType: tipoDeRegistro(cuenta.tipoCuenta),
+        baseCurrency: 'CAD',
+      });
 
       if (alta.estado >= 300) {
         console.log(`    ERROR cartera ${cuenta.nombre}: ${alta.estado} ${alta.json?.title ?? ''}`);

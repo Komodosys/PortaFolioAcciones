@@ -1,4 +1,5 @@
 using PortaFolioAcciones.Application.Abstractions;
+using PortaFolioAcciones.Domain.ValueObjects;
 
 namespace PortaFolioAcciones.Api.Endpoints;
 
@@ -73,9 +74,25 @@ internal static class PortfolioEndpoints
                     statusCode: StatusCodes.Status400BadRequest, title: "portfolio.name_required");
             }
 
+            // El tipo es obligatorio, y **un valor desconocido no se convierte en el primero del enumerado**,
+            // que es lo que pasaria con un enumerado no anulable en el record: etiquetaria una cuenta de
+            // jubilacion como no registrada sin decir nada. `Enum.IsDefined` hace falta ademas porque
+            // `TryParse` acepta numeros fuera de rango.
+            if (!Enum.TryParse<RegistrationType>(peticion.RegistrationType, ignoreCase: true, out var tipo) ||
+                !Enum.IsDefined(tipo))
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest, title: "portfolio.registration_required");
+            }
+
             try
             {
-                var cartera = await repositorio.CreateAsync(peticion.Name, peticion.BaseCurrency, cancelacion);
+                var cartera = await repositorio.CreateAsync(
+                    peticion.Name,
+                    tipo,
+                    peticion.BaseCurrency,
+                    cancelacion);
+
                 return Results.Created($"/api/portfolios/{cartera.Id}", cartera);
             }
             catch (ArgumentException)
@@ -174,7 +191,10 @@ internal static class PortfolioEndpoints
         Results.Problem(statusCode: StatusCodes.Status404NotFound, title: "portfolio.not_found");
 
     /// <summary>Lo que manda el formulario de nueva cartera.</summary>
-    internal sealed record CreatePortfolioRequest(string Name, string? BaseCurrency);
+    internal sealed record CreatePortfolioRequest(
+        string Name,
+        string? RegistrationType,
+        string? BaseCurrency);
 
     /// <summary>Lo que manda el formulario de cambio de nombre.</summary>
     internal sealed record RenamePortfolioRequest(string Name);

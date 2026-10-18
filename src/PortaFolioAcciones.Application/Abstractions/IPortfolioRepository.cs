@@ -1,4 +1,5 @@
 using PortaFolioAcciones.Application.Portfolios;
+using PortaFolioAcciones.Domain.ValueObjects;
 
 namespace PortaFolioAcciones.Application.Abstractions;
 
@@ -35,11 +36,16 @@ public interface IPortfolioRepository
     /// de otra persona ni pasando un identificador.
     /// </summary>
     /// <param name="name">Nombre de la cartera.</param>
+    /// <param name="registrationType">
+    /// Cómo está registrada a efectos fiscales. <b>Es obligatorio</b> y no tiene valor por defecto: un valor
+    /// por defecto cómodo etiquetaría en silencio una cuenta de jubilación como no registrada.
+    /// </param>
     /// <param name="baseCurrency">Moneda propia, o nulo para heredar la de la persona.</param>
     /// <param name="cancellationToken">Cancelacion.</param>
     /// <exception cref="InvalidOperationException">Si no hay sesion.</exception>
     public Task<PortfolioSummary> CreateAsync(
         string name,
+        RegistrationType registrationType,
         string? baseCurrency,
         CancellationToken cancellationToken = default);
 

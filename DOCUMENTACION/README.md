@@ -25,6 +25,7 @@ inversión: posiciones, precios y rendimiento. Inspirada en la vista de portafol
 | [07-baseline-tecnologico.md](07-baseline-tecnologico.md) | **Referencia única del stack**: versiones, librerías y decisiones cerradas |
 | [08-prueba-cobertura-instrumentos.md](08-prueba-cobertura-instrumentos.md) | Prueba de cobertura de instrumentos reales: plan, hallazgos observados y criterio de decisión |
 | [09-guia-de-uso.md](09-guia-de-uso.md) | **Para la familia**: cómo se entra, qué significa cada columna y qué hacer cuando algo no cuadra |
+| [10 — Estadísticas para el administrador](10-estadisticas-del-administrador.md) | Análisis de qué informes pedir, qué se puede responder hoy y qué hay que arreglar antes |
 | [decisiones/](decisiones/README.md) | Registro de decisiones de arquitectura (ADR) |
 
 ## 2. Convenciones

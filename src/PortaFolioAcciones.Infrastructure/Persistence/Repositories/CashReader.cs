@@ -110,6 +110,11 @@ internal sealed class CashReader : ICashReader
         var retirado = SumaDesde(MovementKind.Withdrawal);
         var vendido = SumaDesde(MovementKind.Sale);
 
+        // Un dividendo entra y una comision sale. Ninguno es dinero aportado: el dividendo es ganancia y la
+        // comision es un coste, y por eso no pasan por lo aportado sino por el efectivo.
+        var dividendos = SumaDesde(MovementKind.Dividend);
+        var comisiones = SumaDesde(MovementKind.Commission);
+
         // Lo comprado: lo que todavía se tiene, MÁS lo que se vendió.
         //
         // Lo que se tiene son los lotes; lo vendido ya no está en los lotes, pero su coste salió de la cuenta
@@ -164,7 +169,7 @@ internal sealed class CashReader : ICashReader
             }
         }
 
-        var saldo = declarado + aportado - retirado + vendido - comprado;
+        var saldo = declarado + aportado - retirado + vendido + dividendos - comisiones - comprado;
 
         // La vista en dolares, solo informativa. Se calcula al cambio de hoy y no se guarda: manana valdra otra
         // cosa, y guardarla seria tener un numero que envejece sin decirlo. El tipo se ensena al lado para que la
@@ -198,6 +203,8 @@ internal sealed class CashReader : ICashReader
             saldo,
             desde,
             sinConvertir,
+            dividendos,
+            comisiones,
             saldoEnUsd,
             tipoDeHoy);
     }

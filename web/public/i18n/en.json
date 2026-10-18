@@ -294,6 +294,8 @@
     "tipos": {
       "Deposit": "Contribution",
       "Withdrawal": "Withdrawal",
+    "Dividend": "Dividend",
+    "Commission": "Commission",
     "Opening": "Opening",
     "saldo": "Cash",
     "saldoEnUsd": "That is about {{usd}} at the rate of today (1 USD = {{tipo}} {{moneda}}). Informational only.",

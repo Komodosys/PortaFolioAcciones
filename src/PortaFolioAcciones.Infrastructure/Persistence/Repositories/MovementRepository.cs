@@ -157,6 +157,13 @@ internal sealed class MovementRepository : IMovementRepository
             // suma cuadre, pero no cuenta como aportacion: no es dinero que entrara, es el dinero que ya habia.
             "Opening" => Movement.Opening(portfolioId, importe, occurredOn, notes, ahora),
 
+            // Un dividendo entra y una comision sale, pero ninguno es dinero aportado: el dividendo es ganancia y
+            // la comision es un coste.
+            "Dividend" => Movement.Dividend(portfolioId, importe, occurredOn, notes, ahora),
+            "Commission" => Movement.Commission(portfolioId, importe, occurredOn, notes, ahora),
+            // Un dividendo entra y una comision sale, pero ninguno es dinero aportado: el dividendo es ganancia, y
+            // la comision es un coste.`n            `"Dividend`" => Movement.Dividend(portfolioId, importe, occurredOn, notes, ahora),`n            `"Commission`" => Movement.Commission(portfolioId, importe, occurredOn, notes, ahora),
+
             // Una venta NO se registra aquí: se registra al vender, porque además reduce la posición. Dejar
             // crear una venta suelta permitiría tener una venta sin su reducción, y la posición y el registro
             // dirían cosas distintas.

@@ -154,6 +154,8 @@ export class MovimientosDeCartera {
     { valor: 'Deposit', clave: 'movimiento.tipos.Deposit' },
     { valor: 'Withdrawal', clave: 'movimiento.tipos.Withdrawal' },
     { valor: 'Opening', clave: 'movimiento.tipos.Opening' },
+    { valor: 'Dividend', clave: 'movimiento.tipos.Dividend' },
+    { valor: 'Commission', clave: 'movimiento.tipos.Commission' },
   ];
 
   /**

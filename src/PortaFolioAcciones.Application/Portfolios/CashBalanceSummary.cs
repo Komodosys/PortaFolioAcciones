@@ -40,6 +40,8 @@ public sealed record CashBalanceSummary(
     decimal Balance,
     DateOnly? Since,
     int Unconverted,
+    decimal Dividends = 0m,
+    decimal Commissions = 0m,
     decimal? BalanceInUsd = null,
     decimal? UsdRate = null)
 {

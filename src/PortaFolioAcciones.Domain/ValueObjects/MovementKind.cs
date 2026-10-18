@@ -29,4 +29,16 @@ public enum MovementKind
 
     /// <summary>Una venta de una posición, con su precio.</summary>
     Sale = 3,
+
+    /// <summary>
+    /// Un dividendo cobrado. **Es ganancia**, no dinero aportado: entra en la cuenta pero no viene de fuera, sale
+    /// de que la empresa reparte lo que gano. Por eso no cuenta como aportacion y si suma al efectivo.
+    /// </summary>
+    Dividend = 4,
+
+    /// <summary>
+    /// Una comision cobrada por el broker. Sale de la cuenta y **no es un retiro**: no te llevas el dinero, se lo
+    /// queda el intermediario.
+    /// </summary>
+    Commission = 5,
 }

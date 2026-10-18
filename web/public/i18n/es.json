@@ -294,6 +294,8 @@
     "tipos": {
       "Deposit": "Aportación",
       "Withdrawal": "Retiro",
+    "Dividend": "Dividendo",
+    "Commission": "Comisión",
     "Opening": "Apertura",
     "saldo": "Efectivo",
     "saldoEnUsd": "Son unos {{usd}} al cambio de hoy (1 USD = {{tipo}} {{moneda}}). Solo informativo.",

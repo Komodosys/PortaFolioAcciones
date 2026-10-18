@@ -189,6 +189,49 @@ public sealed class Movement
             positionId: null, quantity: null, pricePerUnit: null, notes, now, rateUsed);
     }
 
+    /// <summary>
+    /// Un dividendo cobrado. Es dinero que entra en la cuenta, pero **no es una aportación**: viene de que la
+    /// empresa reparte lo que ganó. Contarlo como aportación haría que el informe dijera que pusiste dinero que
+    /// no pusiste, y la ganancia saldría corta.
+    /// </summary>
+    public static Movement Dividend(
+        Guid portfolioId,
+        Money amount,
+        DateOnly occurredOn,
+        string? notes,
+        DateTimeOffset now,
+        decimal? rateUsed = null)
+    {
+        ArgumentNullException.ThrowIfNull(amount);
+        ExigirCartera(portfolioId);
+        ExigirPositivo(amount, nameof(amount));
+
+        return new Movement(
+            Guid.NewGuid(), portfolioId, MovementKind.Dividend, occurredOn, amount,
+            positionId: null, quantity: null, pricePerUnit: null, notes, now, rateUsed);
+    }
+
+    /// <summary>
+    /// Una comisión cobrada por el broker. Sale de la cuenta y **no es un retiro**: no te llevas el dinero, se lo
+    /// queda el intermediario. Es un coste, y sin él la ganancia saldría más alta de lo que es.
+    /// </summary>
+    public static Movement Commission(
+        Guid portfolioId,
+        Money amount,
+        DateOnly occurredOn,
+        string? notes,
+        DateTimeOffset now,
+        decimal? rateUsed = null)
+    {
+        ArgumentNullException.ThrowIfNull(amount);
+        ExigirCartera(portfolioId);
+        ExigirPositivo(amount, nameof(amount));
+
+        return new Movement(
+            Guid.NewGuid(), portfolioId, MovementKind.Commission, occurredOn, amount,
+            positionId: null, quantity: null, pricePerUnit: null, notes, now, rateUsed);
+    }
+
     /// <summary>Dinero que sale hacia fuera.</summary>
     public static Movement Withdrawal(
         Guid portfolioId,

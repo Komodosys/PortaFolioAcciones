@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { Idioma } from '../../core/i18n/idioma';
 import { Informes } from './informes';
 
 /**
@@ -27,7 +28,15 @@ describe('Informes', () => {
     TestBed.configureTestingModule({
       // El componente va como proveedor para poder instanciarlo sin renderizar la plantilla: lo que se prueba
       // es su logica de filtrado, no como se pinta.
-      providers: [Informes, provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        Informes,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+
+        // El idioma, como doble: la prueba no va de traducciones, y el servicio real arrastra Transloco y su
+        // cargador, que no aportan nada aqui y hacen fallar el montaje.
+        { provide: Idioma, useValue: { activo: () => 'es' } },
+      ],
     });
 
     informe = TestBed.inject(Informes);
@@ -81,6 +90,24 @@ describe('Informes', () => {
     expect(informe.totales()?.valor).toBe(300);
   });
 
+  it('los importes se escriben con dos decimales y su moneda', () => {
+    // Antes salían crudos: `431587.9045`. No es un problema de estética — una tabla de dinero que mezcla
+    // `431587.9045` con `494,53` parece que una de las dos cifras está mal.
+    const escrito = informe.importe(431587.9045, 'CAD');
+
+    expect(escrito).toContain('CAD');
+    expect(escrito).toMatch(/[.,]90\b/);
+  });
+
+  it('todos los importes de la tabla usan el mismo formateador', () => {
+    // Si uno solo se escribiera a mano, la tabla volveria a tener dos formatos.
+    const valores = [informe.importe(1000, 'CAD'), informe.importe(1000.005, 'CAD')];
+
+    for (const valor of valores) {
+      expect(valor).toContain('CAD');
+      expect(valor).toMatch(/[.,]\d{2}\b/);
+    }
+  });
   it('limpiar los filtros vuelve a enseñarlos todos', () => {
     informe.persona.set('Titular B');
     informe.tipo.set('RegisteredRetirement');

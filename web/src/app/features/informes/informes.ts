@@ -3,6 +3,8 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { codigoDe } from '../../core/api/interceptores';
+import { Idioma } from '../../core/i18n/idioma';
+import { formatearImporte } from '../../shared/formato/numeros';
 import { FilaDeRendimiento, InformeDeRendimiento, InformesApi } from '../../core/api/informes.api';
 
 /**
@@ -20,6 +22,7 @@ import { FilaDeRendimiento, InformeDeRendimiento, InformesApi } from '../../core
 })
 export class Informes {
   private readonly api = inject(InformesApi);
+  private readonly idioma = inject(Idioma);
 
   readonly informe = signal<InformeDeRendimiento | null>(null);
   readonly cargando = signal(true);
@@ -94,10 +97,14 @@ export class Informes {
         ? null
         : suma('realizedGain');
 
+    // La moneda de los totales: la que declara el servidor. Si no hay, la de la primera fila.
+    const moneda = this.informe()?.totals?.currency ?? filas[0]?.currency ?? 'CAD';
+
     const valor = suma('marketValue');
     const efectivo = suma('cashValue');
 
     return {
+      moneda,
       valor,
       efectivo,
       total: valor + efectivo,
@@ -117,9 +124,20 @@ export class Informes {
     };
   });
 
-  /** Un importe como número, para poder sumarlo y formatearlo. */
+  /** Un importe como número, para poder sumarlo. */
   numero(valor: string | number | null): number {
     return valor === null ? 0 : Number(valor);
+  }
+
+  /**
+   * Un importe escrito como se escribe el dinero en el idioma de la pantalla: dos decimales y el código de la
+   * moneda.
+   *
+   * Se usa el formateador compartido y no uno propio: si esta pantalla formateara a su manera, la misma cifra
+   * saldria distinta aquí y en el detalle de la cartera, y alguien lo tomaría por un error de cuentas.
+   */
+  importe(valor: string | number | null, moneda: string): string {
+    return formatearImporte(this.numero(valor), moneda, this.idioma.activo());
   }
 
   limpiarFiltros(): void {

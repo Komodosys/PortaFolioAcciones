@@ -60,15 +60,15 @@
       <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div class="rounded-3xl bg-white p-5 shadow-lg">
           <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ t('informe.total') }}</p>
-          <p class="mt-1 text-2xl font-bold text-slate-800">{{ total.total }}</p>
+          <p class="mt-1 text-2xl font-bold text-slate-800">{{ importe(total.total, total.moneda) }}</p>
           <p class="mt-1 text-xs text-slate-400">
-            {{ t('informe.desglose', { valor: total.valor, efectivo: total.efectivo }) }}
+            {{ t('informe.desglose', { valor: importe(total.valor, total.moneda), efectivo: importe(total.efectivo, total.moneda) }) }}
           </p>
         </div>
 
         <div class="rounded-3xl bg-white p-5 shadow-lg">
           <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ t('informe.coste') }}</p>
-          <p class="mt-1 text-2xl font-bold text-slate-800">{{ total.coste }}</p>
+          <p class="mt-1 text-2xl font-bold text-slate-800">{{ importe(total.coste, total.moneda) }}</p>
         </div>
 
         <div class="rounded-3xl bg-white p-5 shadow-lg">
@@ -76,13 +76,13 @@
           @if (total.ganado === null) {
             <p class="mt-1 text-sm font-semibold text-slate-400">{{ t('informe.ganadoSinApertura') }}</p>
           } @else {
-            <p class="mt-1 text-2xl font-bold text-emerald-600">{{ total.ganado }}</p>
+            <p class="mt-1 text-2xl font-bold text-emerald-600">{{ importe(total.ganado, total.moneda) }}</p>
           }
         </div>
 
         <div class="rounded-3xl bg-white p-5 shadow-lg">
           <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ t('informe.aportadoNeto') }}</p>
-          <p class="mt-1 text-2xl font-bold text-slate-800">{{ total.aportado - total.retirado }}</p>
+          <p class="mt-1 text-2xl font-bold text-slate-800">{{ importe(total.aportado - total.retirado, total.moneda) }}</p>
         </div>
       </div>
 
@@ -91,7 +91,7 @@
         @if (total.realizado === null) {
           <span class="font-semibold text-slate-400">{{ t('informe.realizadaDesconocida') }}</span>
         } @else {
-          <span class="font-semibold text-slate-800">{{ total.realizado }}</span>
+          <span class="font-semibold text-slate-800">{{ importe(total.realizado, total.moneda) }}</span>
         }
       </p>
     }
@@ -127,19 +127,19 @@
                     {{ t('cartera.tipos.' + fila.registrationType) }}
                   </span>
                 </td>
-                <td class="text-right">{{ numero(fila.marketValue) }}</td>
-                <td class="text-right text-slate-500">{{ numero(fila.cashValue) }}</td>
-                <td class="text-right font-semibold">{{ numero(fila.marketValue) + numero(fila.cashValue) }}</td>
-                <td class="text-right text-slate-500">{{ numero(fila.costBasis) }}</td>
-                <td class="text-right font-semibold text-emerald-600">{{ numero(fila.unrealizedGain) }}</td>
+                <td class="text-right">{{ importe(fila.marketValue, fila.currency) }}</td>
+                <td class="text-right text-slate-500">{{ importe(fila.cashValue, fila.currency) }}</td>
+                <td class="text-right font-semibold">{{ importe(numero(fila.marketValue) + numero(fila.cashValue), fila.currency) }}</td>
+                <td class="text-right text-slate-500">{{ importe(fila.costBasis, fila.currency) }}</td>
+                <td class="text-right font-semibold text-emerald-600">{{ importe(fila.unrealizedGain, fila.currency) }}</td>
                 <td class="text-right">
                   @if (fila.realizedGain === null) {
                     <span class="text-slate-400">{{ t('informe.desconocida') }}</span>
                   } @else {
-                    {{ numero(fila.realizedGain) }}
+                    {{ importe(fila.realizedGain, fila.currency) }}
                   }
                 </td>
-                <td class="text-right text-slate-600">{{ numero(fila.contributed) }}</td>
+                <td class="text-right text-slate-600">{{ importe(fila.contributed, fila.currency) }}</td>
               </tr>
             }
           </tbody>

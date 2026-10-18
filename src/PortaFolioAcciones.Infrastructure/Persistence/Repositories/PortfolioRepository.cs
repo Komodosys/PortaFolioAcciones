@@ -123,6 +123,54 @@ internal sealed class PortfolioRepository : IPortfolioRepository
             },
             cancellationToken);
 
+    public Task<PortfolioSummary?> UpdateAsync(
+        Guid id,
+        string name,
+        RegistrationType registrationType,
+        string? baseCurrency,
+        CancellationToken cancellationToken = default) =>
+        ModificarAsync(
+            id,
+            (cartera, ahora) =>
+            {
+                cartera.Rename(name, ahora);
+                cartera.SetRegistrationType(registrationType, ahora);
+
+                if (string.IsNullOrWhiteSpace(baseCurrency))
+                {
+                    cartera.InheritBaseCurrency(ahora);
+                }
+                else
+                {
+                    cartera.SetBaseCurrency(Currency.FromCode(baseCurrency), ahora);
+                }
+            },
+            cancellationToken);
+
+    public async Task<DeleteOutcome> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var cartera = await CargarParaOperarAsync(id, cancellationToken);
+
+        if (cartera is null)
+        {
+            return DeleteOutcome.NotFound;
+        }
+
+        // La regla la decide el dominio; aqui solo se cuenta lo que hace falta para aplicarla.
+        var posiciones = await _context.Positions
+            .CountAsync(posicion => posicion.PortfolioId == cartera.Id, cancellationToken);
+
+        if (!Portfolio.CanBeDeleted(posiciones))
+        {
+            return DeleteOutcome.HasPositions;
+        }
+
+        _context.Portfolios.Remove(cartera);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return DeleteOutcome.Deleted;
+    }
+
     public Task<PortfolioSummary?> ReorderAsync(
         Guid id,
         int sortOrder,

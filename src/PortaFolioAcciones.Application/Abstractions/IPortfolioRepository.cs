@@ -62,6 +62,37 @@ public interface IPortfolioRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Cambia de golpe el nombre, el tipo de registro y la moneda base.
+    ///
+    /// Es una sola operación y no tres, y no es por comodidad: la pantalla de edición cambia las cosas a la
+    /// vez, y con tres llamadas una podría fallar y las otras no, dejando la cartera a medio editar. Además
+    /// cada llamada deja su propia entrada en el libro de auditoría, así que editar una cartera aparecería
+    /// como tres cambios distintos.
+    /// </summary>
+    /// <param name="id">Identificador.</param>
+    /// <param name="name">Nombre nuevo.</param>
+    /// <param name="registrationType">Tipo de registro nuevo.</param>
+    /// <param name="baseCurrency">Moneda propia, o nulo para volver a heredar la de la persona.</param>
+    /// <param name="cancellationToken">Cancelación.</param>
+    /// <returns>La cartera, o <c>null</c> si no existe o no es de quien la pide.</returns>
+    public Task<PortfolioSummary?> UpdateAsync(
+        Guid id,
+        string name,
+        RegistrationType registrationType,
+        string? baseCurrency,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Borra una cartera, <b>solo si no tiene posiciones</b>.
+    ///
+    /// La regla la decide <c>Portfolio.CanBeDeleted</c>; aquí solo se cuenta lo que hace falta para
+    /// aplicarla. Una cartera con posiciones se archiva y no se borra.
+    /// </summary>
+    /// <param name="id">Identificador.</param>
+    /// <param name="cancellationToken">Cancelación.</param>
+    public Task<DeleteOutcome> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Archiva una cartera.
     ///
     /// Se archiva y no se borra: una cartera tiene posiciones e histórico, y borrarla se llevaría por

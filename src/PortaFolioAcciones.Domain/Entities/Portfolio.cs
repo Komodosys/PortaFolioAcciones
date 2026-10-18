@@ -148,6 +148,20 @@ public sealed class Portfolio
         Touch(now);
     }
 
+    /// <summary>
+    /// Dice si esta cartera se puede borrar: <b>solo si no tiene ninguna posicion</b>.
+    ///
+    /// La regla vive aqui y no en la pantalla, y no es formalismo: esconder un boton no impide llamar a la
+    /// API. Una cartera con posiciones tiene lotes, y los lotes son historia — lo que se compro, cuando y a
+    /// que precio, que es justo lo que hace falta para entender cualquier cifra posterior. Borrarla se
+    /// llevaria por delante eso y no habria forma de reconstruirlo.
+    ///
+    /// El caso que si se atiende es el otro: una cartera creada por error, vacia, que no deberia quedarse
+    /// ahi para siempre. Por eso se distingue «vacia» de «con historia» en vez de prohibir borrar sin mas.
+    /// </summary>
+    /// <param name="positionCount">Cuantas posiciones tiene, contadas por quien puede contarlas.</param>
+    public static bool CanBeDeleted(int positionCount) => positionCount == 0;
+
     private static void ValidarNombre(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);

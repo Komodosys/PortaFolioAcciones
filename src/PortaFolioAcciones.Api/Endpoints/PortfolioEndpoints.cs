@@ -1,4 +1,5 @@
 using PortaFolioAcciones.Application.Abstractions;
+using PortaFolioAcciones.Application.Portfolios;
 using PortaFolioAcciones.Domain.ValueObjects;
 
 namespace PortaFolioAcciones.Api.Endpoints;
@@ -76,10 +77,8 @@ internal static class PortfolioEndpoints
 
             // El tipo es obligatorio, y **un valor desconocido no se convierte en el primero del enumerado**,
             // que es lo que pasaria con un enumerado no anulable en el record: etiquetaria una cuenta de
-            // jubilacion como no registrada sin decir nada. `Enum.IsDefined` hace falta ademas porque
-            // `TryParse` acepta numeros fuera de rango.
-            if (!Enum.TryParse<RegistrationType>(peticion.RegistrationType, ignoreCase: true, out var tipo) ||
-                !Enum.IsDefined(tipo))
+            // jubilacion como no registrada sin decir nada.
+            if (!TryParseRegistrationType(peticion.RegistrationType, out var tipo))
             {
                 return Results.Problem(
                     statusCode: StatusCodes.Status400BadRequest, title: "portfolio.registration_required");
@@ -185,10 +184,87 @@ internal static class PortfolioEndpoints
         })
         .WithName("portfolios.order")
         .WithSummary("Cambia el orden en el que se quiere ver la cartera.");
+
+        // La edición completa, en UNA llamada. Con tres (nombre, tipo, moneda) una podría fallar y las otras
+        // no, y además cada una dejaría su propia entrada en el libro de auditoría: editar una cartera
+        // aparecería como tres cambios distintos.
+        group.MapPut("/{id:guid}", async (
+            Guid id,
+            UpdatePortfolioRequest peticion,
+            IPortfolioRepository repositorio,
+            CancellationToken cancelacion) =>
+        {
+            if (string.IsNullOrWhiteSpace(peticion.Name))
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest, title: "portfolio.name_required");
+            }
+
+            if (!TryParseRegistrationType(peticion.RegistrationType, out var tipo))
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest, title: "portfolio.registration_required");
+            }
+
+            try
+            {
+                var cartera = await repositorio.UpdateAsync(
+                    id,
+                    peticion.Name,
+                    tipo,
+                    peticion.BaseCurrency,
+                    cancelacion);
+
+                return cartera is null ? NoEncontrada() : Results.Ok(cartera);
+            }
+            catch (ArgumentException)
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest, title: "portfolio.invalid_currency");
+            }
+        })
+        .WithName("portfolios.update")
+        .WithSummary("Cambia el nombre, el tipo de registro y la moneda base de una cartera, todo a la vez.");
+
+        // Borrar solo si esta vacia. Con posiciones devuelve 409 y no 400: la peticion es correcta, es el
+        // estado de la cartera el que no lo permite — y el 409 es justo lo que significa eso.
+        group.MapDelete("/{id:guid}", async (
+            Guid id,
+            IPortfolioRepository repositorio,
+            CancellationToken cancelacion) =>
+        {
+            var resultado = await repositorio.DeleteAsync(id, cancelacion);
+
+            return resultado switch
+            {
+                DeleteOutcome.Deleted => Results.NoContent(),
+                DeleteOutcome.HasPositions => Results.Problem(
+                    statusCode: StatusCodes.Status409Conflict,
+                    title: "portfolio.has_positions"),
+                _ => NoEncontrada(),
+            };
+        })
+        .WithName("portfolios.delete")
+        .WithSummary("Borra una cartera, SOLO si no tiene posiciones. Si las tiene, se archiva.");
     }
 
     private static IResult NoEncontrada() =>
         Results.Problem(statusCode: StatusCodes.Status404NotFound, title: "portfolio.not_found");
+
+    /// <summary>
+    /// Traduce el tipo de registro que llega como texto.
+    ///
+    /// <c>Enum.IsDefined</c> hace falta además de <c>TryParse</c> porque <c>TryParse</c> acepta números fuera
+    /// de rango: «99» se convierte en un valor que no existe y llegaría hasta la base de datos.
+    /// </summary>
+    private static bool TryParseRegistrationType(string? texto, out RegistrationType tipo) =>
+        Enum.TryParse(texto, ignoreCase: true, out tipo) && Enum.IsDefined(tipo);
+
+    /// <summary>Lo que manda el formulario de edición de una cartera.</summary>
+    internal sealed record UpdatePortfolioRequest(
+        string Name,
+        string? RegistrationType,
+        string? BaseCurrency);
 
     /// <summary>Lo que manda el formulario de nueva cartera.</summary>
     internal sealed record CreatePortfolioRequest(

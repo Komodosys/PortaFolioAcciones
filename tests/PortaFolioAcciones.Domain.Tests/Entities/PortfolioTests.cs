@@ -41,6 +41,17 @@ public class PortfolioTests
                 RegistrationType.NotRegistered,
                 Ahora));
 
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    [InlineData(27, false)]
+    public void SoloSeBorraUnaCarteraVacia(int posiciones, bool sePuede)
+    {
+        // La regla vive en el dominio y no en la pantalla: esconder un boton no impide llamar a la API. Una
+        // cartera con posiciones tiene lotes, y los lotes son historia.
+        Assert.Equal(sePuede, Portfolio.CanBeDeleted(posiciones));
+    }
+
     [Fact]
     public void KeepsTheRegistrationTypeItWasCreatedWith()
     {

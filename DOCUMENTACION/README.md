@@ -26,6 +26,7 @@ inversión: posiciones, precios y rendimiento. Inspirada en la vista de portafol
 | [08-prueba-cobertura-instrumentos.md](08-prueba-cobertura-instrumentos.md) | Prueba de cobertura de instrumentos reales: plan, hallazgos observados y criterio de decisión |
 | [09-guia-de-uso.md](09-guia-de-uso.md) | **Para la familia**: cómo se entra, qué significa cada columna y qué hacer cuando algo no cuadra |
 | [10 — Estadísticas para el administrador](10-estadisticas-del-administrador.md) | Análisis de qué informes pedir, qué se puede responder hoy y qué hay que arreglar antes |
+| [11 — El efectivo en las carteras](11-efectivo-en-las-carteras.md) | Plan para integrar el registro de efectivo, con la trampa de la divisa y las decisiones que faltan |
 | [decisiones/](decisiones/README.md) | Registro de decisiones de arquitectura (ADR) |
 
 ## 2. Convenciones

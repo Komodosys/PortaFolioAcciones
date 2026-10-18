@@ -269,6 +269,9 @@ export class DetalleDeCartera {
   readonly recogiendoCierre = signal(false);
   readonly confirmandoCierre = signal(false);
 
+  readonly rellenando = signal(false);
+  readonly confirmandoRelleno = signal(false);
+
   /**
    * Vuelve a pedir la cotización de cada instrumento.
    *
@@ -339,12 +342,48 @@ export class DetalleDeCartera {
     }
   }
 
+  /** Pide confirmación: el relleno son decenas de peticiones a la fuente, aunque sea una sola vez. */
+  pedirRellenarHistorico(): void {
+    this.confirmandoRelleno.set(true);
+  }
+
+  cancelarRellenarHistorico(): void {
+    this.confirmandoRelleno.set(false);
+  }
+
+  async rellenarHistorico(): Promise<void> {
+    if (this.rellenando()) {
+      return;
+    }
+
+    this.rellenando.set(true);
+    this.avisoDePrecios.set(null);
+
+    try {
+      const resultado = await this.mercado.rellenarHistorico();
+
+      this.confirmandoRelleno.set(false);
+      this.avisoDePrecios.set({
+        clave: 'cartera.rellenarHistoricoHecho',
+        total: resultado.nuevos,
+        guardados: resultado.nuevos,
+        fotos: resultado.yaEstaban,
+        carteras: resultado.instrumentos,
+      });
+
+      await this.cargar(this.id());
+    } catch (error: unknown) {
+      this.confirmandoRelleno.set(false);
+      this.avisoDePrecios.set(this.avisoDeError(error));
+    } finally {
+      this.rellenando.set(false);
+    }
+  }
   /**
    * El aviso de un fallo. El 429 se cuenta aparte porque no es un error: es «espera», y decir cuánto falta
    * es la diferencia entre entenderlo y pensar que el botón está roto.
    */
-  private avisoDeError(error: unknown): AvisoDePrecios {
-    if (error instanceof HttpErrorResponse) {
+  private avisoDeError(error: unknown): AvisoDePrecios {    if (error instanceof HttpErrorResponse) {
       if (error.status === 429) {
         const espera = (error.error as { retryAfterSeconds?: number } | null)?.retryAfterSeconds;
 

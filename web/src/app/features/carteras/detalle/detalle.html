@@ -52,6 +52,10 @@
           <button type="button" class="btn btn-ghost btn-sm text-slate-500" (click)="pedirRecogerCierre()">
             {{ t('cartera.recogerCierre') }}
           </button>
+
+          <button type="button" class="btn btn-ghost btn-sm text-slate-500" (click)="pedirRellenarHistorico()">
+            {{ t('cartera.rellenarHistorico') }}
+          </button>
         }
 
         <a
@@ -106,6 +110,30 @@
         </div>
 
         <button type="button" class="modal-backdrop" (click)="cancelarRecogerCierre()">{{ t('comun.cancelar') }}</button>
+      </dialog>
+    }
+
+    <!-- Rellenar el histórico pide confirmación: son decenas de peticiones a la fuente, aunque sea una vez. -->
+    @if (confirmandoRelleno()) {
+      <dialog class="modal modal-open">
+        <div class="modal-box rounded-3xl">
+          <h3 class="text-lg font-bold text-slate-800">{{ t('cartera.rellenarHistorico') }}</h3>
+          <p class="mt-3 text-sm text-slate-600">{{ t('cartera.rellenarHistoricoAviso') }}</p>
+
+          <div class="modal-action">
+            <button type="button" class="btn btn-ghost text-slate-500" (click)="cancelarRellenarHistorico()">
+              {{ t('comun.cancelar') }}
+            </button>
+            <button type="button" class="btn btn-primary" [disabled]="rellenando()" (click)="rellenarHistorico()">
+              @if (rellenando()) {
+                <span class="loading loading-spinner loading-xs"></span>
+              }
+              {{ t('cartera.rellenarHistorico') }}
+            </button>
+          </div>
+        </div>
+
+        <button type="button" class="modal-backdrop" (click)="cancelarRellenarHistorico()">{{ t('comun.cancelar') }}</button>
       </dialog>
     }
 

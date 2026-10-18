@@ -23,25 +23,30 @@ await admin.entrar('admin', claveDelAdmin());
 const antes = await admin.pedir('GET', '/api/portfolios');
 c.comprobar('el administrador ve carteras', true, (antes.json ?? []).length > 0);
 
-c.titulo('1. El administrador refresca las cotizaciones');
+c.titulo('1. El administrador rellena el histórico');
+// Va PRIMERO a propósito: el relleno gasta el freno, y las comprobaciones siguientes necesitan la ventana
+// gastada para ver el 429. Al revés, el relleno recibiría el 429 de la comprobación anterior.
+const relleno = await admin.pedir('POST', '/api/market/backfill');
+c.comprobar('se rellena', 200, relleno.estado);
+c.comprobar('y dice cuantos instrumentos', true, (relleno.json?.instrumentos ?? 0) > 0);
+c.comprobar('y cuantos cierres nuevos', true, typeof relleno.json?.nuevos === 'number');
+c.comprobar('y cuantos ya estaban', true, typeof relleno.json?.yaEstaban === 'number');
+
+c.titulo('2. El freno: la siguiente operacion seguida no pasa');
 const refresco = await admin.pedir('POST', '/api/market/refresh-quotes');
-c.comprobar('se refresca', 200, refresco.estado);
-c.comprobar('y dice cuantos instrumentos', true, typeof refresco.json?.instrumentos === 'number');
-c.comprobar('y cuantos se actualizaron', true, typeof refresco.json?.actualizados === 'number');
-c.comprobar('y cuantos se quedaron sin precio', true, typeof refresco.json?.sinPrecio === 'number');
+c.comprobar('da 429', 429, refresco.estado);
+c.comprobar('y dice por que', 'mercado.demasiadoPronto', refresco.json?.title);
+c.comprobar('y cuantos segundos faltan', true, (refresco.json?.retryAfterSeconds ?? 0) > 0);
+c.comprobar('y los segundos no pasan del tope', true, (refresco.json?.retryAfterSeconds ?? 999) <= 120);
 
-c.titulo('2. El freno: la segunda pulsacion seguida no pasa');
-const otraVez = await admin.pedir('POST', '/api/market/refresh-quotes');
-c.comprobar('da 429', 429, otraVez.estado);
-c.comprobar('y dice por que', 'mercado.demasiadoPronto', otraVez.json?.title);
-c.comprobar('y cuantos segundos faltan', true, (otraVez.json?.retryAfterSeconds ?? 0) > 0);
-c.comprobar('y los segundos no pasan del tope', true, (otraVez.json?.retryAfterSeconds ?? 999) <= 120);
-
-c.titulo('3. El mismo freno vale para recoger el cierre');
-// Es a proposito: las dos llaman a la misma fuente, asi que un freno por operacion dejaria la puerta abierta
-// a alternarlas para saltarselo.
+c.titulo('3. El mismo freno vale para las tres operaciones');
+// Es a proposito: las tres llaman a la misma fuente, asi que un freno por operacion dejaria la puerta
+// abierta a alternarlas para saltarselo.
 const recoger = await admin.pedir('POST', '/api/market/collect');
-c.comprobar('tambien da 429 mientras dura la espera', 429, recoger.estado);
+c.comprobar('recoger el cierre tambien da 429', 429, recoger.estado);
+
+const rellenoOtraVez = await admin.pedir('POST', '/api/market/backfill');
+c.comprobar('y rellenar otra vez, tambien', 429, rellenoOtraVez.estado);
 
 c.titulo('4. AISLAMIENTO: quien no administra no puede');
 const sufijo = Date.now().toString().slice(-6);
@@ -59,10 +64,12 @@ const persona = crearCliente('personaNormal');
 c.comprobar('entra', 200, (await persona.entrar(`mercado${sufijo}`, clave)).estado);
 c.comprobar('pero no puede refrescar cotizaciones', 403, (await persona.pedir('POST', '/api/market/refresh-quotes')).estado);
 c.comprobar('ni recoger el cierre', 403, (await persona.pedir('POST', '/api/market/collect')).estado);
+c.comprobar('ni rellenar el historico', 403, (await persona.pedir('POST', '/api/market/backfill')).estado);
 
 c.titulo('5. Sin sesion tampoco');
 const anonimo = crearCliente('anonimo');
 c.comprobar('401 al refrescar', 401, (await anonimo.pedir('POST', '/api/market/refresh-quotes')).estado);
 c.comprobar('401 al recoger', 401, (await anonimo.pedir('POST', '/api/market/collect')).estado);
+c.comprobar('401 al rellenar', 401, (await anonimo.pedir('POST', '/api/market/backfill')).estado);
 
 c.terminar();

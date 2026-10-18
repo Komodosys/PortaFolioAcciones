@@ -21,6 +21,14 @@ export interface RecogidaDiaria {
   readonly fotos: number;
 }
 
+/** Lo que ha pasado al rellenar el histórico hacia atrás. */
+export interface RellenoDeHistorico {
+  readonly instrumentos: number;
+  readonly nuevos: number;
+  readonly yaEstaban: number;
+  readonly sinSerie: number;
+}
+
 /**
  * Los refrescos de precios pedidos a mano.
  *
@@ -54,5 +62,18 @@ export class MercadoApi {
    */
   recogerElCierre(): Promise<RecogidaDiaria> {
     return firstValueFrom(this.http.post<RecogidaDiaria>('/api/market/collect', {}));
+  }
+
+  /**
+   * Rellena el histórico de precios hacia atrás, **una vez**.
+   *
+   * Sin esto, el histórico empieza el día que se instaló la aplicación y los informes de periodo no se
+   * pueden calcular hasta pasado un año. Pide cinco años en una sola petición por instrumento: son unos
+   * segundos, pero son decenas de peticiones a la fuente, y por eso pide confirmación.
+   *
+   * **No sobrescribe**: lo que ya está guardado se queda como está, así que repetirlo es inofensivo.
+   */
+  rellenarHistorico(): Promise<RellenoDeHistorico> {
+    return firstValueFrom(this.http.post<RellenoDeHistorico>('/api/market/backfill', {}));
   }
 }

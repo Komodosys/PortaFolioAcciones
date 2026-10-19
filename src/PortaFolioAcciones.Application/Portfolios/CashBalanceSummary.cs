@@ -11,8 +11,8 @@ namespace PortaFolioAcciones.Application.Portfolios;
 /// <param name="Sales">Lo cobrado en las ventas desde la apertura.</param>
 /// <param name="Purchases">Lo pagado en las compras desde la apertura.</param>
 /// <param name="Balance">
-/// Apertura + aportaciones − retiros + traspasos recibidos − traspasos enviados + ventas + dividendos −
-/// comisiones − compras.
+/// El saldo, <b>sumando las bolsas de cada moneda al cambio de hoy</b>. Es lo que informa el bróker cuando da un
+/// saldo combinado, y por eso es la cifra que se compara con el estado de cuenta.
 /// </param>
 /// <param name="Since">El día de la apertura. Nulo si no la hay.</param>
 /// <param name="BalanceInUsd">
@@ -33,10 +33,21 @@ namespace PortaFolioAcciones.Application.Portfolios;
 /// traspaso no.
 /// </param>
 /// <param name="TransfersOut">Lo que ha salido hacia otra cuenta del mismo titular. No es un retiro.</param>
+/// <param name="Balances">
+/// El saldo de cada bolsa de moneda. **Es de donde sale <paramref name="Balance"/>**, y existe porque una cuenta
+/// puede tener dos monedas: sin ver las dos, un total que no cuadre con el bróker no se puede explicar.
+/// </param>
 /// <remarks>
 /// <b>Lo anterior a la apertura no se resta.</b> Los lotes y las ventas de antes están incorporados en lo que
 /// se declaró, no recalculados: de las compras antiguas no se sabe cuánto salió de la cuenta, y recalcularlas
 /// con una estimación daría un saldo con aspecto de exacto y sin serlo.
+///
+/// <para>
+/// <b>Las cifras de los flujos no suman <paramref name="Balance"/>, y no es un fallo.</b> Apertura, aportaciones,
+/// ventas y compras están cada una al tipo de su día, y son lo que se puede contar de cada flujo; el saldo es otra
+/// cosa: cada bolsa llevada al cambio de hoy. En una cuenta de una sola moneda coinciden; en una de dos, no, y
+/// fingir que sí fue justo lo que hacía que el saldo no cuadrara.
+/// </para>
 /// </remarks>
 public sealed record CashBalanceSummary(
     Guid PortfolioId,
@@ -54,8 +65,12 @@ public sealed record CashBalanceSummary(
     decimal? BalanceInUsd = null,
     decimal? UsdRate = null,
     decimal TransfersIn = 0m,
-    decimal TransfersOut = 0m)
+    decimal TransfersOut = 0m,
+    IReadOnlyList<CashBalanceByCurrency>? Balances = null)
 {
     /// <summary>Dice si el saldo se puede dar como bueno.</summary>
     public bool IsKnown => Since is not null && Unconverted == 0;
+
+    /// <summary>Las bolsas, nunca nulas: una cartera sin movimientos no tiene ninguna, y eso es una lista vacía.</summary>
+    public IReadOnlyList<CashBalanceByCurrency> Pockets => Balances ?? [];
 }

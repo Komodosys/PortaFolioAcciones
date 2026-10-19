@@ -8,8 +8,10 @@
 >
 > 1. **El efectivo de la gráfica de evolución.** El último punto da **2.269,20 CAD** y la ficha de la cartera
 >    da **−1.050,39**: **3.320 CAD de diferencia**, y el bróker dice **+36,41**. Ya está diagnosticado y
->    medido: ver *«El efectivo de la gráfica, propuesta para cerrarlo»* más abajo. **Hay un plan de tres pasos
->    y no se ha empezado.**
+>    medido, y **hay trabajo empezado**: ver *«El efectivo de la gráfica, propuesta para cerrarlo»* y
+>    *«El efectivo: lo hecho y lo que falta»* más abajo.
+>    **⚠ NO DESPLEGAR hasta cargar las 10 conversiones**: el lector ya calcula dos bolsas, y sin las
+>    conversiones cargadas enseñaría un saldo peor que el de antes (aunque más honesto).
 > 2. **El respaldo**, que tiene **tres cosas pendientes**: borrar el respaldo falso de 670 bytes, arreglar la
 >    copia de seguridad de `actualizar.cmd` y sacar las copias fuera del equipo. Ver *«El respaldo, tres cosas
 >    que hacer más adelante»*.
@@ -208,6 +210,65 @@ conversiones de divisa que no se modelaron.
 
 **Lo que no hay que hacer**: tocar el gráfico para que se parezca al lector sin saber cuál de los dos miente. Eso
 sería tapar la diferencia, no cerrarla.
+
+### El efectivo: lo hecho y lo que falta (2026-10-19)
+
+**El diagnóstico cambió al mirar un estado de cuenta de verdad**, y el titular del 30-09-2026 lo dejó claro:
+
+| Resumen del estado | Mes actual (CAD) |
+|---|---|
+| **Argent comptant** (efectivo) | **36,59** |
+| Acciones | 60.158,62 |
+| FNB | 20.165,05 |
+| Certificados (ADR) | 6.926,41 |
+| **Total** | **87.286,67** |
+
+El bróker informa **un solo saldo combinado** y aplica el cambio del mes (1 USD = 1,3856 CAD).
+
+**Y el fondo del asunto es otro que el que creíamos**: la cuenta tiene **dos bolsas**. Todo el dinero entra en
+**CAD** (aportaciones y traspasos, 21.541,86) y **se convierte entero a USD** el mismo día o el siguiente (10
+conversiones, 21.541,86 CAD → 16.324,93 USD). La aplicación apuntaba el CAD que entraba y **nunca la conversión**,
+así que sumaba en una sola bolsa dos monedas: por eso daba cifras que no cuadraban con nada.
+
+| Bolsa | Entra | Sale | Saldo |
+|---|---|---|---|
+| **CAD** | 21.541,86 | 21.541,86 (conversiones) | **0,00** |
+| **USD** | 84.902,47 | 84.876,76 (compras y traspaso) | **25,71** |
+| Combinado al cambio del mes | | | **35,62** (el estado: 36,59) |
+
+Queda **~1 CAD sin explicar** entre 35,62 y 36,59, y no se da por bueno hasta saber de dónde sale.
+
+**Hecho el 2026-10-19** (código, con pruebas; **sin desplegar**):
+
+- [x] `MovementKind.Conversion = 8`, documentado: **no es aportación ni retiro**, el dinero cambia de bolsa.
+- [x] `Movement` gana **dos patas**: `Amount` es lo que sale y `CounterAmount` lo que entra, en su moneda. El
+      tipo implicito **no se guarda**: se deduce de las dos patas (`ConversionRate`), porque guardar tres cifras
+      del mismo hecho es tener tres verdades.
+- [x] `CashLegs()`: cada movimiento dice **qué bolsa toca y cuánto**. Es lo que permite sumar por moneda en vez
+      de convertir cada movimiento a su tipo y mezclarlo todo. Incluye ventas, dividendos y comisiones —dejarlos
+      fuera hacía que el saldo por bolsa no cuadrara nunca—, y un cambio de moneda devuelve **dos patas**.
+- [x] `AmountIn` devuelve **cero** en un cambio de moneda: el valor no se movió, cambió la moneda.
+- [x] Migración `ConversionDeMoneda`: dos columnas opcionales. Se generó con `dotnet-ef` 10.0.13, que hubo que
+      instalar (`dotnet tool install --global dotnet-ef --version 10.0.13`).
+- [x] **`CashReader` calcula una bolsa por moneda** y lleva cada una al **cambio de hoy**; el total es la suma.
+      `CashBalanceSummary` expone las bolsas en `Balances`. Los flujos de arriba ya no suman el saldo, y está
+      documentado que no es un fallo: cada flujo va a su tipo, el saldo va al de hoy.
+- [x] **Seis pruebas de dominio y dos de infraestructura**, y **la que importa falsificada**: al devolver el
+      cálculo del saldo a la fórmula de una sola bolsa, `UnaCuentaConDosMonedasTieneDosBolsasYElTotalVaAlCambioDeHoy`
+      **falla**. La prueba compara además con las dos cifras que daba el modelo viejo (2.400 y 2.900) para dejar
+      claro que la buena no es ninguna de ellas.
+- [x] Un fallo mío cazado antes de ejecutar: `CashLegs` dejaba fuera ventas y dividendos.
+
+**Falta, por orden:**
+
+1. **Cargar las 10 conversiones** en la 126. Los datos están en el CSV y en los estados; hace falta la base
+   (Docker). Sin esto no se puede verificar nada.
+2. **El gráfico de evolución**: su efectivo también tiene que calcularse por bolsas, o seguirá mezclando monedas.
+3. **La pantalla**: enseñar las dos bolsas («0,00 CAD · 25,71 USD · 36,59 CAD»). Un solo número esconde el
+   problema y no deja comprobarlo.
+4. **Aplicar la migración** y **verificar el 36,59** contra el estado del 30-09-2026. Ese es el criterio de que
+   esto está cerrado.
+5. El ADR: «el efectivo se lleva por moneda y se convierte al cambio de hoy para informar de un total».
 
 ### El borrado de posiciones, que era el hueco de auditoría (hecho el 2026-10-18)
 

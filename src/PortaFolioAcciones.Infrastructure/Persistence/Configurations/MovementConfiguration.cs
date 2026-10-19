@@ -36,6 +36,11 @@ internal sealed class MovementConfiguration : IEntityTypeConfiguration<Movement>
         builder.ComplexProperty(movimiento => movimiento.Amount,
             dinero => dinero.ConfigureMoney(ColumnPrecision.Amount));
 
+        // La segunda pata de un cambio de moneda. Nula en todo lo demas: rellenarla con ceros en los otros tipos
+        // diria que hay un importe donde no lo hay.
+        builder.ComplexProperty(movimiento => movimiento.CounterAmount,
+            dinero => dinero.ConfigureMoney(ColumnPrecision.Amount));
+
         builder.ComplexProperty(movimiento => movimiento.PricePerUnit,
             dinero => dinero.ConfigureMoney(ColumnPrecision.Price));
 

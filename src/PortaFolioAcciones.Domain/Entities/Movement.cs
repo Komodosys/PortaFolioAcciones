@@ -31,13 +31,15 @@ public sealed class Movement
         Money? pricePerUnit,
         string? notes,
         DateTimeOffset now,
-        decimal? rateUsed = null)
+        decimal? rateUsed = null,
+        Money? counterAmount = null)
     {
         Id = id;
         PortfolioId = portfolioId;
         Kind = kind;
         OccurredOn = occurredOn;
         Amount = amount;
+        CounterAmount = counterAmount;
         PositionId = positionId;
         Quantity = quantity;
         PricePerUnit = pricePerUnit;
@@ -115,6 +117,16 @@ public sealed class Movement
 
     /// <summary>La posición vendida. Nula en las aportaciones y los retiros.</summary>
     public Guid? PositionId { get; private set; }
+
+    /// <summary>
+    /// La otra pata de un <see cref="MovementKind.Conversion"/>: el dinero que **entra**, en su moneda.
+    ///
+    /// <b>Nula en todos los demás tipos</b>, porque todos mueven una sola moneda. Solo un cambio de moneda tiene
+    /// dos importes, y por eso hacen falta dos campos: <see cref="Amount"/> es lo que sale y esto lo que entra.
+    /// Guardar un solo importe obligaría a inventar el otro con un tipo de cambio, y el tipo de una conversión es
+    /// un hecho del día, no una cuenta.
+    /// </summary>
+    public Money? CounterAmount { get; private set; }
 
     /// <summary>Cuántas unidades se vendieron. Nula en las aportaciones y los retiros.</summary>
     public Quantity? Quantity { get; private set; }
@@ -297,6 +309,65 @@ public sealed class Movement
     }
 
     /// <summary>
+    /// Un cambio de moneda dentro de la cuenta: <b>sale</b> un importe en una moneda y <b>entra</b> otro en otra.
+    ///
+    /// <para>
+    /// **No es aportación ni retiro.** El dinero no entró ni salió de la cuenta: cambió de moneda. Por eso
+    /// <see cref="CashFlow"/> devuelve cero y <see cref="IsCash"/> es cierto —se movió dinero, aunque el valor no
+    /// cambiara—. Son dos preguntas distintas y este tipo es el que obliga a no confundirlas.
+    /// </para>
+    /// <para>
+    /// **Las dos patas son obligatorias y de monedas distintas.** Con una sola pata habría que deducir la otra
+    /// con un tipo de cambio, y lo que se sabe es el hecho: «salieron 2.040 CAD y entraron 1.629,39 USD». El tipo
+    /// que eso implica es una consecuencia, no un dato de entrada.
+    /// </para>
+    /// </summary>
+    /// <param name="portfolioId">La cartera.</param>
+    /// <param name="from">Lo que sale, en su moneda.</param>
+    /// <param name="to">Lo que entra, en la otra.</param>
+    /// <param name="occurredOn">El día.</param>
+    /// <param name="notes">Notas.</param>
+    /// <param name="now">Momento de creación.</param>
+    public static Movement Conversion(
+        Guid portfolioId,
+        Money from,
+        Money to,
+        DateOnly occurredOn,
+        string? notes,
+        DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(from);
+        ArgumentNullException.ThrowIfNull(to);
+        ExigirCartera(portfolioId);
+        ExigirPositivo(from, nameof(from));
+        ExigirPositivo(to, nameof(to));
+
+        if (from.Currency == to.Currency)
+        {
+            // Convertir euros en euros no es un cambio de moneda: es un movimiento mal escrito, y aceptarlo
+            // dejaría un tipo de cambio 1 escondido en un tipo que no le toca.
+            throw new ArgumentException(
+                "Un cambio de moneda tiene que ser entre dos monedas distintas.",
+                nameof(to));
+        }
+
+        return new Movement(
+            Guid.NewGuid(), portfolioId, MovementKind.Conversion, occurredOn, from,
+            positionId: null, quantity: null, pricePerUnit: null, notes, now, counterAmount: to);
+    }
+
+    /// <summary>
+    /// Las unidades de la moneda que sale por cada unidad de la que entra, tal como lo dicen las dos patas.
+    ///
+    /// Nulo si el movimiento no es un cambio de moneda. <b>No se guarda</b>: se deduce de los dos importes, que
+    /// son los hechos. Guardarlo además sería una tercera cifra que puede contradecir a las otras dos.
+    /// </summary>
+    public decimal? ConversionRate =>
+        Kind is MovementKind.Conversion && CounterAmount is { Amount: > 0m } contrapartida
+            ? Amount.Amount / contrapartida.Amount
+            : null;
+
+    /// <summary>
     /// Una venta: cuántas unidades, a qué precio y **cuánto habían costado**.
     ///
     /// El importe <b>se calcula</b> y no se recibe. Si se pudiera pasar, alguien podría registrar «10 unidades
@@ -370,6 +441,14 @@ public sealed class Movement
     {
         ArgumentNullException.ThrowIfNull(baseCurrency);
 
+        // Un cambio de moneda no lleva valor de un sitio a otro: el dinero es el mismo en otra moneda. Devolver
+        // una de las dos patas diria que entro o salio dinero que no se movio, y sumarlo al saldo lo inflaria o
+        // lo dejaria corto justo en lo convertido. Se devuelve cero en la moneda base, que es lo que aporta.
+        if (Kind is MovementKind.Conversion)
+        {
+            return Money.Of(0m, baseCurrency);
+        }
+
         if (Amount.Currency == baseCurrency)
         {
             return Amount;
@@ -382,9 +461,14 @@ public sealed class Movement
     }
 
     /// <summary>Dice si es dinero que entra o sale, en vez de una operación sobre un valor.</summary>
+    /// <remarks>
+    /// Un <see cref="MovementKind.Conversion"/> también cuenta: mueve dinero de una bolsa a otra. Lo que no hace
+    /// es cambiar el valor total, y eso lo dice <see cref="CashFlow"/>.
+    /// </remarks>
     public bool IsCash =>
         Kind is MovementKind.Deposit or MovementKind.Withdrawal
-            or MovementKind.TransferIn or MovementKind.TransferOut;
+            or MovementKind.TransferIn or MovementKind.TransferOut
+            or MovementKind.Conversion;
 
     /// <summary>
     /// El efecto sobre el dinero <b>aportado</b>: positivo si entró y negativo si salió.
@@ -399,6 +483,9 @@ public sealed class Movement
     /// no su importe: que <see cref="IsCash"/> sea cierto no significa que cambie lo aportado. Son dos preguntas
     /// distintas —«¿se movió dinero?» y «¿puse dinero nuevo?»— y mezclarlas es justo el error que estos dos
     /// tipos existen para evitar.
+    ///
+    /// **Y un cambio de moneda tampoco**: el dinero ya estaba dentro, solo cambió de bolsa. Es el mismo caso que
+    /// el traspaso, y por eso también devuelve cero.
     /// </summary>
     public Money CashFlow() => Kind switch
     {
@@ -406,6 +493,39 @@ public sealed class Movement
         MovementKind.Withdrawal => Amount.Negate(),
         _ => Money.Of(0m, Amount.Currency),
     };
+
+    /// <summary>
+    /// El saldo de cada moneda que mueve este movimiento.
+    ///
+    /// <b>Un movimiento puede tocar dos bolsas a la vez</b> —un cambio de moneda toca dos— y por eso no basta
+    /// con <see cref="AmountIn"/>: el efectivo de una cuenta con dos monedas no es un número, son dos, y sumarlos
+    /// convertidos al tipo de cada movimiento es lo que hacía que el saldo no cuadrara con el del bróker.
+    /// </summary>
+    /// <returns>
+    /// Pares «moneda, importe» con signo: positivo si entra en esa bolsa, negativo si sale. Solo los movimientos
+    /// que tocan dinero devuelven algo; una operación sobre un valor que no cobra ni paga no toca ninguna bolsa.
+    /// </returns>
+    public IReadOnlyList<(Currency Currency, decimal Amount)> CashLegs()
+    {
+        if (Kind is MovementKind.Conversion)
+        {
+            return CounterAmount is { } contrapartida
+                ? [(Amount.Currency, -Amount.Amount), (contrapartida.Currency, contrapartida.Amount)]
+                : [(Amount.Currency, -Amount.Amount)];
+        }
+
+        var signo = Kind switch
+        {
+            MovementKind.Opening or MovementKind.Deposit or MovementKind.TransferIn
+                or MovementKind.Sale or MovementKind.Dividend => 1m,
+
+            MovementKind.Withdrawal or MovementKind.TransferOut or MovementKind.Commission => -1m,
+
+            _ => 0m,
+        };
+
+        return signo == 0m ? [] : [(Amount.Currency, signo * Amount.Amount)];
+    }
 
     /// <summary>
     /// Todo movimiento pertenece a una cartera. Se comprueba en un solo sitio para que no se olvide en uno de

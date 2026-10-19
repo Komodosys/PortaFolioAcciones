@@ -181,8 +181,19 @@ internal sealed class CashReader : ICashReader
             }
         }
 
-        var saldo = declarado + aportado - retirado + transferidoEntrada - transferidoSalida
-            + vendido + dividendos - comisiones - comprado;
+        // ---------------------------------------------------------------------------------------------
+        // El saldo de verdad: una bolsa por moneda.
+        //
+        // La suma de los flujos de arriba —cada uno al tipo de su dia— **no es el saldo de una cuenta con dos
+        // monedas**: mezcla el dinero que entro en coronas con el que salio en dolares como si fueran la misma
+        // bolsa. En la cuenta real eso daba a la aplicacion unos 21.500 CAD de dinero que ya no estaba.
+        //
+        // La cuenta tiene dos bolsas. El saldo es el de cada una, y el total es la suma llevada al cambio de hoy,
+        // que es lo que hace el broker cuando informa de un solo saldo combinado.
+        // ---------------------------------------------------------------------------------------------
+        var bolsas = await BolsasAsync(movimientos, desde, moneda, cancellationToken);
+
+        var saldo = bolsas.Total;
 
         // La vista en dolares, solo informativa. Se calcula al cambio de hoy y no se guarda: manana valdra otra
         // cosa, y guardarla seria tener un numero que envejece sin decirlo. El tipo se ensena al lado para que la
@@ -215,13 +226,110 @@ internal sealed class CashReader : ICashReader
             comprado,
             saldo,
             desde,
-            sinConvertir,
+            sinConvertir + bolsas.SinConvertir,
             dividendos,
             comisiones,
             saldoEnUsd,
             tipoDeHoy,
             transferidoEntrada,
-            transferidoSalida);
+            transferidoSalida,
+            bolsas.Detalle);
+    }
+
+    /// <summary>
+    /// El saldo de cada bolsa de moneda, y el total llevado al cambio de hoy.
+    /// </summary>
+    /// <remarks>
+    /// <b>Las compras van en la moneda del instrumento, no en la de la cartera.</b> Es el fondo del asunto: quien
+    /// compra en dólares gasta dólares, y apuntarlo como si gastara coronas deja la bolsa de coronas llena para
+    /// siempre. Se resta de la bolsa en la que de verdad se pagó.
+    /// </remarks>
+    private async Task<(decimal Total, int SinConvertir, IReadOnlyList<CashBalanceByCurrency> Detalle)> BolsasAsync(
+        IReadOnlyList<Movement> movimientos,
+        DateOnly? desde,
+        Currency moneda,
+        CancellationToken cancellationToken)
+    {
+        var bolsas = new Dictionary<string, decimal>(StringComparer.Ordinal);
+        var sinConvertir = 0;
+
+        void Sumar(Currency divisa, decimal importe) =>
+            bolsas[divisa.Code] = bolsas.GetValueOrDefault(divisa.Code) + importe;
+
+        // Lo que entra y sale, pata a pata. Un cambio de moneda aporta dos patas, una por bolsa.
+        foreach (var movimiento in movimientos)
+        {
+            if (desde is { } dia && movimiento.OccurredOn < dia)
+            {
+                continue;
+            }
+
+            foreach (var (divisa, importe) in movimiento.CashLegs())
+            {
+                Sumar(divisa, importe);
+            }
+        }
+
+        // Lo que se pagó por lo que se tiene, en la moneda en que se pagó.
+        var cartera = movimientos.Count > 0 ? movimientos[0].PortfolioId : Guid.Empty;
+
+        var lotes = await (
+                from lote in _context.Lots.AsNoTracking()
+                join posicion in _context.Positions.AsNoTracking() on lote.PositionId equals posicion.Id
+                where posicion.PortfolioId == cartera
+                select lote)
+            .ToListAsync(cancellationToken);
+
+        foreach (var lote in lotes)
+        {
+            Sumar(lote.CostPerUnit.Currency, -(lote.Quantity.Value * lote.CostPerUnit.Amount));
+        }
+
+        // Y lo que se pagó por lo que ya se vendió, que salió de la cuenta igual.
+        foreach (var venta in movimientos.Where(m => m.Kind is MovementKind.Sale))
+        {
+            if (venta.Quantity is { } unidades && venta.CostPerUnit is { } costeUnitario)
+            {
+                Sumar(costeUnitario.Currency, -(unidades.Value * costeUnitario.Amount));
+            }
+            else
+            {
+                sinConvertir++;
+            }
+        }
+
+        // El cambio de hoy para cada bolsa, en una sola consulta. La agrupación se hace en memoria y no en SQL:
+        // el «ultimo tipo por moneda» no se traduce igual en Postgres que en SQLite, y una consulta que solo
+        // funciona en uno de los dos motores es una prueba que no prueba nada.
+        var tipos = (await _context.DailyFxRates
+                .AsNoTracking()
+                .Where(tipo => tipo.To == moneda)
+                .ToListAsync(cancellationToken))
+            .GroupBy(tipo => tipo.From.Code)
+            .ToDictionary(
+                grupo => grupo.Key,
+                grupo => grupo.OrderByDescending(tipo => tipo.RateDate).First().Rate);
+
+        var detalle = new List<CashBalanceByCurrency>(bolsas.Count);
+        var total = 0m;
+
+        foreach (var (divisa, importe) in bolsas.OrderBy(par => par.Key, StringComparer.Ordinal))
+        {
+            decimal? tipo = divisa == moneda.Code ? 1m : tipos.GetValueOrDefault(divisa);
+
+            if (tipo is null or 0m)
+            {
+                sinConvertir++;
+                detalle.Add(new CashBalanceByCurrency(divisa, importe, null, null));
+                continue;
+            }
+
+            var enBase = importe * tipo.Value;
+            total += enBase;
+            detalle.Add(new CashBalanceByCurrency(divisa, importe, tipo, enBase));
+        }
+
+        return (total, sinConvertir, detalle);
     }
 
     private async Task<Currency> BaseDelDuenoAsync(Guid dueno, CancellationToken cancellationToken)

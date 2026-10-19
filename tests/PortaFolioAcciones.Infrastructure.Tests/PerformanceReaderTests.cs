@@ -114,6 +114,16 @@ public sealed class PerformanceReaderTests
         contexto.Movements.Add(apertura);
         contexto.Movements.Add(aportacion);
 
+        // El cambio de HOY, que es el que usa el saldo para llevar cada bolsa a la moneda de la cartera. No es
+        // el tipo del movimiento: una cuenta que tiene dólares vale lo que valgan hoy, no lo que valían el día
+        // que se ingresaron. Sin este tipo, la bolsa de dólares no se puede valorar y el saldo se declara
+        // incompleto —que es lo honesto— pero no se puede comprobar la cifra.
+        if (tipoDeCambio is { } tipo)
+        {
+            contexto.DailyFxRates.Add(DailyFxRate.FromValue(
+                FxRate.Of(Currency.Usd, Currency.Cad, tipo, new DateOnly(2026, 10, 1)), Ahora));
+        }
+
         if (conTraspasos)
         {
             var traspaso = Movement.TransferIn(cartera.Id, Money.Of(500m, Currency.Cad), new DateOnly(2026, 3, 10), "traspaso", Ahora);

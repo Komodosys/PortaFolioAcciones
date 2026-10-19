@@ -469,6 +469,18 @@ namespace PortaFolioAcciones.Infrastructure.Persistence.Migrations
                                 .HasColumnType("character varying(3)");
                         });
 
+                    b.ComplexProperty(typeof(Dictionary<string, object>), "CounterAmount", "PortaFolioAcciones.Domain.Entities.Movement.CounterAmount#Money", b1 =>
+                        {
+                            b1.Property<decimal>("Amount")
+                                .HasPrecision(28, 4)
+                                .HasColumnType("numeric(28,4)");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)");
+                        });
+
                     b.ComplexProperty(typeof(Dictionary<string, object>), "PricePerUnit", "PortaFolioAcciones.Domain.Entities.Movement.PricePerUnit#Money", b1 =>
                         {
                             b1.Property<decimal>("Amount")

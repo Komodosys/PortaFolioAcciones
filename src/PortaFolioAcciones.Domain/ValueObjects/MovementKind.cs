@@ -59,4 +59,17 @@ public enum MovementKind
     /// retiro**: el dinero no se lo llevó nadie, sigue siendo suyo, en otro sitio.
     /// </summary>
     TransferOut = 7,
+
+    /// <summary>
+    /// Un cambio de moneda dentro de la cuenta: sale dinero en una moneda y entra en otra.
+    ///
+    /// **No es ni una entrada ni una salida, y por eso no cambia el valor.** El dinero sigue siendo del titular,
+    /// en la misma cuenta: lo único que cambia es la moneda en que está. Tratarlo como aportación inflaría lo
+    /// aportado; tratarlo como retiro lo dejaría corto.
+    ///
+    /// **Existe porque una cuenta puede tener dos bolsas.** Sin este tipo, la aplicación sumaba el dinero que
+    /// entró en coronas canadienses y el que salió en dólares como si fueran la misma bolsa, y el saldo salía
+    /// alto en todo lo que se había convertido: en la cuenta real, unos 21.500 CAD de dinero que ya no estaba.
+    /// </summary>
+    Conversion = 8,
 }

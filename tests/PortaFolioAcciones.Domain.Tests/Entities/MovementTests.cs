@@ -219,4 +219,76 @@ public sealed class MovementTests
 
         Assert.True(venta.CashFlow().IsZero);
     }
+
+    [Fact]
+    public void Un_cambio_de_moneda_tiene_dos_patas_y_no_es_aportacion()
+    {
+        // 2.040 CAD que se convierten en 1.629,39 USD: el dinero no entró ni salió de la cuenta, cambió de bolsa.
+        // Contarlo como aportación diría que se puso dinero que no se puso; contarlo como retiro, al revés.
+        var cambio = Movement.Conversion(
+            Cartera, Money.Of(2040m, Currency.Cad), Money.Of(1629.39m, Currency.Usd), Dia, null, Ahora);
+
+        Assert.Equal(MovementKind.Conversion, cambio.Kind);
+        Assert.Equal(Currency.Cad, cambio.Amount.Currency);
+        Assert.Equal(1629.39m, cambio.CounterAmount!.Amount);
+        Assert.Equal(Currency.Usd, cambio.CounterAmount.Currency);
+
+        // Mueve dinero —IsCash— pero no cambia lo aportado ni el valor: son dos preguntas distintas.
+        Assert.True(cambio.IsCash);
+        Assert.True(cambio.CashFlow().IsZero);
+    }
+
+    [Fact]
+    public void Un_cambio_de_moneda_no_suma_al_saldo_en_la_moneda_de_la_cartera()
+    {
+        // Sumar una de las dos patas al saldo lo inflaría justo en lo convertido. El valor en la moneda base no
+        // cambió: lo que cambió es en qué moneda está.
+        var cambio = Movement.Conversion(
+            Cartera, Money.Of(2040m, Currency.Cad), Money.Of(1629.39m, Currency.Usd), Dia, null, Ahora);
+
+        Assert.True(cambio.AmountIn(Currency.Cad)!.IsZero);
+    }
+
+    [Fact]
+    public void Un_cambio_de_moneda_dice_su_tipo_implicito()
+    {
+        var cambio = Movement.Conversion(
+            Cartera, Money.Of(2040m, Currency.Cad), Money.Of(1629.39m, Currency.Usd), Dia, null, Ahora);
+
+        // 2.040 / 1.629,39 = 1,2520 CAD por dólar, que es el tipo del día. No se guarda: se deduce de las patas,
+        // que son los hechos; guardarlo sería una tercera cifra que puede contradecir a las otras dos.
+        Assert.Equal(1.252m, Math.Round(cambio.ConversionRate!.Value, 3));
+    }
+
+    [Fact]
+    public void Las_dos_patas_de_un_cambio_van_cada_una_a_su_bolsa()
+    {
+        var cambio = Movement.Conversion(
+            Cartera, Money.Of(2040m, Currency.Cad), Money.Of(1629.39m, Currency.Usd), Dia, null, Ahora);
+
+        var patas = cambio.CashLegs();
+
+        // Sale de la bolsa de CAD y entra en la de USD, con el signo de cada una.
+        Assert.Contains((Currency.Cad, -2040m), patas);
+        Assert.Contains((Currency.Usd, 1629.39m), patas);
+        Assert.Equal(2, patas.Count);
+    }
+
+    [Fact]
+    public void Un_cambio_entre_la_misma_moneda_se_rechaza()
+    {
+        // No es un cambio de moneda: es un movimiento mal escrito, y aceptarlo escondería un tipo 1 donde no toca.
+        Assert.Throws<ArgumentException>(() => Movement.Conversion(
+            Cartera, Money.Of(100m, Currency.Cad), Money.Of(100m, Currency.Cad), Dia, null, Ahora));
+    }
+
+    [Fact]
+    public void Una_venta_cobra_en_la_bolsa_de_su_moneda()
+    {
+        // Las ventas, los dividendos y las comisiones también tocan una bolsa. Dejarlos fuera del saldo por
+        // moneda haría que éste no cuadrara nunca con el del bróker.
+        var venta = Movement.Sale(Cartera, Posicion, Quantity.Of(10m), Dolar(50m), Dolar(40m), Dia, null, Ahora);
+
+        Assert.Equal([(Currency.Usd, 500m)], venta.CashLegs());
+    }
 }

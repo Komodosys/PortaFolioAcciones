@@ -1,8 +1,25 @@
 # TODO — PortaFolioAcciones
 
-**Última actualización:** 2026-10-12
-**Estado:** diseño cerrado, **cero líneas de código de la aplicación**. Lo que existe hoy son
-decisiones documentadas y la cadena de herramientas que **extrae, valida y reconcilia la cartera real**.
+> ## Al retomar, lo primero (escrito el 2026-10-18, al cerrar)
+>
+> **Si esta es una sesión nueva: no recuerdas nada de esto de memoria. Está escrito aquí, y hay que leerlo.**
+> Lo primero es recordarle a la persona estas **dos cosas abiertas**, en este orden, y empezar por la que él
+> elija:
+>
+> 1. **El efectivo de la gráfica de evolución.** El último punto da **2.269,20 CAD** y la ficha de la cartera
+>    da **−1.050,39**: **3.320 CAD de diferencia**, y el bróker dice **+36,41**. Ya está diagnosticado y
+>    medido: ver *«El efectivo de la gráfica, propuesta para cerrarlo»* más abajo. **Hay un plan de tres pasos
+>    y no se ha empezado.**
+> 2. **El respaldo**, que tiene **tres cosas pendientes**: borrar el respaldo falso de 670 bytes, arreglar la
+>    copia de seguridad de `actualizar.cmd` y sacar las copias fuera del equipo. Ver *«El respaldo, tres cosas
+>    que hacer más adelante»*.
+>
+> Dile que lo has leído, con las cifras, y no vuelvas a diagnosticar el efectivo desde cero: **el diagnóstico
+> está hecho y medido**, y rehacerlo es la forma de perder otra sesión.
+
+**Última actualización:** 2026-10-18
+**Estado:** aplicación funcionando y publicada (API, web, base de datos y respaldo diario programado). La cuenta
+RRSP ···126 está reconstruida desde sus 73 estados de cuenta. Queda abierto lo de arriba.
 
 Marca `[x]` al completar. Añade al final de *Hecho* una entrada con la fecha cuando cierres un bloque,
 para que este archivo haga de diario del proyecto y no solo de lista de pendientes.
@@ -140,10 +157,57 @@ pie, 12 CPU y 8 GB. PostgreSQL 18.6 ya está levantado encima.
 
 **Queda abierto en el gráfico de evolución, y no se da por bueno:** el efectivo del último punto sale **2.269 CAD
 frente a los −1.050,39 del lector de efectivo**, una diferencia de unos **3.300 CAD**. El valor de las posiciones
-es exacto —precio por unidades invertidas—, pero la parte de efectivo de la curva no cierra todavía. Se ve
-afectado por las posiciones **vendidas del todo**, cuyos lotes quedaron a cero y de los que se usó el coste de la
-venta; hay un detalle de convenio con el lector de efectivo que falta por cuadrar. **No se presenta como
-terminado hasta que los dos números coincidan al céntimo.**
+es exacto —precio por unidades invertidas—, pero la parte de efectivo de la curva no cierra todavía. **No se
+presenta como terminado hasta que los dos números coincidan al céntimo.**
+
+### El efectivo de la gráfica, propuesta para cerrarlo (diagnóstico hecho y medido el 2026-10-18)
+
+**Esto ya no es un «no sé»: está medido.** El gráfico calcula cada punto como posiciones + efectivo, y el efectivo
+se reconstruye restando **lo comprado**. Ahí está la diferencia.
+
+Los tres números:
+
+| | Efectivo |
+|---|---|
+| La ficha de la cartera (lector de efectivo) | **−1.050,39** |
+| El gráfico, último punto | **+2.269,20** |
+| El bróker, según los estados de cuenta | **+36,41** |
+
+**Descartado midiendo**, para que nadie lo vuelva a intentar:
+
+- **No son dos aperturas.** Hay **una**: 15.300 USD al 1,317 = 20.150,10 CAD.
+- **No es la media de los tipos de cambio.** Compra 1,3333 y venta 1,3364: aplicada en bloque da **118 CAD**, no
+  3.300.
+
+**La causa, medida:** las acciones **que se vendieron** se valoran en CAD a dos tipos distintos.
+
+| | Lo vendido, en CAD |
+|---|---|
+| El lector de efectivo, al tipo del **día de la venta** | **50.320,82** |
+| El gráfico, al tipo del **día de la compra** de esos lotes | **47.384,52** |
+| Diferencia | **2.936,30** |
+
+El resto hasta 3.320 es la aproximación de la consulta —se usó el coste medio de cada posición en vez del de cada
+lote—, así que el número exacto sale de la inversión de verdad, pero **la causa está identificada**.
+
+**Cuál de los dos tiene razón: ninguno lo sabe todavía.** Para una *historia del efectivo*, el del gráfico es el
+defendible: el dinero salió de la cuenta el día de la compra, a ese tipo. Pero **ninguno cuadra con el bróker**: el
+lector está a **1.087 CAD** del saldo real y el gráfico a **2.232**, y ese hueco es el ya conocido de las 10
+conversiones de divisa que no se modelaron.
+
+**La propuesta, en tres pasos** (nada hecho todavía):
+
+1. **Reconciliar venta a venta** —son 16— contra el saldo que dan los estados de cuenta mes a mes, y ver en qué
+   meses se separa cada criterio. Los estados traen el saldo en las dos monedas, así que el árbitro son ellos, no
+   una opinión.
+2. **Elegir el criterio que cuadre** y aplicarlo **en los dos sitios**: el lector de efectivo y la reconstrucción
+   de la serie. Tener **dos cifras distintas para el mismo dinero dentro de la aplicación es inaceptable**, y no
+   se arregla tocando el gráfico para que se parezca al otro.
+3. **Dejarlo escrito en el ADR**, con el criterio y por qué ese y no el otro, porque el siguiente que mire esto
+   se preguntará lo mismo.
+
+**Lo que no hay que hacer**: tocar el gráfico para que se parezca al lector sin saber cuál de los dos miente. Eso
+sería tapar la diferencia, no cerrarla.
 
 ### El borrado de posiciones, que era el hueco de auditoría (hecho el 2026-10-18)
 

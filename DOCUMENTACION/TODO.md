@@ -293,7 +293,27 @@ siguiente—, pero **no se da por bueno hasta verlo en el estado de octubre**.
 
 **Pendiente también:** quedó instalada una herramienta global, `dotnet-ef` 10.0.13, que no hacía falta: el
 proyecto ya tiene la suya en `.herramientas\dotnet-ef`. Se quita con
-`dotnet tool uninstall --global dotnet-ef`.
+`dotnet tool uninstall --global dotnet-ef`. *(Hecho: desinstalada.)*
+
+### Un despiste que hay que decidir: el informe lee el efectivo de la foto
+
+Al cerrar el cuadre, el informe seguía enseñando **−1.050,39** mientras la ficha y el gráfico ya daban 36,20. No
+era un cálculo distinto: **el informe no calcula el efectivo, lo lee de la foto guardada del día**
+(`PerformanceRow` toma el efectivo de `foto.CashValue`). La foto de esa cuenta era del **18 de octubre**, de antes
+de cargar las conversiones. Se tomó una nueva y quedó al día.
+
+El problema de fondo sigue: **cualquier cambio en el efectivo no aparece en el informe hasta que se toma una foto
+nueva.** Es coherente con «el informe es el cierre del día», y a la vez es una trampa: la cifra se queda vieja sin
+avisar.
+
+**La decisión, para el ADR:**
+
+- **Que el informe lea el efectivo en vivo** (del lector, como la ficha y el gráfico): siempre al día, pero mezcla
+  una cifra de ahora con un valor de la foto.
+- **Que siga leyendo la foto** (estable y reproducible), y entonces **hay que decirlo**: la fecha de la foto ya
+  aparece en la fila, pero no se advierte de que el efectivo puede ser de otro día.
+
+Lo que no puede quedar es lo de hoy: dos pantallas con dos efectivos distintos y ninguna pista de por qué.
 
 ### El borrado de posiciones, que era el hueco de auditoría (hecho el 2026-10-18)
 

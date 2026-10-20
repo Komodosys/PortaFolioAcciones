@@ -340,4 +340,26 @@ export interface SaldoDeEfectivo {
 
   /** El cambio usado, «1 USD = X» de la moneda de la cartera, para poder comprobar la cifra. */
   readonly usdRate: number | null;
+
+  /**
+   * El saldo de cada bolsa de moneda.
+   *
+   * **Es de donde sale el saldo**, y se enseña porque una cuenta puede tener dos monedas: sin ver las dos, un
+   * total que no cuadre con el bróker no se puede explicar. La bolsa de la moneda de la cartera tiene cambio 1.
+   */
+  readonly pockets: readonly BolsaDeEfectivo[] | null;
+}
+
+/** El saldo de una de las bolsas de moneda de una cartera. */
+export interface BolsaDeEfectivo {
+  readonly currency: string;
+
+  /** Lo que hay en esa bolsa, en su moneda. */
+  readonly amount: number;
+
+  /** El cambio usado para llevarla a la moneda de la cartera. Nulo si no había. */
+  readonly rate: number | null;
+
+  /** Lo que vale en la moneda de la cartera al cambio de hoy. Nulo si no se pudo convertir. */
+  readonly amountInBase: number | null;
 }

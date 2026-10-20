@@ -42,7 +42,8 @@ internal sealed class CashReader : ICashReader
 
     public async Task<CashBalanceSummary?> GetAsync(
         Guid portfolioId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        DateOnly? asOf = null)
     {
         var cartera = await _context.Portfolios
             .AsNoTracking()
@@ -59,6 +60,13 @@ internal sealed class CashReader : ICashReader
             .AsNoTracking()
             .Where(movimiento => movimiento.PortfolioId == portfolioId)
             .ToListAsync(cancellationToken);
+
+        // El saldo de un día pasado: se miran solo los movimientos hasta ese día, y los tipos de ese día. Es lo
+        // que usa el gráfico de evolución, para que el gráfico y la ficha no puedan dar cifras distintas.
+        if (asOf is { } diaDelSaldo)
+        {
+            movimientos = [.. movimientos.Where(movimiento => movimiento.OccurredOn <= diaDelSaldo)];
+        }
 
         // La apertura: la última declarada. Si se corrige, se declara otra vez y vale la nueva.
         var apertura = movimientos
@@ -191,7 +199,7 @@ internal sealed class CashReader : ICashReader
         // La cuenta tiene dos bolsas. El saldo es el de cada una, y el total es la suma llevada al cambio de hoy,
         // que es lo que hace el broker cuando informa de un solo saldo combinado.
         // ---------------------------------------------------------------------------------------------
-        var bolsas = await BolsasAsync(movimientos, desde, moneda, cancellationToken);
+        var bolsas = await BolsasAsync(movimientos, desde, moneda, asOf, cancellationToken);
 
         var saldo = bolsas.Total;
 
@@ -248,6 +256,7 @@ internal sealed class CashReader : ICashReader
         IReadOnlyList<Movement> movimientos,
         DateOnly? desde,
         Currency moneda,
+        DateOnly? asOf,
         CancellationToken cancellationToken)
     {
         var bolsas = new Dictionary<string, decimal>(StringComparer.Ordinal);
@@ -280,6 +289,12 @@ internal sealed class CashReader : ICashReader
                 select lote)
             .ToListAsync(cancellationToken);
 
+        // Para el saldo de un día pasado, un lote comprado después **todavía no se había pagado**.
+        if (asOf is { } diaDelSaldo)
+        {
+            lotes = [.. lotes.Where(lote => lote.PurchaseDate <= diaDelSaldo)];
+        }
+
         foreach (var lote in lotes)
         {
             Sumar(lote.CostPerUnit.Currency, -(lote.Quantity.Value * lote.CostPerUnit.Amount));
@@ -298,13 +313,17 @@ internal sealed class CashReader : ICashReader
             }
         }
 
-        // El cambio de hoy para cada bolsa, en una sola consulta. La agrupación se hace en memoria y no en SQL:
-        // el «ultimo tipo por moneda» no se traduce igual en Postgres que en SQLite, y una consulta que solo
-        // funciona en uno de los dos motores es una prueba que no prueba nada.
+        // El cambio para cada bolsa, en una sola consulta. La agrupación se hace en memoria y no en SQL: el
+        // «ultimo tipo por moneda» no se traduce igual en Postgres que en SQLite, y una consulta que solo funciona
+        // en uno de los dos motores es una prueba que no prueba nada.
+        //
+        // Para el saldo de un día pasado se usa el tipo de ESE día, no el de hoy: un saldo de hace un año llevado
+        // al cambio de hoy diría que el pasado valía lo que vale ahora.
         var tipos = (await _context.DailyFxRates
                 .AsNoTracking()
                 .Where(tipo => tipo.To == moneda)
                 .ToListAsync(cancellationToken))
+            .Where(tipo => asOf is not { } dia || tipo.RateDate <= dia)
             .GroupBy(tipo => tipo.From.Code)
             .ToDictionary(
                 grupo => grupo.Key,

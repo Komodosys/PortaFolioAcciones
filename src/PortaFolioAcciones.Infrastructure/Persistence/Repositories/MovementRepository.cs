@@ -144,7 +144,9 @@ internal sealed class MovementRepository : IMovementRepository
         string currency,
         DateOnly occurredOn,
         string? notes,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        decimal? counterAmount = null,
+        string? counterCurrency = null)
     {
         var ahora = DateTimeOffset.UtcNow;
         var importe = Money.Of(amount, Currency.FromCode(currency));
@@ -167,11 +169,26 @@ internal sealed class MovementRepository : IMovementRepository
             "TransferIn" => Movement.TransferIn(portfolioId, importe, occurredOn, notes, ahora),
             "TransferOut" => Movement.TransferOut(portfolioId, importe, occurredOn, notes, ahora),
 
+            // Un cambio de moneda: las dos patas son obligatorias. Sin la segunda no hay conversion que
+            // registrar, y el dinero se quedaria en una bolsa que no le toca.
+            "Conversion" => Movement.Conversion(
+                portfolioId,
+                importe,
+                Money.Of(
+                    counterAmount ?? throw new ArgumentException(
+                        "Un cambio de moneda necesita la segunda pata.", nameof(counterAmount)),
+                    Currency.FromCode(counterCurrency ?? throw new ArgumentException(
+                        "Un cambio de moneda necesita la moneda de la segunda pata.", nameof(counterCurrency)))),
+                occurredOn,
+                notes,
+                ahora),
+
             // Una venta NO se registra aquí: se registra al vender, porque además reduce la posición. Dejar
             // crear una venta suelta permitiría tener una venta sin su reducción, y la posición y el registro
             // dirían cosas distintas.
             _ => throw new ArgumentOutOfRangeException(
-                nameof(kind), kind, "Solo se pueden registrar aportaciones, retiros, traspasos, dividendos y comisiones."),
+                nameof(kind), kind,
+                "Solo se pueden registrar aportaciones, retiros, traspasos, dividendos, comisiones y cambios de moneda."),
         };
 
         // El tipo del dia del movimiento, para poder llevar el importe a la moneda de la cartera. Sin el, una

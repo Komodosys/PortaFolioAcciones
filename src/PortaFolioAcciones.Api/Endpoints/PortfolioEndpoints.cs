@@ -411,6 +411,15 @@ internal static class PortfolioEndpoints
                     statusCode: StatusCodes.Status400BadRequest, title: "movement.invalid_amount");
             }
 
+            // Un cambio de moneda necesita las dos patas. Se comprueba aquí para contestar 400 con un motivo, en
+            // vez de dejar que reviente en el constructor y salga un 500 por una petición mal formada.
+            if (peticion.Kind is "Conversion"
+                && (peticion.CounterAmount is not > 0m || string.IsNullOrWhiteSpace(peticion.CounterCurrency)))
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest, title: "movement.conversion_needs_both_legs");
+            }
+
             try
             {
                 var dia = peticion.OccurredOn ?? DateOnly.FromDateTime(reloj.GetUtcNow().UtcDateTime);
@@ -422,7 +431,9 @@ internal static class PortfolioEndpoints
                     peticion.Currency ?? Currency.Cad.Code,
                     dia,
                     peticion.Notes,
-                    cancelacion);
+                    cancelacion,
+                    peticion.CounterAmount,
+                    peticion.CounterCurrency);
 
                 return Results.Created($"/api/portfolios/{id}/movements/{movimiento.Id}", movimiento);
             }
@@ -459,12 +470,18 @@ internal static class PortfolioEndpoints
     /// <param name="Currency">La moneda. Sin ella se usa la base de la aplicación.</param>
     /// <param name="OccurredOn">El día. Nulo usa el de hoy.</param>
     /// <param name="Notes">Notas.</param>
+    /// <param name="CounterAmount">
+    /// La segunda pata de un cambio de moneda: lo que <b>entra</b>, siempre positivo. Nula en los demás tipos.
+    /// </param>
+    /// <param name="CounterCurrency">La moneda de esa segunda pata. Tiene que ser distinta de <paramref name="Currency"/>.</param>
     internal sealed record CashMovementRequest(
         string? Kind,
         decimal Amount,
         string? Currency,
         DateOnly? OccurredOn,
-        string? Notes);
+        string? Notes,
+        decimal? CounterAmount = null,
+        string? CounterCurrency = null);
 
     /// <summary>Lo que manda el formulario de edición de una cartera.</summary>
     internal sealed record UpdatePortfolioRequest(

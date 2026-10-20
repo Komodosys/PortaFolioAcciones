@@ -6,12 +6,11 @@
 > Lo primero es recordarle a la persona estas **dos cosas abiertas**, en este orden, y empezar por la que él
 > elija:
 >
-> 1. **El efectivo de la gráfica de evolución.** El último punto da **2.269,20 CAD** y la ficha de la cartera
->    da **−1.050,39**: **3.320 CAD de diferencia**, y el bróker dice **+36,41**. Ya está diagnosticado y
->    medido, y **hay trabajo empezado**: ver *«El efectivo de la gráfica, propuesta para cerrarlo»* y
->    *«El efectivo: lo hecho y lo que falta»* más abajo.
->    **⚠ NO DESPLEGAR hasta cargar las 10 conversiones**: el lector ya calcula dos bolsas, y sin las
->    conversiones cargadas enseñaría un saldo peor que el de antes (aunque más honesto).
+> 1. **El efectivo de la gráfica de evolución.** **CUADRADO el 2026-10-19**: la cuenta tenía **dos bolsas**
+>    (el dinero entraba en CAD y se convertía entero a USD), y la aplicación las fundía en una. Ahora la bolsa
+>    de CAD queda **0,00**, la de USD **25,72** y el total **36,43 CAD**, frente a los **36,59** del estado —los
+>    0,70 USD que faltan están **dentro del estado**. La ficha y el gráfico dan lo mismo. **Queda pendiente**:
+>    enseñar las dos bolsas en la pantalla y el ADR. Ver *«El cuadre del efectivo»*.
 > 2. **El respaldo**, que tiene **tres cosas pendientes**: borrar el respaldo falso de 670 bytes, arreglar la
 >    copia de seguridad de `actualizar.cmd` y sacar las copias fuera del equipo. Ver *«El respaldo, tres cosas
 >    que hacer más adelante»*.
@@ -261,14 +260,40 @@ Queda **~1 CAD sin explicar** entre 35,62 y 36,59, y no se da por bueno hasta sa
 
 **Falta, por orden:**
 
-1. **Cargar las 10 conversiones** en la 126. Los datos están en el CSV y en los estados; hace falta la base
-   (Docker). Sin esto no se puede verificar nada.
-2. **El gráfico de evolución**: su efectivo también tiene que calcularse por bolsas, o seguirá mezclando monedas.
-3. **La pantalla**: enseñar las dos bolsas («0,00 CAD · 25,71 USD · 36,59 CAD»). Un solo número esconde el
-   problema y no deja comprobarlo.
-4. **Aplicar la migración** y **verificar el 36,59** contra el estado del 30-09-2026. Ese es el criterio de que
-   esto está cerrado.
+1. ~~Cargar las 10 conversiones~~ — **hecho**: cargadas por la API, y la bolsa de coronas queda en **0,00**.
+2. ~~El gráfico de evolución~~ — **hecho**: ahora pregunta al **mismo lector de efectivo** por cada día. Se borró
+   la segunda cuenta que tenía dentro, que era la que se separaba en 3.320 CAD. Con una sola implementación, la
+   ficha y el gráfico **no pueden contradecirse**.
+3. **La pantalla**: enseñar las dos bolsas («0,00 CAD · 25,72 USD · 36,43 CAD»). Un solo número esconde el
+   problema y no deja comprobarlo. **Pendiente.**
+4. ~~Aplicar la migración y verificar~~ — **hecho**: ver el cuadre de abajo.
 5. El ADR: «el efectivo se lleva por moneda y se convierte al cambio de hoy para informar de un total».
+
+### El cuadre del efectivo (2026-10-19)
+
+| | Antes | Ahora |
+|---|---|---|
+| Bolsa CAD | 21.541,86 | **0,00** |
+| Bolsa USD | −16.299,21 | **25,72** |
+| Saldo combinado | −1.539,45 | **36,43** |
+| Lo que dice el estado (30-09-2026) | | **36,59** |
+
+- **La bolsa de coronas queda exactamente en cero**: todo el CAD que entró se convirtió. Eso confirma que las 10
+  conversiones eran lo que faltaba.
+- **La ficha y el gráfico dan lo mismo**, comprobado contra la API: el último punto del gráfico lleva
+  `efectivo 36,43` y la ficha `saldo 36,43`.
+- **El gráfico tarda 1,2 s** en 60 puntos (una consulta al lector por punto). Es el precio de que haya una sola
+  implementación; si algún día molesta, se optimiza sin cambiar el resultado.
+
+**Los 0,16 CAD (0,70 USD) que faltan NO son de la aplicación: están dentro del estado.** Su detalle, sumado línea
+a línea, da **25,71 USD y 0,00 CAD**, y su línea de efectivo dice **36,59 CAD** = **26,41 USD** al cambio del mes
+(1,3856): el estado declara **0,70 USD más** de los que enseñan sus propios movimientos. Lo más probable es una
+operación pendiente de liquidar del apartado 05 —que la extracción excluye a propósito porque reaparece al mes
+siguiente—, pero **no se da por bueno hasta verlo en el estado de octubre**.
+
+**Pendiente también:** quedó instalada una herramienta global, `dotnet-ef` 10.0.13, que no hacía falta: el
+proyecto ya tiene la suya en `.herramientas\dotnet-ef`. Se quita con
+`dotnet tool uninstall --global dotnet-ef`.
 
 ### El borrado de posiciones, que era el hueco de auditoría (hecho el 2026-10-18)
 

@@ -31,7 +31,7 @@ public sealed class PortfolioEvolutionReaderTests
         var carteraId = await SembrarAsync(bd, compradas: 10m, vendidas: 4m, desdoblamiento: null);
 
         using var contexto = bd.CrearContexto();
-        var lector = new PortfolioEvolutionReader(contexto, new RelojFalso(Ahora));
+        var lector = new PortfolioEvolutionReader(contexto, new RelojFalso(Ahora), new CashReader(contexto));
 
         var serie = await lector.GetAsync(carteraId, new DateOnly(2024, 1, 10), new DateOnly(2024, 12, 31), 13, Ct);
 
@@ -61,7 +61,7 @@ public sealed class PortfolioEvolutionReaderTests
             bd, compradas: 10m, vendidas: 0m, desdoblamiento: new DateOnly(2024, 9, 1));
 
         using var contexto = bd.CrearContexto();
-        var lector = new PortfolioEvolutionReader(contexto, new RelojFalso(Ahora));
+        var lector = new PortfolioEvolutionReader(contexto, new RelojFalso(Ahora), new CashReader(contexto));
 
         var serie = await lector.GetAsync(carteraId, new DateOnly(2024, 1, 10), new DateOnly(2024, 12, 31), 13, Ct);
 
@@ -100,7 +100,7 @@ public sealed class PortfolioEvolutionReaderTests
 
         await contexto.SaveChangesAsync(Ct);
 
-        var lector = new PortfolioEvolutionReader(contexto, new RelojFalso(Ahora));
+        var lector = new PortfolioEvolutionReader(contexto, new RelojFalso(Ahora), new CashReader(contexto));
         var serie = await lector.GetAsync(cartera.Id, null, null, 60, Ct);
 
         Assert.NotNull(serie);

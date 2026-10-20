@@ -29,11 +29,13 @@ internal sealed class PortfolioEvolutionReader : IPortfolioEvolutionReader
 {
     private readonly PortafolioDbContext _context;
     private readonly TimeProvider _reloj;
+    private readonly ICashReader efectivoDelDia;
 
-    public PortfolioEvolutionReader(PortafolioDbContext context, TimeProvider reloj)
+    public PortfolioEvolutionReader(PortafolioDbContext context, TimeProvider reloj, ICashReader efectivoDelDia)
     {
         _context = context;
         _reloj = reloj;
+        this.efectivoDelDia = efectivoDelDia;
     }
 
     public async Task<PortfolioEvolution?> GetAsync(
@@ -251,7 +253,11 @@ internal sealed class PortfolioEvolutionReader : IPortfolioEvolutionReader
                 valor += unidades * enMonedaBase;
             }
 
-            var (efectivo, aportado) = Acumulado(ordenados, series, fecha, moneda);
+            // El efectivo lo dice **el mismo lector que la ficha**, preguntándole por ese día. Es a propósito:
+            // tener aquí una segunda cuenta era tener dos maneras de calcular lo mismo, y la ficha y el gráfico
+            // decían cifras distintas del mismo dinero. Una sola implementación no puede contradecirse.
+            var efectivo = (await efectivoDelDia.GetAsync(portfolioId, cancellationToken, fecha))?.Balance ?? 0m;
+            var aportado = Aportado(ordenados, fecha, moneda);
 
             resultado.Add(new EvolutionPoint(fecha, valor, efectivo, aportado));
         }
@@ -344,12 +350,7 @@ internal sealed class PortfolioEvolutionReader : IPortfolioEvolutionReader
         var vendidas = ventas
             .Select(venta => new VentaInvertida(
                 venta.OccurredOn,
-                (venta.Quantity?.Value ?? 0m) * FactorDeSplit(venta.OccurredOn, hoy),
-
-                // Lo que costó lo vendido. Va aquí porque en una posición cerrada del todo es **lo único** que
-                // queda de lo que se pagó: los lotes se quedaron a cero y su cantidad original no se puede
-                // recuperar de ellos.
-                (venta.Quantity?.Value ?? 0m) * (venta.CostPerUnit?.Amount ?? 0m) * (venta.RateUsed ?? 1m)))
+                (venta.Quantity?.Value ?? 0m) * FactorDeSplit(venta.OccurredOn, hoy)))
             .ToList();
 
         return new SerieDeInstrumento(
@@ -362,18 +363,21 @@ internal sealed class PortfolioEvolutionReader : IPortfolioEvolutionReader
             hoy);
     }
 
-    // ------------------------------------------------------------------ el acumulado
+    // ------------------------------------------------------------------ lo aportado
 
     /// <summary>
-    /// El efectivo y lo puesto hasta una fecha, con el mismo criterio que el lector de efectivo.
+    /// Lo puesto hasta una fecha: apertura, aportaciones y traspasos, menos lo que salió.
     /// </summary>
-    private static (decimal Efectivo, decimal? Aportado) Acumulado(
-        IReadOnlyList<Movement> movimientos,
-        IReadOnlyList<SerieDeInstrumento> series,
-        DateOnly fecha,
-        Currency moneda)
+    /// <remarks>
+    /// <b>El efectivo ya no se calcula aquí.</b> Lo dice el lector de efectivo, preguntándole por ese día. Hubo una
+    /// segunda cuenta en este fichero y el resultado fue el de siempre: dos maneras de calcular lo mismo acaban
+    /// diciendo cosas distintas del mismo dinero, y en esta cuenta se separaban en 3.320 CAD.
+    ///
+    /// Lo aportado sí se queda, porque es otra pregunta: no es qué dinero hay, sino cuánto puso alguien. Es la
+    /// línea contra la que se compara el valor, y tiene que ser la misma definición que la del informe.
+    /// </remarks>
+    private static decimal? Aportado(IReadOnlyList<Movement> movimientos, DateOnly fecha, Currency moneda)
     {
-        var efectivo = 0m;
         var aportado = 0m;
         var conocido = true;
 
@@ -390,21 +394,6 @@ internal sealed class PortfolioEvolutionReader : IPortfolioEvolutionReader
                 continue;
             }
 
-            efectivo += movimiento.Kind switch
-            {
-                MovementKind.Opening or MovementKind.Deposit => importe.Amount,
-                MovementKind.Withdrawal => -importe.Amount,
-                MovementKind.TransferIn => importe.Amount,
-                MovementKind.TransferOut => -importe.Amount,
-                MovementKind.Sale => importe.Amount,
-                MovementKind.Dividend => importe.Amount,
-                MovementKind.Commission => -importe.Amount,
-                _ => 0m,
-            };
-
-            // Lo puesto es lo que entró sin ser ganancia: apertura, aportaciones y traspasos, menos lo que salió.
-            // Es la línea contra la que se compara el valor, y tiene que ser la misma definición que la del
-            // informe, o las dos cifras dirían cosas distintas de lo mismo.
             aportado += movimiento.Kind switch
             {
                 MovementKind.Opening or MovementKind.Deposit => importe.Amount,
@@ -415,12 +404,7 @@ internal sealed class PortfolioEvolutionReader : IPortfolioEvolutionReader
             };
         }
 
-        foreach (var serie in series)
-        {
-            efectivo -= serie.CosteDe(fecha, moneda);
-        }
-
-        return (efectivo, conocido ? aportado : null);
+        return conocido ? aportado : null;
     }
 
     // ------------------------------------------------------------------ utilidades
@@ -500,7 +484,7 @@ internal sealed class PortfolioEvolutionReader : IPortfolioEvolutionReader
 
     private sealed record Evento(DateOnly Fecha, bool EsVenta, decimal Cantidad, Lot? Lote);
 
-    private sealed record VentaInvertida(DateOnly Fecha, decimal Cantidad, decimal Coste);
+    private sealed record VentaInvertida(DateOnly Fecha, decimal Cantidad);
 
     private sealed record LoteInvertido(DateOnly Fecha, decimal CantidadDeHoy, decimal CostePorUnidad, decimal? Tipo);
 
@@ -526,40 +510,5 @@ internal sealed class PortfolioEvolutionReader : IPortfolioEvolutionReader
 
             return factor == 0m ? 0m : enUnidadesDeHoy / factor;
         }
-
-        /// <summary>
-        /// Lo que había costado, en la moneda de la cartera, todo lo comprado hasta esa fecha.
-        ///
-        /// En una posición <b>cerrada del todo</b> los lotes están a cero y su cantidad original no se puede
-        /// recuperar de ellos —cero por lo que sea sigue siendo cero—, así que se usa el coste de lo vendido, que
-        /// la venta sí guarda. Sin esto, el efectivo salía <b>más alto de lo que es</b> en todo lo que valían las
-        /// posiciones ya vendidas: en esta cuenta, unos 5.900 CAD.
-        /// </summary>
-        public decimal CosteDe(DateOnly fecha, Currency moneda)
-        {
-            var total = 0m;
-
-            if (Cerrada)
-            {
-                foreach (var venta in Ventas.Where(venta => venta.Fecha <= fecha))
-                {
-                    total += venta.Coste;
-                }
-
-                return total;
-            }
-
-            foreach (var lote in Lotes.Where(lote => lote.Fecha <= fecha))
-            {
-                var coste = lote.CantidadDeHoy * lote.CostePorUnidad;
-
-                total += MonedaDelPrecio == moneda ? coste : coste * (lote.Tipo ?? 1m);
-            }
-
-            return total;
-        }
-
-        /// <summary>Si hoy no queda nada: todo lo que había se vendió.</summary>
-        public bool Cerrada => Lotes.Sum(lote => lote.CantidadDeHoy) <= 0m;
     }
 }

@@ -64,6 +64,21 @@ public interface IMovementRepository
         Guid movementId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Registra un movimiento de efectivo.
+    /// </summary>
+    /// <param name="portfolioId">La cartera.</param>
+    /// <param name="kind">El tipo, por su nombre.</param>
+    /// <param name="amount">El importe, siempre positivo: el signo lo pone el tipo.</param>
+    /// <param name="currency">La moneda del importe.</param>
+    /// <param name="occurredOn">El día.</param>
+    /// <param name="notes">Notas.</param>
+    /// <param name="cancellationToken">Cancelación.</param>
+    /// <param name="counterAmount">
+    /// La segunda pata de un <c>Conversion</c>: lo que entra. Nula en todos los demás tipos, que mueven una sola
+    /// moneda.
+    /// </param>
+    /// <param name="counterCurrency">La moneda de esa segunda pata. Tiene que ser distinta de <paramref name="currency"/>.</param>
     public Task<MovementSummary> AddCashAsync(
         Guid portfolioId,
         string kind,
@@ -71,5 +86,7 @@ public interface IMovementRepository
         string currency,
         DateOnly occurredOn,
         string? notes,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        decimal? counterAmount = null,
+        string? counterCurrency = null);
 }

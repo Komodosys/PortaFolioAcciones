@@ -264,8 +264,15 @@ Queda **~1 CAD sin explicar** entre 35,62 y 36,59, y no se da por bueno hasta sa
 2. ~~El gráfico de evolución~~ — **hecho**: ahora pregunta al **mismo lector de efectivo** por cada día. Se borró
    la segunda cuenta que tenía dentro, que era la que se separaba en 3.320 CAD. Con una sola implementación, la
    ficha y el gráfico **no pueden contradecirse**.
-3. **La pantalla**: enseñar las dos bolsas («0,00 CAD · 25,72 USD · 36,43 CAD»). Un solo número esconde el
-   problema y no deja comprobarlo. **Pendiente.**
+3. ~~La pantalla~~ — **hecho**: en **Movimientos**, debajo del saldo, se ven las bolsas con su importe y su
+   cambio («CAD 0,00 · USD 25,72 = 36,20 CAD al cambio 1,4074»), y solo cuando hay más de una: con una sola
+   repetiría el saldo.
+   - **Y se limpió un estropicio**: `movimiento.tipos` tenía **diez claves duplicadas** que se colaron dentro al
+     añadir los traspasos —`saldo`, `saldoDesde`, `borrar`…— y que ya estaban en su sitio. Un fichero con la
+     misma clave dos veces no falla: gana la última, y nadie se entera.
+   - **Y rompí algo haciéndolo**: el script que las quitaba barría desde el primer `"tipos": {` del fichero —que
+     es el de **cartera**— hasta el primer `TransferOut`, y se llevó por delante `cartera.borrar`. Lo cazó el
+     comprobador de idiomas («1 clave que el código usa y no existe»), y se restauró en los tres ficheros.
 4. ~~Aplicar la migración y verificar~~ — **hecho**: ver el cuadre de abajo.
 5. El ADR: «el efectivo se lleva por moneda y se convierte al cambio de hoy para informar de un total».
 

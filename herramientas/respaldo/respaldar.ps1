@@ -17,7 +17,17 @@
 
 param(
     [int] $Retencion = 14,
-    [string] $Carpeta = 'respaldos'
+    [string] $Carpeta = 'respaldos',
+
+    # El remoto de rclone, **cifrado**: el fichero sale de aqui ya cifrado.
+    [string] $Remoto = 'portafolio-cifrado:',
+
+    # Cuantos dias se guardan en el destino. Mas que en local a proposito: si algo se rompe, se descubre
+    # dias despues, y para entonces el respaldo bueno puede haberse ido de la rotacion local.
+    [int] $DiasEnLaNube = 30,
+
+    # Saltarse la copia fuera del equipo. Existe para poder respaldar sin red, diciendolo.
+    [switch] $SinNube
 )
 
 $ErrorActionPreference = 'Stop'
@@ -25,6 +35,29 @@ Set-StrictMode -Version Latest
 
 $raiz = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path))
 Set-Location $raiz
+
+# --- rclone, lanzado por cmd /c ---------------------------------------------------------------
+# No es un capricho. En PowerShell, la salida de error de un programa externo se convierte en un error de
+# PowerShell y, con $ErrorActionPreference = 'Stop', **corta el script**. rclone escribe avisos normales por
+# stderr —el del client_id compartido, sin ir más lejos—, así que llamarlo directo mataba el respaldo *después*
+# de haberlo hecho bien, y en un sitio donde el fichero local ya estaba creado y comprobado.
+#
+# Es exactamente la misma razón por la que `pg_restore` se lanza con `cmd /c` más arriba. Estaba escrito en este
+# mismo fichero y volví a tropezar con ello.
+#
+# Devuelve el código y la salida juntos: con `$LASTEXITCODE` suelto, la siguiente llamada lo pisa.
+function Rclone {
+    param([string[]] $Argumentos)
+
+    # `--log-level ERROR` para que los avisos no se mezclen con lo que se lee. rclone avisa por stderr de que
+    # el client_id compartido se retira, y ese texto acababa dentro del JSON que luego se intentaba leer.
+    $linea = "`"$rcloneExe`" " + ($Argumentos -join ' ') + ' --log-level ERROR'
+
+    # `2>&1` va DENTRO de lo que se le pasa a cmd: es lo que mezcla el stderr de rclone con su salida.
+    $salida = cmd /c "$linea 2>&1"
+
+    return @{ Codigo = $LASTEXITCODE; Salida = @($salida) }
+}
 
 # --- Las credenciales, del .env ---------------------------------------------------------------
 if (-not (Test-Path '.env')) {
@@ -116,4 +149,91 @@ if ($todos.Count -gt $Retencion) {
 }
 
 Write-Host "  Quedan $([math]::Min($todos.Count, $Retencion)) respaldos (retencion: $Retencion)." -ForegroundColor Cyan
+
+# --- 4. La copia fuera del equipo -------------------------------------------------------------
+# El respaldo de arriba vive en el MISMO disco que la base de datos. Eso protege de un error —una migracion,
+# un borrado equivocado— pero no de que el disco muera. Para eso hay que sacarlo de la maquina.
+#
+# Se sube **cifrado**: el remoto de rclone es de tipo `crypt`, asi que el fichero sale de aqui ya cifrado y
+# en Drive queda ilegible. La contrapartida es que la contrasena es imprescindible para restaurar, y por eso
+# no vive en este repositorio.
+#
+# **Si la nube falla, el script falla.** El respaldo local ya esta hecho y comprobado, pero una copia fuera
+# que lleva un mes sin subir es peor que no tenerla: se daria por hecha. Que la tarea de Windows marque error
+# es lo que hace que se vea.
+if ($SinNube) {
+    Write-Host '  Copia fuera del equipo: OMITIDA (se pidio con -SinNube).' -ForegroundColor Yellow
+    exit 0
+}
+
+$rclone = Get-Command rclone -ErrorAction SilentlyContinue
+$rcloneExe = if ($rclone) { $rclone.Source } else { $null }
+
+# Una tarea programada no hereda el PATH de la consola, asi que se busca tambien donde winget lo deja.
+if (-not $rcloneExe) {
+    $rcloneExe = @(
+        Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter 'rclone.exe' -ErrorAction SilentlyContinue
+        Get-ChildItem "$env:ProgramFiles\rclone" -Filter 'rclone.exe' -ErrorAction SilentlyContinue
+    ) | Select-Object -First 1 -ExpandProperty FullName
+}
+
+if (-not $rcloneExe) {
+    Write-Host '  Copia fuera del equipo: NO se puede: falta rclone.' -ForegroundColor Red
+    Write-Host '  Instalalo con: winget install Rclone.Rclone' -ForegroundColor Red
+    exit 1
+}
+
+# Si el remoto no esta configurado todavia, se dice claro y se falla: no se puede dar por hecho.
+#
+# El `-join` no es cosmetico: `listremotes` devuelve una LISTA, y comparar una lista con `-notmatch` no da un
+# booleano —devuelve los elementos que no casan—, que en un `if` siempre es verdadero. Con eso, el script decia
+# «el remoto no esta configurado» teniendolo configurado delante.
+$remotos = (Rclone 'listremotes').Salida -join "`n"
+if ($remotos -notmatch [regex]::Escape($Remoto)) {
+    Write-Host "  Copia fuera del equipo: NO se puede: el remoto '$Remoto' no esta configurado." -ForegroundColor Red
+    Write-Host '  Configuralo una vez con: rclone config' -ForegroundColor Red
+    exit 1
+}
+
+$nombreDelFichero = Split-Path $destino -Leaf
+Write-Host "  Subiendo a $Remoto (cifrado) ..." -ForegroundColor Cyan
+
+$subida = Rclone @('copy', "`"$destino`"", "`"$Remoto`"")
+if ($subida.Codigo -ne 0) {
+    Write-Host '  La copia fuera del equipo HA FALLADO. El respaldo local esta hecho.' -ForegroundColor Red
+    exit 1
+}
+
+# Y se comprueba que llego, que es lo que convierte una copia en un respaldo.
+#
+# Se usa `rclone check` y no se lee el JSON de `lsjson`: interpretar una salida pensada para programas era
+# fragility añadida, y fallaba por el formato. `check` compara el fichero de verdad —tamaño y, si el remoto lo
+# admite, huella— y contesta con el código de salida, que es lo que hace falta.
+#
+# `--one-way` porque solo importa que esté LO QUE SE ACABA DE SUBIR: en el destino hay más días, y sin esto
+# `check` se quejaría de que aquí faltan ficheros que allí sí están.
+$comprobacion = Rclone @(
+    'check', "`"$Carpeta`"", "`"$Remoto`"",
+    '--include', "`"$nombreDelFichero`"",
+    '--one-way'
+)
+
+if ($comprobacion.Codigo -ne 0) {
+    Write-Host '  El fichero NO se ha podido comprobar en el remoto. Se da por fallida la copia.' -ForegroundColor Red
+    $comprobacion.Salida | Select-Object -First 5 | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
+    exit 1
+}
+
+$tamanoRemoto = (Get-Item $destino).Length
+Write-Host "  Copia fuera del equipo comprobada: $Remoto$nombreDelFichero ($tamanoRemoto bytes)." -ForegroundColor Green
+
+# Retencion tambien en el destino: lo local se queda en $Retencion, lo de la nube en $DiasEnLaNube.
+if ($DiasEnLaNube -gt 0) {
+    $limpieza = Rclone @('delete', "`"$Remoto`"", '--min-age', "`"$($DiasEnLaNube)d`"")
+
+    if ($limpieza.Codigo -ne 0) {
+        Write-Host '  No se pudo limpiar la nube. No es grave: se deja dicho.' -ForegroundColor Yellow
+    }
+}
+
 exit 0

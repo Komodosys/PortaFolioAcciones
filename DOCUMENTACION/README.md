@@ -71,6 +71,7 @@ inversión: posiciones, precios y rendimiento. Inspirada en la vista de portafol
 | El administrador puede ver los portafolios de los demás | [ADR-012](decisiones/ADR-012-administrador-lectura-portafolios.md) | Sustituido por [ADR-014](decisiones/ADR-014-administrador-escritura-con-auditoria.md) |
 | Interfaz multi-idioma (español, francés e inglés) | [ADR-013](decisiones/ADR-013-interfaz-multi-idioma.md) | **Aceptado** |
 | El administrador puede modificar datos ajenos, con auditoría | [ADR-014](decisiones/ADR-014-administrador-escritura-con-auditoria.md) | **Aceptado** |
+| El efectivo se lleva por moneda y se informa al cambio de hoy | [ADR-015](decisiones/ADR-015-efectivo-por-moneda.md) | **Aceptado** |
 
 **La arquitectura queda cerrada.** El resumen operativo (versiones y librerías) está en
 [07-baseline-tecnologico.md](07-baseline-tecnologico.md).

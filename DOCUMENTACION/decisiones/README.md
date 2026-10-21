@@ -65,3 +65,4 @@ Qué se decide, en una frase, y por qué.
 | [012](ADR-012-administrador-lectura-portafolios.md) | El administrador puede ver los portafolios de los demás (solo lectura) | Sustituido por [ADR-014](ADR-014-administrador-escritura-con-auditoria.md) |
 | [013](ADR-013-interfaz-multi-idioma.md) | Interfaz multi-idioma (español, francés e inglés) | **Aceptado** |
 | [014](ADR-014-administrador-escritura-con-auditoria.md) | El administrador puede modificar datos ajenos, con auditoría | **Aceptado** |
+| [015](ADR-015-efectivo-por-moneda.md) | El efectivo se lleva por moneda y se informa al cambio de hoy | **Aceptado** |

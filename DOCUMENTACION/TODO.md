@@ -362,10 +362,54 @@ cosas que se dejan para después, a propósito:
 2. **Arreglar `actualizar.cmd`**: que su copia de seguridad sea `respaldar.cmd` —que verifica el volcado y devuelve
    error si no sirve— y que **no siga con la migración si la copia falló**. Hoy puede parar la API, migrar y dejar
    como «respaldo» un fichero vacío.
-3. **Copiar los respaldos fuera del equipo.** La base vive en `..\PortaFolioAcciones-datos\postgres` y los
-   respaldos en `respaldos\`: **el mismo disco**. Eso protege de un error —una migración, un borrado equivocado—
-   pero **no de que el disco muera**. Para eso hay que sacarlos a un disco externo o a la nube, y dejarlo también
-   programado.
+3. ~~**Copiar los respaldos fuera del equipo.**~~ — **hecho el 2026-10-20, ver abajo.**
+
+### El respaldo fuera del equipo: hecho y verificado (2026-10-20)
+
+**`rclone` 1.75.1** (instalado con `winget install Rclone.Rclone`) con **dos remotos**:
+
+- `portafolio-drive:` — la cuenta de Google, autorizada una vez por el usuario.
+- `portafolio-cifrado:` — un remoto de tipo `crypt` **encima** del anterior. Es el que usa el respaldo, así que
+  **en Drive no hay nada legible**: los ficheros tienen nombres opacos y el contenido va cifrado.
+
+El respaldo, al terminar lo local y comprobado, **sube el volcado, comprueba que llegó** con `rclone check` y
+rota también en el destino (30 días en la nube, 14 en local: más días fuera a propósito, porque un fallo se
+descubre tarde y para entonces el bueno puede haberse ido de la rotación local).
+
+**Probado de verdad, no de palabra:**
+
+```
+Volcando portafolio ... OK
+Respaldo comprobado: respaldos\portafolio-2026-10-20-203659.dump (382 KB)
+Subiendo a portafolio-cifrado: (cifrado) ...
+Copia fuera del equipo comprobada: portafolio-cifrado:portafolio-2026-10-20-203659.dump (391581 bytes)
+```
+
+Y comprobado en la nube: `rclone lsf portafolio-drive:portafolio` devuelve nombres ilegibles, mientras que por el
+remoto cifrado se ven los `portafolio-*.dump`.
+
+**La clave de cifrado está en `.env` como `RESPALDO_CLAVE`** (excluido del repositorio). **Sin ella, los respaldos
+de la nube no se pueden restaurar**, y `.env` vive en este equipo: hay que apuntarla **fuera** —un gestor de
+contraseñas— o el cifrado se convierte en el problema en vez de la solución.
+
+**Tres trampas de PowerShell que costaron tres intentos, y quedan escritas en el script:**
+
+1. `-notmatch` sobre una **lista** no da un booleano: devuelve los elementos que no casan, que en un `if` siempre
+   es verdadero. El script decía «el remoto no está configurado» teniéndolo delante. Se arregla con `-join`.
+2. **La salida de error de un programa externo se convierte en error de PowerShell** y, con
+   `$ErrorActionPreference = 'Stop'`, corta el script. rclone escribe avisos por stderr, así que el respaldo moría
+   **después** de haberlo hecho bien. Es la misma trampa que ya estaba documentada aquí para `pg_restore`: ahora
+   rclone también se lanza por `cmd /c`.
+3. Leer el JSON de `lsjson` era fragilidad añadida. Se cambió por `rclone check`, que compara el fichero de
+   verdad y contesta con el código de salida.
+
+**⚠ Aviso pendiente, y es de los que importan:** rclone avisa de que su **client_id compartido de Google se retira
+y dejará de funcionar durante 2026**. Cuando pase, **la subida fallará** —el respaldo local seguirá bien, y la
+tarea marcará error, que es lo que queremos— pero hay que arreglarlo antes. La solución es crear un **client_id
+propio** en Google Cloud Console (un proyecto, una credencial de tipo «app de escritorio», ~10 minutos) y
+ponérselo al remoto con `client_id` y `client_secret`. **Pendiente de hacer.**
+
+**Y siguen pendientes de esta lista:** borrar el respaldo falso de 670 bytes y arreglar `actualizar.cmd`.
 
 ---
 

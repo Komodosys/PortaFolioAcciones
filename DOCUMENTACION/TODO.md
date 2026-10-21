@@ -11,9 +11,10 @@
 >    de CAD queda **0,00**, la de USD **25,72** y el total **36,43 CAD**, frente a los **36,59** del estado —los
 >    0,70 USD que faltan están **dentro del estado**. La ficha y el gráfico dan lo mismo. **Queda pendiente**:
 >    enseñar las dos bolsas en la pantalla y el ADR. Ver *«El cuadre del efectivo»*.
-> 2. **El respaldo**, que tiene **tres cosas pendientes**: borrar el respaldo falso de 670 bytes, arreglar la
->    copia de seguridad de `actualizar.cmd` y sacar las copias fuera del equipo. Ver *«El respaldo, tres cosas
->    que hacer más adelante»*.
+> 2. **El respaldo: cerrado el 2026-10-20.** La tarea diaria corre sola, el volcado se comprueba, **se sube
+>    cifrado a Google Drive y se verifica** que llegó, y `actualizar.cmd` ya no puede dejar un «respaldo» vacío.
+>    **Queda una cosa pendiente y con fecha límite**: el `client_id` compartido de rclone **se retira durante
+>    2026**, y cuando pase la subida fallará. Hay que crear uno propio. Ver *«El respaldo, tres cosas»*.
 >
 > Dile que lo has leído, con las cifras, y no vuelvas a diagnosticar el efectivo desde cero: **el diagnóstico
 > está hecho y medido**, y rehacerlo es la forma de perder otra sesión.
@@ -349,20 +350,26 @@ existe `DELETE /api/positions/{id}`, con la regla decidida a propósito:
   nunca**. Fabricar ahora una entrada en el libro sería peor que el hueco. Queda escrito en la documentación, que
   es lo único honesto que se puede hacer
 
-### El respaldo, tres cosas que hacer más adelante (decidido el 2026-10-18)
+### El respaldo, tres cosas: las tres hechas (2026-10-20)
 
-La tarea diaria **está programada y probada**, pero al mirar en qué estado estaba el respaldo salieron tres
-cosas que se dejan para después, a propósito:
+La tarea diaria **está programada y probada** desde el 2026-10-18. Al mirar en qué estado estaba el respaldo
+salieron tres cosas, y las tres están cerradas:
 
-1. **Hay un respaldo FALSO en la carpeta y hay que borrarlo.** `respaldos\portafolio-17-10-2026.sql`, de **670
-   bytes**, tiene la cabecera de `pg_dump` y **ni una sola tabla**. Lo generó el paso de «copia de seguridad» de
-   [`actualizar.cmd`](../actualizar.cmd), que volca **redirigiendo la salida** —la trampa que este mismo proyecto
-   tiene documentada— y **no comprueba que el volcado sirva**. Si alguien restaurara de ahí, se quedaría con una
-   base vacía. Y como la retención solo borra los `portafolio-*.dump`, **ese fichero no se borrará nunca**.
-2. **Arreglar `actualizar.cmd`**: que su copia de seguridad sea `respaldar.cmd` —que verifica el volcado y devuelve
-   error si no sirve— y que **no siga con la migración si la copia falló**. Hoy puede parar la API, migrar y dejar
-   como «respaldo» un fichero vacío.
-3. ~~**Copiar los respaldos fuera del equipo.**~~ — **hecho el 2026-10-20, ver abajo.**
+1. ~~**El respaldo FALSO.**~~ **Borrado.** `respaldos\portafolio-17-10-2026.sql`, de **670 bytes**, tenía la
+   cabecera de `pg_dump` y **ni una sola tabla**. Lo generó el paso de «copia de seguridad» de
+   [`actualizar.cmd`](../actualizar.cmd) redirigiendo la salida de `pg_dump` —la trampa que este mismo proyecto
+   tiene documentada— y sin comprobar que el volcado sirviera.
+   - **Queda uno legítimo, y no se toca:** `respaldos\portafolio-16-10-2026.sql`, **328 KB y 56 tablas**, de la
+     misma época. Ese sí es un volcado completo. No entra en la rotación (que solo mira los `*.dump`), así que
+     **se quedará para siempre**: si algún día molesta, se borra a mano, pero no es basura.
+2. ~~**Arreglar `actualizar.cmd`.**~~ **Hecho y probado.** Su paso 2/4 ya no vuelca: **llama a `respaldar.cmd`**,
+   que comprueba el volcado con `pg_restore`, rota y **lo sube cifrado fuera del equipo**; y **si falla, no se
+   sigue** — parar la API y migrar sin un respaldo comprobado es apostar a que hoy no pasa nada. El aviso de
+   migración fallida ya no manda restaurar un `.sql` que puede no existir: manda `restaurar.cmd`.
+   - **Probado de principio a fin** el 2026-10-20: copia hecha y comprobada (382 KB), subida a la nube y
+     verificada, migraciones aplicadas y la aplicación arrancada y sana. Es un procedimiento que se ejecuta de
+     verdad, no uno que se supone que funciona.
+3. ~~**Copiar los respaldos fuera del equipo.**~~ — **hecho, ver abajo.**
 
 ### El respaldo fuera del equipo: hecho y verificado (2026-10-20)
 

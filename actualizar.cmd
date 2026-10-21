@@ -35,14 +35,25 @@ if errorlevel 1 exit /b 1
 
 echo.
 echo === 2/4 Copia de seguridad ===
-if not exist "respaldos" mkdir respaldos
-for /f "tokens=1-4 delims=/- " %%a in ("%DATE%") do set "HOY=%%c-%%b-%%a"
-docker compose exec -T postgres pg_dump -U %POSTGRES_USER% -d %POSTGRES_DB% > "respaldos\portafolio-%HOY%.sql"
+
+REM **La copia la hace respaldar.cmd, y no este script.**
+REM
+REM Antes se hacia aqui redirigiendo la salida de `pg_dump` a un `portafolio-%HOY%.sql`, y eso dejo un fichero
+REM de **670 bytes con la cabecera y NINGUNA tabla**: un respaldo con el nombre de un respaldo y sin nada
+REM dentro. No fallaba, no avisaba, y la retencion no lo borraba nunca porque solo mira los `*.dump`.
+REM
+REM respaldar.cmd vuelca, **comprueba el volcado con pg_restore**, rota los antiguos y lo sube cifrado fuera
+REM del equipo. Si algo de eso falla, devuelve error.
+REM
+REM Y si la copia falla **no se sigue**: parar la API y migrar sin un respaldo comprobado es apostar a que
+REM hoy no pasa nada.
+call "respaldar.cmd"
 if errorlevel 1 (
-    echo La copia de seguridad ha fallado. NO se toca la base de datos.
+    echo.
+    echo La copia de seguridad ha fallado o no se ha podido comprobar. NO se toca la base de datos.
     exit /b 1
 )
-echo Copia guardada en respaldos\portafolio-%HOY%.sql
+echo Copia de seguridad hecha y comprobada.
 
 echo.
 echo === 3/4 Parando la API ===
@@ -64,7 +75,7 @@ set "NUGET_PACKAGES=%RAIZ%.nuget\packages"
 if errorlevel 1 (
     echo.
     echo LA MIGRACION HA FALLADO. La aplicacion NO se arranca.
-    echo Restaura la copia de respaldos\portafolio-%HOY%.sql antes de seguir.
+    echo Restaura el respaldo mas reciente de respaldos\ con:  restaurar.cmd
     exit /b 1
 )
 
